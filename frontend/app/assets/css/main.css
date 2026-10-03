@@ -17,11 +17,6 @@
   --ui-primary: var(--ui-color-primary-500);
 }
 
-/* grey node borders (also drives the node's handles and selected outline) */
-.vue-flow__node-default {
-  --vf-node-color: var(--ui-color-neutral-400);
-}
-
 /* Node categories: core, fields and defects each get a colour (background + icon) */
 .cat-core {
   --cat-bg: var(--ui-color-primary-100);
@@ -38,8 +33,26 @@
   --cat-fg: var(--ui-color-warning-700);
 }
 
+/* Node outline and handles use the same colour as the node's icon */
+/* The colour fills are light in both colour modes, so keep the text dark (as on the nodes) */
+.cat-core,
+.cat-fields,
+.cat-defects {
+  color: var(--vf-node-text);
+}
+
 .vue-flow__node-default[class*="cat-"] {
   --vf-node-bg: var(--cat-bg);
+  --vf-node-color: var(--cat-fg);
+}
+
+[class*="cat-"] > .vue-flow__handle {
+  --vf-handle: var(--cat-fg);
+  /* centred on the header row (half the 40px header), which is also the middle of a plain node */
+  top: 20px;
+  /* bigger than VueFlow's 6px so connections are easier to start and drop */
+  width: 10px;
+  height: 10px;
 }
 
 /* No bold anywhere unless explicitly requested; overrides Nuxt UI component weights */

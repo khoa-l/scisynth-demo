@@ -9,8 +9,12 @@ function add() {
   updateNodeData(props.id, { axes: [...props.axes, newAxis(props.axes)] });
 }
 
-// Number inputs emit "" while empty; keep the last valid number instead
-function setExtent(axis: AxisData, index: 0 | 1, value: string | number | undefined) {
+function remove(index: number) {
+  updateNodeData(props.id, { axes: props.axes.filter((_, i) => i !== index) });
+}
+
+// Number inputs emit null while empty; keep the last valid number instead
+function setExtent(axis: AxisData, index: 0 | 1, value: number | null | undefined) {
   if (typeof value === "number" && Number.isFinite(value)) axis.extent[index] = value;
 }
 
@@ -41,29 +45,39 @@ const invalidName = (axis: AxisData) =>
         :aria-label="`Axis ${i + 1} unit`"
         class="w-16"
       />
-      <UInput
+      <UInputNumber
         :model-value="axis.extent[0]"
-        type="number"
-        step="any"
+        :step="0.1"
+        :step-snapping="false"
+        :format-options="{ maximumFractionDigits: 10 }"
         size="xs"
         placeholder="min"
         :aria-label="`Axis ${i + 1} extent minimum`"
         :color="invalidExtent(axis) ? 'error' : undefined"
         :highlight="invalidExtent(axis)"
-        class="w-20"
+        class="w-28"
         @update:model-value="setExtent(axis, 0, $event)"
       />
-      <UInput
+      <UInputNumber
         :model-value="axis.extent[1]"
-        type="number"
-        step="any"
+        :step="0.1"
+        :step-snapping="false"
+        :format-options="{ maximumFractionDigits: 10 }"
         size="xs"
         placeholder="max"
         :aria-label="`Axis ${i + 1} extent maximum`"
         :color="invalidExtent(axis) ? 'error' : undefined"
         :highlight="invalidExtent(axis)"
-        class="w-20"
+        class="w-28"
         @update:model-value="setExtent(axis, 1, $event)"
+      />
+      <UButton
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="ghost"
+        size="xs"
+        :aria-label="`Delete axis ${i + 1}`"
+        @click="remove(i)"
       />
     </div>
   </div>

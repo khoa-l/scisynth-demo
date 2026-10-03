@@ -208,6 +208,9 @@ importers:
       nuxt:
         specifier: ^4.5.2
         version: 4.5.2(45cd0ee74b3a900261a3260a9d52ad36)
+      plotly.js-dist-min:
+        specifier: ^4.1.1
+        version: 4.1.1
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -5124,6 +5127,9 @@ packages:
 
   pkg-types@2.3.1:
     resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
+
+  plotly.js-dist-min@4.1.1:
+    resolution: {integrity: sha512-4Jg6n9FKcn5WBuqHESZmueEBYOLjGlsz8ivzMCl03WCX+GAAOgIALvdONwIi54JDMq0tkxbu+vs5Yj7QSPQtgg==}
 
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
@@ -11577,6 +11583,8 @@ snapshots:
       confbox: 0.2.4
       exsolve: 1.1.1
       pathe: 2.0.3
+
+  plotly.js-dist-min@4.1.1: {}
 
   pluralize@8.0.0: {}
 

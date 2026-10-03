@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
     "obskit",
+    "plotly>=7.1.0",
     "uvicorn[standard]>=0.54.0",
 ]
 

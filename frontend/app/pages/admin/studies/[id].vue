@@ -6,6 +6,7 @@ interface StudyDetail {
   id: number;
   name: string;
   nodes: SavedNode[];
+  edges: SavedEdge[];
 }
 
 const route = useRoute();
@@ -45,7 +46,12 @@ const plugins = [
         </section>
       </aside>
       <main class="relative flex-1">
-        <FlowCanvas v-if="study" :study-id="study.id" :initial-nodes="study.nodes" />
+        <FlowCanvas
+          v-if="study"
+          :study-id="study.id"
+          :initial-nodes="study.nodes"
+          :initial-edges="study.edges"
+        />
       </main>
     </div>
     <NodeDragOverlay />
