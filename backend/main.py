@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS edges (
     id       TEXT NOT NULL,
     source   TEXT NOT NULL,
     target   TEXT NOT NULL,
+    source_handle TEXT,
+    target_handle TEXT,
     PRIMARY KEY (study_id, id)
 );
 """
@@ -75,6 +77,11 @@ async def lifespan(_: FastAPI):
         # databases created before nodes carried their own data (e.g. a Domain's axes)
         if "data" not in columns:
             conn.execute("ALTER TABLE nodes ADD COLUMN data TEXT NOT NULL DEFAULT '{}'")
+        # databases created before connections said which input they end on
+        edge_columns = [r["name"] for r in conn.execute("PRAGMA table_info(edges)")]
+        for column in ("source_handle", "target_handle"):
+            if column not in edge_columns:
+                conn.execute(f"ALTER TABLE edges ADD COLUMN {column} TEXT")
         # GaussianRandomField was renamed GaussianField in obskit
         conn.execute(
             "UPDATE nodes SET type = 'gaussianField', label = 'GaussianField' "
@@ -107,6 +114,9 @@ class EdgeState(BaseModel):
     id: str
     source: str
     target: str
+    # which output / input of the nodes the connection uses (null = the header's)
+    sourceHandle: str | None = None
+    targetHandle: str | None = None
 
 
 class GraphState(BaseModel):
@@ -151,7 +161,9 @@ def get_study(study_id: int) -> dict:
             (study_id,),
         )
         edges = conn.execute(
-            "SELECT id, source, target FROM edges WHERE study_id = ? ORDER BY rowid", (study_id,)
+            "SELECT id, source, target, source_handle AS sourceHandle, "
+            "target_handle AS targetHandle FROM edges WHERE study_id = ? ORDER BY rowid",
+            (study_id,),
         )
         return {
             **dict(study),
@@ -191,8 +203,12 @@ def save_graph(study_id: int, graph: GraphState) -> Response:
             ],
         )
         conn.executemany(
-            "INSERT INTO edges (study_id, id, source, target) VALUES (?, ?, ?, ?)",
-            [(study_id, e.id, e.source, e.target) for e in graph.edges],
+            "INSERT INTO edges (study_id, id, source, target, source_handle, target_handle) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                (study_id, e.id, e.source, e.target, e.sourceHandle, e.targetHandle)
+                for e in graph.edges
+            ],
         )
     return Response(status_code=204)
 

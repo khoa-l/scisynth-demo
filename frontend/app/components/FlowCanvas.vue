@@ -36,19 +36,28 @@ setNodes(
   })),
 );
 
-setEdges(props.initialEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })));
+setEdges(props.initialEdges);
 
-// Only connections that a node kind accepts (for now: defects into a Preview) are allowed
-function isValidConnection(connection: { source: string; target: string }) {
+// Only connections that an input accepts are allowed (a defect into a Preview, a Domain into a
+// GaussianField's domain)
+function isValidConnection(connection: {
+  source: string;
+  target: string;
+  targetHandle?: string | null;
+}) {
   return canConnect(
     findNode(connection.source)?.data?.type,
     findNode(connection.target)?.data?.type,
+    connection.targetHandle,
   );
 }
 
 // An input takes one connection, so a new one replaces the old
 onConnect((connection) => {
-  removeEdges(edges.value.filter((e) => e.target === connection.target).map((e) => e.id));
+  const sameInput = (e: { target: string; targetHandle?: string | null }) =>
+    e.target === connection.target &&
+    (e.targetHandle ?? null) === (connection.targetHandle ?? null);
+  removeEdges(edges.value.filter(sameInput).map((e) => e.id));
   addEdges(connection);
 });
 
@@ -79,7 +88,13 @@ function snapshot() {
         data,
       };
     }),
-    edges: edges.value.map((e): SavedEdge => ({ id: e.id, source: e.source, target: e.target })),
+    edges: edges.value.map((e): SavedEdge => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? null,
+      targetHandle: e.targetHandle ?? null,
+    })),
   };
 }
 

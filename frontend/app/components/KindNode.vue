@@ -12,7 +12,9 @@ const connected = computed(() => edges.value.some((e) => e.target === props.id))
 // Nodes with a body (an axis list, parameters, a plot) get a coloured header over a neutral
 // body. A node that expands (the Preview) has a body only once something is connected.
 const body = computed(() =>
-  kind.value.expandedWidth ? connected.value : nodeType.value === "domain" || !!kind.value.params,
+  kind.value.expandedWidth
+    ? connected.value
+    : nodeType.value === "domain" || !!kind.value.params || !!kind.value.ports,
 );
 const width = computed(() => (connected.value ? kind.value.expandedWidth : undefined));
 </script>

@@ -17,6 +17,39 @@
   --ui-primary: var(--ui-color-primary-500);
 }
 
+/* Scrollable areas inside nodes (an open group's rows, the Domain's axis list). The scrollbar is
+   slim, always drawn, and fixed at --sbw wide, so it fits in the 10px of padding the area borrows
+   from the node's side (negative margin). The area's right padding is 10px minus the scrollbar,
+   and the gutter is reserved even when nothing overflows, so the fields end exactly where every
+   other field in the node ends, scrolling or not. Firefox gets its own width: ::-webkit-scrollbar
+   is not supported there. */
+.node-scroll {
+  --sbw: 6px;
+  scrollbar-gutter: stable;
+  padding-right: calc(10px - var(--sbw));
+}
+
+.node-scroll::-webkit-scrollbar {
+  width: var(--sbw);
+}
+
+.node-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.node-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--cat-fg) 55%, transparent);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .node-scroll {
+    --sbw: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--cat-fg) 55%, transparent) transparent;
+  }
+}
+
 /* Node categories: core, fields and defects each get a colour (background + icon) */
 .cat-core {
   --cat-bg: var(--ui-color-primary-100);
@@ -46,13 +79,18 @@
   --vf-node-color: var(--cat-fg);
 }
 
-[class*="cat-"] > .vue-flow__handle {
+/* every handle, including ones next to a field in the body: category colour, and bigger than
+   VueFlow's 6px so connections are easier to start and drop */
+[class*="cat-"] .vue-flow__handle {
   --vf-handle: var(--cat-fg);
-  /* centred on the header row (half the 40px header), which is also the middle of a plain node */
-  top: 20px;
-  /* bigger than VueFlow's 6px so connections are easier to start and drop */
   width: 10px;
   height: 10px;
+}
+
+/* the header's handles are centred on the header row (half the 40px header), which is also the
+   middle of a plain node; handles next to a field keep VueFlow's default (middle of their row) */
+[class*="cat-"] > .vue-flow__handle {
+  top: 20px;
 }
 
 /* No bold anywhere unless explicitly requested; overrides Nuxt UI component weights */
