@@ -11,6 +11,8 @@ export interface SavedNode {
   label: string;
   x: number;
   y: number;
+  // id of the container this node sits inside (x and y are then relative to it), or null
+  parent: string | null;
   data: Record<string, unknown>;
 }
 
@@ -84,6 +86,17 @@ export interface Port {
   accepts: InputRule;
 }
 
+// An area of a container that takes the nodes its rule accepts
+export interface Zone {
+  id: string;
+  label: string; // shown on the area's edge
+  hint: string; // shown while the area is empty
+  accepts: InputRule;
+  max?: number; // how many nodes it takes (unlimited if omitted)
+  minHeight: number; // the area is at least this tall; it grows with what it holds
+  ordered?: boolean; // its nodes are listed in the order they are connected in
+}
+
 export interface NodeKind {
   type: string;
   label: string;
@@ -91,6 +104,10 @@ export interface NodeKind {
   category: NodeCategory;
   // node width in px when it needs more than NODE_SIZE.width
   width?: number;
+  // zones make the node a container (the Observer): areas below its header in which nodes can be
+  // placed. A node placed in a zone is laid out by the container (see containerLayout), so the
+  // container grows with what it holds
+  zones?: Zone[];
   // width once the node has something to show (e.g. a Preview with a connected defect)
   expandedWidth?: number;
   // parameters edited on the node body (stored in the node's data as `params`)
@@ -106,11 +123,46 @@ export interface NodeKind {
 
 export const nodeWidth = (kind: NodeKind) => kind.width ?? NODE_SIZE.width;
 
+// A defect's input takes another defect: connected defects form a chain, an ordered list of
+// stages (see "Defect chains" in docs/decisions.md)
+const DEFECT_INPUT: InputRule = { categories: ["defects"] };
+
 // The kinds of node that can be dragged onto the canvas, named after their obskit classes.
 // Icon names must stay literal strings so Nuxt Icon bundles them.
 export const NODE_KINDS: NodeKind[] = [
   // core
-  { type: "observer", label: "Observer", icon: "i-lucide-eye", category: "core" },
+  {
+    type: "observer",
+    label: "Observer",
+    icon: "i-lucide-eye",
+    category: "core",
+    width: 280,
+    // two areas under the white inputs section: one for the sampler, and a list of the defects
+    // (stages), which grows as they are added and is in the order they are connected in
+    zones: [
+      {
+        id: "sampler",
+        label: "sampler",
+        hint: "Drop a sampler here",
+        accepts: { types: ["gridSampler", "pointSampler"] },
+        max: 1,
+        minHeight: 56,
+      },
+      {
+        id: "stages",
+        label: "stages",
+        hint: "Drop defects here",
+        accepts: { categories: ["defects"] },
+        minHeight: 160,
+        ordered: true,
+      },
+    ],
+    // inputs live in the white section above the zones (see ContainerBody)
+    input: false,
+    ports: [{ id: "latent", label: "latent", accepts: { categories: ["fields"] } }],
+    // the seed of the run: the same seed always gives the same observation
+    params: [{ name: "seed", default: 0, min: 0, max: 2147483647, step: 1, integer: true }],
+  },
   {
     type: "domain",
     label: "Domain",
@@ -160,6 +212,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "RandomDropout",
     icon: "i-lucide-eraser",
     category: "defects",
+    accepts: DEFECT_INPUT,
     // probability that each entry is dropped; obskit requires 0 <= p <= 1
     params: [{ name: "p", default: 0.1, min: 0, max: 1, step: 0.05 }],
   },
@@ -168,6 +221,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "GaussianNoise",
     icon: "i-lucide-audio-lines",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [
       { name: "sigma", default: 1, min: 0, step: 0.1 },
       { name: "mean", default: 0, step: 0.1 },
@@ -178,6 +232,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "PoissonNoise",
     icon: "i-lucide-dices",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [{ name: "scale", default: 1, min: 0, minExclusive: true, step: 1 }],
   },
   {
@@ -185,6 +240,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "Quantize",
     icon: "i-lucide-chart-no-axes-column",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [
       { name: "levels", default: 256, min: 2, step: 1, integer: true },
       { name: "vmin", default: null, step: 0.1, placeholder: "auto" },
@@ -196,6 +252,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "Clip",
     icon: "i-lucide-scissors",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [
       { name: "lo", default: null, step: 0.1, placeholder: "none" },
       { name: "hi", default: null, step: 0.1, placeholder: "none" },
@@ -206,6 +263,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "Saturate",
     icon: "i-lucide-contrast",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [{ name: "ceiling", default: 1, min: 0, minExclusive: true, step: 0.1 }],
   },
   {
@@ -213,6 +271,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "ValueOffset",
     icon: "i-lucide-move-vertical",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [{ name: "value", default: 0, step: 0.1 }],
   },
   {
@@ -220,6 +279,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "Gain",
     icon: "i-lucide-volume-2",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [{ name: "factor", default: 1, step: 0.1 }],
   },
   {
@@ -227,6 +287,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "Drift",
     icon: "i-lucide-trending-up",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [
       { name: "rate", default: 0, step: 0.1 },
       // the preview signal has axes x and y; unset drifts along the sample order instead
@@ -246,6 +307,7 @@ export const NODE_KINDS: NodeKind[] = [
     label: "CoordinateShift",
     icon: "i-lucide-move",
     category: "defects",
+    accepts: DEFECT_INPUT,
     params: [{ name: "shift", default: 0, step: 0.1 }],
   },
 ];
@@ -259,6 +321,27 @@ const FALLBACK_KIND: Omit<NodeKind, "type" | "label"> = {
 export function kindOf(type: string | undefined, label = ""): NodeKind {
   return NODE_KINDS.find((k) => k.type === type) ?? { type: type ?? "", label, ...FALLBACK_KIND };
 }
+
+// The height of a node's header
+export const HEADER_HEIGHT = NODE_SIZE.height;
+
+// A container with inputs has a white section under its header: a row of fields is 28px (24px
+// plus a 4px gap), plus its padding
+export const containerTopHeight = (kind: NodeKind) => {
+  const rows = (kind.ports?.length ?? 0) + (kind.params?.length ?? 0);
+  return rows ? rows * 28 + 12 : 0;
+};
+
+// The zone of a container kind that takes nodes of the `child` kind, if any
+export function zoneFor(container: NodeKind, child: string | undefined) {
+  const kind = kindOf(child);
+  return container.zones?.find(
+    (z) => z.accepts.categories?.includes(kind.category) || z.accepts.types?.includes(kind.type),
+  );
+}
+
+// Whether a node type is one of the defects
+export const isDefectKind = (type: string | undefined) => kindOf(type).category === "defects";
 
 // Whether an output of the `source` kind may be connected to an input of the `target` kind:
 // the header input, or the port with id `handle`

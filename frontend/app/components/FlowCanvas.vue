@@ -11,58 +11,51 @@ const props = defineProps<{
   initialEdges: SavedEdge[];
 }>();
 
-const {
-  nodes,
-  edges,
-  setNodes,
-  setEdges,
-  addNodes,
-  addEdges,
-  removeEdges,
-  findNode,
-  onConnect,
-  screenToFlowCoordinate,
-  onNodesInitialized,
-  fitView,
-} = useVueFlow(FLOW_ID);
+const { setNodes, setEdges, addNodes, screenToFlowCoordinate, onNodesInitialized, fitView } =
+  useVueFlow(FLOW_ID);
+
+// ---- loading the saved study
+
+// A node can only point at a parent that is already there, so containers go first. The saved
+// order (and what counts as "unchanged" for saving) follows.
+const initialNodes = [...props.initialNodes].sort(
+  (a, b) => Number(!!a.parent) - Number(!!b.parent),
+);
 
 setNodes(
-  props.initialNodes.map((n) => ({
+  initialNodes.map((n) => ({
     id: n.id,
     type: "kind",
     label: n.label,
     data: { type: n.type, ...n.data },
     position: { x: n.x, y: n.y },
+    parentNode: n.parent ?? undefined,
   })),
 );
 
-setEdges(props.initialEdges);
+// Connections saved against an input that no longer exists (the Observer's old sampler port, now
+// a zone) are dropped; the cleaned list is saved right after loading.
+const typeById = new Map(initialNodes.map((n) => [n.id, n.type]));
+setEdges(
+  props.initialEdges
+    .filter(
+      (e) =>
+        !e.targetHandle ||
+        e.targetHandle === "prev" ||
+        kindOf(typeById.get(e.target)).ports?.some((port) => port.id === e.targetHandle),
+    )
+    // the vertical links between neighbors in a list are straight
+    .map((e) => (e.targetHandle === "prev" ? { ...e, type: "straight" } : e)),
+);
 
-// Only connections that an input accepts are allowed (a defect into a Preview, a Domain into a
-// GaussianField's domain)
-function isValidConnection(connection: {
-  source: string;
-  target: string;
-  targetHandle?: string | null;
-}) {
-  return canConnect(
-    findNode(connection.source)?.data?.type,
-    findNode(connection.target)?.data?.type,
-    connection.targetHandle,
-  );
-}
+// ---- behavior (each needs the study loaded above)
 
-// An input takes one connection, so a new one replaces the old
-onConnect((connection) => {
-  const sameInput = (e: { target: string; targetHandle?: string | null }) =>
-    e.target === connection.target &&
-    (e.targetHandle ?? null) === (connection.targetHandle ?? null);
-  removeEdges(edges.value.filter(sameInput).map((e) => e.id));
-  addEdges(connection);
-});
+const { isValidConnection } = useConnectionRules();
+const { zoneAt, showHover, placeInList } = useContainers();
+useGraphSave(props.studyId, { nodes: initialNodes, edges: props.initialEdges });
 
-// Once the saved nodes are measured, center the view on them, close up (padding 10%, zoomed in at most 150%).
-// Nodes added later by dropping also trigger this event, so only fit the first time.
+// Once the saved nodes are measured, center the view on them, close up (padding 10%, zoomed in at
+// most 150%). Nodes added later by dropping also trigger this event, so only fit the first time.
 let fitted = props.initialNodes.length === 0;
 onNodesInitialized(() => {
   if (fitted) return;
@@ -70,75 +63,35 @@ onNodesInitialized(() => {
   fitView({ maxZoom: 1.5, padding: 0.1 });
 });
 
-// Save the study's canvas state (nodes and connections) whenever anything is added, moved or removed
-const SAVE_DELAY_MS = 300;
-let lastSaved = JSON.stringify({ nodes: props.initialNodes, edges: props.initialEdges });
-let timer: ReturnType<typeof setTimeout> | undefined;
-
-function snapshot() {
-  return {
-    nodes: nodes.value.map((n): SavedNode => {
-      const { type, ...data } = n.data ?? {};
-      return {
-        id: n.id,
-        type: String(type ?? ""),
-        label: String(n.label ?? ""),
-        x: n.position.x,
-        y: n.position.y,
-        data,
-      };
-    }),
-    edges: edges.value.map((e): SavedEdge => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      sourceHandle: e.sourceHandle ?? null,
-      targetHandle: e.targetHandle ?? null,
-    })),
-  };
-}
-
-async function save() {
-  clearTimeout(timer);
-  timer = undefined;
-  const state = snapshot();
-  const serialized = JSON.stringify(state);
-  if (serialized === lastSaved) return;
-  lastSaved = serialized;
-  await $fetch(`/api/studies/${props.studyId}/graph`, { method: "PUT", body: state });
-}
-
-watch(
-  () => JSON.stringify(snapshot()),
-  () => {
-    clearTimeout(timer);
-    timer = setTimeout(save, SAVE_DELAY_MS);
-  },
-);
-
-// Don't lose a pending save when leaving the page
-onBeforeUnmount(() => {
-  if (timer) save();
-});
+// ---- dragging a new node in from the sidebar
 
 const element = ref<HTMLElement>();
 const { isDropTarget } = useDroppable({ id: "canvas", element });
 
 useDragDropMonitor({
+  onDragMove(event) {
+    const kind = NODE_KINDS.find((k) => k.type === event.operation.source?.id);
+    if (!kind) return;
+    showHover(zoneAt(screenToFlowCoordinate(event.operation.position.current), kind.type));
+  },
   onDragEnd(event) {
+    showHover();
     const kind = NODE_KINDS.find((k) => k.type === event.operation.source?.id);
     if (event.canceled || event.operation.target?.id !== "canvas" || !kind) return;
     const pointer = screenToFlowCoordinate(event.operation.position.current);
+    // dropped on a zone that takes it (a defect on the stages list, a sampler on the sampler
+    // zone): the node goes inside, and the container's layout puts it in its place
+    const hit = zoneAt(pointer, kind.type);
+    const id = newNodeId();
     addNodes({
-      id: newNodeId(),
+      id,
       type: "kind",
       label: kind.label,
       data: { type: kind.type, ...(kind.params ? { params: paramsOf(kind) } : {}) },
-      position: {
-        x: pointer.x - nodeWidth(kind) / 2,
-        y: pointer.y - NODE_SIZE.height / 2,
-      },
+      position: { x: pointer.x - nodeWidth(kind) / 2, y: pointer.y - NODE_SIZE.height / 2 },
+      parentNode: hit?.container.id,
     });
+    if (hit) placeInList(hit, id, pointer.y);
   },
 });
 </script>

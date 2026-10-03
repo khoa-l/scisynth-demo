@@ -8,18 +8,28 @@ const { updateNodeData, edges, findNode } = useVueFlow(FLOW_ID);
 const kind = computed(() => kindOf(props.type));
 const values = computed(() => paramsOf(kind.value, props.params));
 
-// The Domain connected to a port, as its axes (null when nothing is connected)
-function axesAt(portId: string): AxisData[] | null {
+// The node connected to a port
+function sourceAt(portId: string) {
   const edge = edges.value.find((e) => e.target === props.id && e.targetHandle === portId);
-  if (!edge) return null;
-  return (findNode(edge.source)?.data?.axes ?? []) as AxisData[];
+  return edge ? findNode(edge.source) : undefined;
 }
 
-// What a port shows in its read-only field: the connected Domain's axis names
-const connectedTo = (portId: string) =>
-  axesAt(portId)
+// A connected Domain as its axes (null when nothing is connected)
+function axesAt(portId: string): AxisData[] | null {
+  const source = sourceAt(portId);
+  return source ? ((source.data?.axes ?? []) as AxisData[]) : null;
+}
+
+// What a port shows in its read-only field: a Domain's axis names, otherwise the connected node's
+// name (a sampler, a field), or nothing
+function connectedTo(portId: string) {
+  const source = sourceAt(portId);
+  if (!source) return "";
+  const names = axesAt(portId)
     ?.map((a) => a.name)
-    .join(", ") ?? "";
+    .join(", ");
+  return names || kindOf(source.data?.type).label;
+}
 
 // One row per field. A per-axis parameter (GaussianField's resolution) follows the connected
 // Domain: a single row while nothing is connected, one row for a one-axis Domain, and for more
@@ -31,7 +41,7 @@ interface Row {
   aria: string; // what assistive technology reads
   axis?: { index: number; count: number };
   summary?: boolean; // the collapsed / expanded header of a per-axis parameter
-  nested?: boolean; // one of the per-axis rows inside an open group's box
+  nested?: boolean; // one of the per-axis rows of an open group (drawn together in a band)
 }
 
 // Per-axis parameters whose rows are open (not saved: they start collapsed)
@@ -72,34 +82,34 @@ const rows = computed<Row[]>(() =>
   }),
 );
 
-// Consecutive nested rows are drawn together in one box; everything else is laid out directly
+// Consecutive nested rows are drawn together in one band; everything else is laid out directly
 // in the grid
 interface Section {
   key: string;
-  box: boolean;
+  band: boolean;
   rows: Row[];
 }
 
 const sections = computed(() => {
   const out: Section[] = [];
   for (const row of rows.value) {
-    const box = !!row.nested;
+    const band = !!row.nested;
     const last = out.at(-1);
-    if (last && last.box === box) last.rows.push(row);
-    else out.push({ key: row.key, box, rows: [row] });
+    if (last && last.band === band) last.rows.push(row);
+    else out.push({ key: row.key, band, rows: [row] });
   }
   return out;
 });
 
-// A nested section shows this many rows before it scrolls, plus half of the next one as a hint
-// that there is more. A row is 24px with a 4px
-// gap; the band adds a 1px border and 4px of padding on top (1 + 4 + 12 for the half row).
+// A nested band shows this many rows before it scrolls, plus half of the next one as a hint that
+// there is more. A row is 24px with a 4px gap; the band adds a 1px border and 4px of padding on
+// top (1 + 4 + 12 for the half row).
 const MAX_SECTION_ROWS = 4;
 const sectionStyle = {
   maxHeight: `${MAX_SECTION_ROWS * 28 + 17}px`,
   // neutral and a shade darker than the white card (a faint black overlay, no color cast)
   backgroundColor: "rgb(0 0 0 / 0.04)",
-  borderColor: "color-mix(in oklab, var(--cat-fg) 45%, transparent)",
+  borderColor: catTint(45),
 };
 
 // The collapsed field's text: every axis's value, e.g. "64×16"
@@ -108,9 +118,7 @@ const summaryOf = (row: Row) =>
 
 // Whether any of a per-axis parameter's values is out of range
 const anyInvalid = (row: Row) =>
-  Array.from({ length: row.axis?.count ?? 0 }, (_, i) =>
-    invalid({ ...row, axis: { index: i, count: row.axis!.count } }),
-  ).some(Boolean);
+  Array.from({ length: row.axis?.count ?? 0 }, (_, i) => outOfRange(row.spec, i)).some(Boolean);
 
 // A row's value. A saved list is read by axis; a single number applies to every axis (as in
 // obskit), and a list shown without a Domain falls back to its first entry.
@@ -156,14 +164,15 @@ function setChoice(row: Row, value: string) {
 }
 
 // obskit rejects values outside the range, so flag them (the preview shows its error too)
-function invalid(row: Row) {
-  const { spec } = row;
-  const value = valueAt(spec, row.axis?.index);
+function outOfRange(spec: ParamSpec, index?: number) {
+  const value = valueAt(spec, index);
   if (typeof value !== "number") return false;
   const tooLow =
     spec.min !== undefined && (spec.minExclusive ? value <= spec.min : value < spec.min);
   return tooLow || (spec.max !== undefined && value > spec.max);
 }
+
+const invalid = (row: Row) => outOfRange(row.spec, row.axis?.index);
 </script>
 
 <template>
@@ -205,11 +214,11 @@ function invalid(row: Row) {
         v-for="section in sections"
         :key="section.key"
         :class="
-          section.box
+          section.band
             ? 'node-scroll col-span-2 -mx-2.5 grid grid-cols-subgrid items-center gap-y-1 overflow-y-auto border-y py-1 pl-2.5'
             : 'contents'
         "
-        :style="section.box ? sectionStyle : undefined"
+        :style="section.band ? sectionStyle : undefined"
       >
         <label v-for="row in section.rows" :key="row.key" class="contents">
           <!-- an axis name must not resize the fields: w-0 + min-w-full keeps a nested label out of

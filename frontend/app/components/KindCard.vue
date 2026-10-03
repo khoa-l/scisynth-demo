@@ -1,5 +1,11 @@
 <script setup lang="ts">
-const props = defineProps<{ type?: string; label?: string; width?: number; body?: boolean }>();
+const props = defineProps<{
+  type?: string;
+  label?: string;
+  width?: number;
+  container?: boolean; // a container's card is see-through; its parts paint themselves
+  body?: boolean;
+}>();
 
 const kind = computed(() => kindOf(props.type));
 </script>
@@ -9,7 +15,11 @@ const kind = computed(() => kindOf(props.type));
   <div
     class="vue-flow__node-default"
     :class="`cat-${kind.category}`"
-    :style="{ width: `${width ?? nodeWidth(kind)}px`, ...(body ? { '--vf-node-bg': '#fff' } : {}) }"
+    :style="{
+      width: `${width ?? nodeWidth(kind)}px`,
+      // a container's card is see-through: its white section and its body paint themselves
+      ...(container ? { '--vf-node-bg': 'transparent' } : body ? { '--vf-node-bg': '#fff' } : {}),
+    }"
   >
     <div
       class="flex items-center justify-center gap-1.5"

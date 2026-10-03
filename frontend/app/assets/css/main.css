@@ -87,9 +87,10 @@
   height: 10px;
 }
 
-/* the header's handles are centred on the header row (half the 40px header), which is also the
+/* the header's side handles are centred on the header row (half the 40px header), which is also the
    middle of a plain node; handles next to a field keep VueFlow's default (middle of their row) */
-[class*="cat-"] > .vue-flow__handle {
+[class*="cat-"] > .vue-flow__handle-left,
+[class*="cat-"] > .vue-flow__handle-right {
   top: 20px;
 }
 

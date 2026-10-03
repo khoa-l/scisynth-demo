@@ -24,6 +24,20 @@ and the conversation, so they carry no dates.
 - **Checks:** `vp fmt`, `vp check` (lint and type-check), `nuxt typecheck`, and a build. UI
   behavior was verified in a real headless browser against the backend code.
 
+## Code layout (frontend)
+
+- `app/utils/node.ts` is the registry (every node kind and its rules); `app/utils/container.ts` is
+  the pure layout of a container (`containerLayout`, `layoutFor`); `app/utils/style.ts` is the one
+  category-tint helper (`catTint`).
+- `FlowCanvas.vue` only loads the study, wires the pieces below and handles a drop from the
+  sidebar. The behavior lives in composables that each use the same canvas store (`FLOW_ID`):
+  `useConnectionRules` (which connections are allowed and what a new one replaces),
+  `useContainers` (zones, the list's order and its connections, dragging in and out, layers of
+  connections, deleting what is inside a container) and `useGraphSave` (autosave). Create them after
+  the study is loaded, since some start working on the loaded nodes straight away.
+- A container's layout is computed in one place and used by both the canvas (to place the nodes)
+  and `ContainerBody.vue` (to draw the zones and size the node), so they cannot disagree.
+
 ## Environment (macOS)
 
 - **Dot-folders get a "hidden" file flag** inside `~/Desktop` (it syncs to iCloud Drive; the flag
@@ -163,6 +177,14 @@ and the conversation, so they carry no dates.
   header input accepts defects, and GaussianField's `domain` port accepts a Domain. Everything
   else cannot be connected until its rules are decided.
 - An input holds one connection; connecting another replaces it.
+- **Defect chains:** a defect's input accepts another defect, so defects connected one to the next
+  form an ordered list of stages, the list an Observer will use. To stay a list: a defect has **one
+  successor** (connecting it to another defect replaces the first; a connection to a Preview does
+  not count, so a chain member can also feed one), an input has one predecessor (as always), and
+  **loops are refused**, including a defect to itself and a defect to one that already leads to it.
+  Outside a list, chains are not tied to an Observer: they can be anywhere on the canvas, and the
+  order is the order of the connections. Inside an Observer's stages list the list sets the
+  connections instead (see Containers).
 - **Handles are in the header by default**, centered on the header row (20 px), inputs on the
   left and outputs on the right. A kind can drop its input (`input: false`, e.g. Domain) or its
   output (`output: false`, Preview).
@@ -179,6 +201,86 @@ and the conversation, so they carry no dates.
 - Connections are saved with the input they end on (`sourceHandle` / `targetHandle`; `null` means
   the header's), so a node with a port and a header input stays unambiguous.
 - Deleting a node removes its connections (VueFlow does this; the next save drops them).
+
+## Containers (the Observer)
+
+- The Observer is a **container** with **zones**, not a free parent: nodes dropped into it are laid
+  out by it, in lists, instead of being placed anywhere inside a box. Its parts, top to bottom:
+  the colored header; a **white section** (68 px: `containerTopHeight`, 28 px a row plus padding)
+  with its inputs; a **sampler zone**; and a **stages list**. It is 280 px wide and as tall as its
+  zones need, so it grows as items are added. A zone is a rounded translucent box (an 8% tint of
+  the node's color, 35% border, a small caption on its edge: "sampler", "stages") inside a
+  translucent body (4% tint); the card itself is transparent, so the canvas (grid, connections,
+  other nodes) shows through. A zone shows a hint while empty ("Drop a sampler here", "Drop
+  defects here") and lights up (dashed border, 18% tint) while a node it takes is dragged over it.
+- **Inputs (white section):** a `latent` port (accepts any node in the fields category) and the
+  `seed` (a whole number from 0, default 0, in `data.params`), in a compact 176 px column like the
+  Preview's seed. They follow obskit's `Observer(sampler, stages).run(latent, seed)`. **There is no
+  sampler input node any more**: the sampler is placed in its zone. The Observer has no header
+  input; its output stays in the header.
+- **The sampler zone takes one sampler** (GridSampler or PointSampler, by node type): a second
+  one dropped there is refused and stays on the canvas, as is a defect. It sits above everything
+  else, as the first thing the run does.
+- **The stages list takes defects, and its order sets their connections** (not the other way
+  round). Each item is connected to the next by a vertical link: the bottom handle (`next`) of
+  one to the top handle (`prev`) of the next, drawn as a straight line. The links are made by the
+  list and saved like any connection (ids like `chain:<a>><b>`, so unchanged neighbors keep theirs),
+  and the order is read back from them on load. So:
+  - **Putting an item in** (from the palette, or dragging a defect in from the canvas) inserts it
+    **at the height it is dropped at**, **breaks the item's other defect-to-defect connections**
+    (to anything, inside the list or not) and connects it to its new neighbors; the link that
+    joined those neighbors is replaced. Its connection to a Preview is left alone.
+  - **Taking an item out** (dragging it off, or deleting it) joins its neighbors to each other, and
+    it loses its links to them.
+  - **The list is sortable:** dragging an item up or down reorders it live as it passes its
+    neighbors (by the dragged item's center against theirs), the connections are rewired as it
+    goes, and it snaps into its slot on release. A drag that passes no neighbor snaps back.
+  - **Items in the list lose the side input** and keep the side output (right), which feeds a
+    Preview as before; the top and bottom handles are drawn only while a link is on them, and
+    cannot be dragged from. A list item's side output cannot connect to another defect; only
+    the list makes defect-to-defect links there.
+  **Handle order matters:** a connection saved without a handle name (every Preview connection)
+  attaches to the first handle of its kind in the node's markup. The side output is therefore
+  declared before the list's `prev` / `next` handles in `KindNode.vue`; with the bottom `next`
+  handle first, Preview connections from list items were drawn from the bottom. Naming the side
+  output instead would have needed a migration of saved connections.
+  The list remembers the order it was last given (`knownOrder`) because the links go when an item
+  does (deleting a node removes its links): the order that is left is the remembered one without
+  the item, not whatever the surviving links say (rebuilding it from them put the item before
+  the removed one at the end).
+- **The nodes inside are still real canvas nodes** (children, with `parentNode` set), so they keep
+  every control, their connections and a connection to a Preview. They move with the Observer.
+  Their places are set by one pure function (`containerLayout`, `app/utils/container.ts`), which
+  also gives the zone heights and the node's total height, so what is drawn and where the nodes are
+  cannot disagree: a zone is the larger of its minimum (56 px for the sampler, 160 px for the list;
+  the list is 262 px wide against 180 px for the items) and its items (8 px padding, 16 px
+  between items, so the vertical link between neighbors is visible, items centered). It runs again whenever a child is added or removed, a child's
+  measured height changes, or a connection changes the order.
+- **Dragging in and out:** a defect from the palette dropped on a zone that takes it is created
+  inside; one dragged from the canvas onto it moves in when released. The pointer decides for a
+  palette drop and the dragged node's center for an existing node. Dropped on its own zone it snaps
+  to its slot (and reorders, in the stages list, as above); dropped anywhere else, including the
+  Observer's white section and margins, it is taken out and stays where it was let go, and the list
+  closes up.
+- **Deleting an Observer deletes what is inside it** (the sampler and the list), however it is
+  deleted (sidebar list or select and Backspace): a watcher removes any node whose parent is gone.
+- **Connections of a node inside a container are drawn above the container** (they would be
+  hidden behind it otherwise). VueFlow draws every connection under every node by default (each
+  connection has its own layer, `zIndex`, 0). A connection with an endpoint inside a container takes
+  the layer of that node (the container is at 0 and its children at 1; a node on the same layer is
+  drawn over a connection, so the children still cover it). It follows the node's layer because
+  VueFlow lifts a selected node by 1000 (the container too, with its children above it); a fixed
+  layer of 1 was hidden again once the Observer was selected. The layer is derived, not saved.
+- Saved as `nodes.parent` (null for top-level nodes), migrated on startup. Containers are written
+  before their children. **Older data is converted on load:** an Observer saved as a 640 x 400
+  box with freely placed children has them stacked into its list, in the order their side links
+  gave (unconnected ones last); those links are replaced by the list's vertical ones and any link
+  from a list item to a defect outside is broken, and the converted study is saved at once. Connections
+  saved against the Observer's old `sampler` input are dropped too.
+  A saved sampler that was only connected to it stays an ordinary canvas node.
+- **Not decided yet:** how the Observer reads its sampler and stages (the structure is built,
+  nothing consumes it yet), whether a chain must lie inside one Observer (it is not enforced), and
+  whether a defect chain made outside a list should still exist now that a list builds them.
 
 ## Preview
 
@@ -217,6 +319,41 @@ and the conversation, so they carry no dates.
 
 ## Change log
 
+- **2026-10-03** Code clean-up, no behavior change. `FlowCanvas.vue` (500 lines doing four jobs) is
+  split into `useConnectionRules`, `useContainers` and `useGraphSave` (110 lines left). One shared
+  layout helper replaces three copies of "a container's children as layout items" (and the
+  estimated-height fallback), a zone box now carries its zone (label, hint), `catTint` replaces two
+  hand-written `color-mix` strings, the "put into the list" steps are one function, the list's
+  remembered order is forgotten when its container is deleted, `ParamInputs` checks a value's range
+  in one place, and the backend's four "add a column if missing" blocks are one `ensure_column`.
+- **2026-10-03** Fixed a list item's side output: its Preview connection was drawn from the bottom
+  handle because an unnamed connection takes the first handle of its kind and `next` came before
+  the side output. The side output is declared first now (no data change, saved connections are
+  fixed too).
+- **2026-10-03** The Observer's stages list now sets the connections: putting an item in inserts it
+  where it was dropped, breaks its other defect connections and links it to its neighbors; the
+  list is sortable by dragging (live, with the links rewired); neighbors are joined by vertical
+  links, and list items lose the side input but keep the side output for a Preview. Taking an item
+  out or deleting it joins its neighbors. Gap between items 8 to 16 px. (Replaces "the order comes
+  from the connections".)
+- **2026-10-03** The Observer is rebuilt around zones instead of a free parent box. A white section
+  holds `latent` and `seed` (the sampler input node is gone); under it a sampler zone takes one
+  sampler, and a stages list takes defects, grows with them and lists them in the order they are
+  connected in. Items keep all their controls, snap back into place when dragged inside the list, and
+  leave it when dragged out. The body stays translucent and is wider than the items. Older
+  Observers are converted on load. (Replaces the 640 x 400 container with free placement and
+  clamping, and the sampler port.)
+- **2026-10-03** Observer inputs reordered to latent, sampler, seed, and kept compact (176 px, like
+  the Preview's seed) rather than filling the node.
+- **2026-10-03** Defects connect to one another to build a chain (an ordered list of stages): one
+  successor each, no loops. The Observer's body is translucent, and a white section above it holds
+  its inputs: a sampler port, a latent port and a seed. Port fields now show the connected node's
+  name (a Domain still shows its axis names).
+- **2026-10-03** Connections of nodes inside an Observer are drawn above it (under the nodes
+  inside), also while it is selected, instead of disappearing behind its body.
+- **2026-10-03** The Observer is now a large container node (640 x 400) that holds defect nodes:
+  dropped on its body from the palette, or dragged in and out; they move with it, are saved with a
+  `parent`, and are deleted with it. Defects inside can still be connected (e.g. to a Preview).
 - **2026-10-03** A one-axis Domain keeps the plain `resolution` label; axis names truncate (label,
   `domain` display, summary) and never change the label column, the fields or the node size.
 - **2026-10-03** Max height and scrolling for an open group's section (4 rows) and the Domain's axis

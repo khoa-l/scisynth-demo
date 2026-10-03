@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     label    TEXT NOT NULL,
     x        REAL NOT NULL,
     y        REAL NOT NULL,
+    parent   TEXT,
     data     TEXT NOT NULL DEFAULT '{}',
     PRIMARY KEY (study_id, id)
 );
@@ -66,22 +67,24 @@ def db():
         conn.close()
 
 
+def ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    """Add a column that databases created before it existed do not have."""
+    existing = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     with db() as conn:
         conn.executescript(SCHEMA)
-        # databases created before nodes had a type
-        columns = [r["name"] for r in conn.execute("PRAGMA table_info(nodes)")]
-        if "type" not in columns:
-            conn.execute("ALTER TABLE nodes ADD COLUMN type TEXT NOT NULL DEFAULT 'placeholder'")
-        # databases created before nodes carried their own data (e.g. a Domain's axes)
-        if "data" not in columns:
-            conn.execute("ALTER TABLE nodes ADD COLUMN data TEXT NOT NULL DEFAULT '{}'")
-        # databases created before connections said which input they end on
-        edge_columns = [r["name"] for r in conn.execute("PRAGMA table_info(edges)")]
-        for column in ("source_handle", "target_handle"):
-            if column not in edge_columns:
-                conn.execute(f"ALTER TABLE edges ADD COLUMN {column} TEXT")
+        # older databases: nodes without a type, their own data (a Domain's axes), or a parent
+        # (the Observer's list), and connections that do not say which input they end on
+        ensure_column(conn, "nodes", "type", "TEXT NOT NULL DEFAULT 'placeholder'")
+        ensure_column(conn, "nodes", "data", "TEXT NOT NULL DEFAULT '{}'")
+        ensure_column(conn, "nodes", "parent", "TEXT")
+        ensure_column(conn, "edges", "source_handle", "TEXT")
+        ensure_column(conn, "edges", "target_handle", "TEXT")
         # GaussianRandomField was renamed GaussianField in obskit
         conn.execute(
             "UPDATE nodes SET type = 'gaussianField', label = 'GaussianField' "
@@ -107,6 +110,8 @@ class NodeState(BaseModel):
     label: str
     x: float
     y: float
+    # id of the node this one sits inside (x and y are then relative to it), or null
+    parent: str | None = None
     data: dict[str, Any] = {}
 
 
@@ -157,7 +162,7 @@ def get_study(study_id: int) -> dict:
     with db() as conn:
         study = require_study(conn, study_id)
         nodes = conn.execute(
-            "SELECT id, type, label, x, y, data FROM nodes WHERE study_id = ? ORDER BY rowid",
+            "SELECT id, type, label, x, y, parent, data FROM nodes WHERE study_id = ? ORDER BY rowid",
             (study_id,),
         )
         edges = conn.execute(
@@ -196,9 +201,9 @@ def save_graph(study_id: int, graph: GraphState) -> Response:
         conn.execute("DELETE FROM nodes WHERE study_id = ?", (study_id,))
         conn.execute("DELETE FROM edges WHERE study_id = ?", (study_id,))
         conn.executemany(
-            "INSERT INTO nodes (study_id, id, type, label, x, y, data) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO nodes (study_id, id, type, label, x, y, parent, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
-                (study_id, n.id, n.type, n.label, n.x, n.y, json.dumps(n.data))
+                (study_id, n.id, n.type, n.label, n.x, n.y, n.parent, json.dumps(n.data))
                 for n in graph.nodes
             ],
         )
