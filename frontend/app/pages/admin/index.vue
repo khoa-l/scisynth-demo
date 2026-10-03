@@ -1,11 +1,15 @@
 <script setup lang="ts">
 const { logout } = useSession();
-const { studies, add, remove } = useStudies();
+const { studies, load, add, rename, remove } = useStudies();
+
+await load();
 
 const editingId = ref<number | null>(null);
 
-function finishEdit() {
+async function finishEdit(study: Study) {
+  if (editingId.value !== study.id) return;
   editingId.value = null;
+  await rename(study);
 }
 
 function signOut() {
@@ -36,9 +40,9 @@ function signOut() {
               v-model="study.name"
               autofocus
               :aria-label="`Name of ${study.name}`"
-              @keydown.enter="finishEdit"
-              @keydown.esc="finishEdit"
-              @blur="finishEdit"
+              @keydown.enter="finishEdit(study)"
+              @keydown.esc="finishEdit(study)"
+              @blur="finishEdit(study)"
             />
             <template v-else>
               <span>{{ study.name }}</span>

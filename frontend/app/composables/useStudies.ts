@@ -3,46 +3,25 @@ export interface Study {
   name: string;
 }
 
-const STORAGE_KEY = "scisynth.studies";
-
-function load(): Study[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Study[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 export function useStudies() {
-  const studies = useState<Study[]>("studies", load);
+  const studies = useState<Study[]>("studies", () => []);
 
-  if (import.meta.client) {
-    watch(
-      studies,
-      (value) => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
-        } catch {
-          // storage unavailable; studies last until reload
-        }
-      },
-      { deep: true },
-    );
+  async function load() {
+    studies.value = await $fetch<Study[]>("/api/studies");
   }
 
-  function add() {
-    const id = studies.value.reduce((max, s) => Math.max(max, s.id), 0) + 1;
-    studies.value.push({ id, name: `Study ${id}` });
+  async function add() {
+    studies.value.push(await $fetch<Study>("/api/studies", { method: "POST" }));
   }
 
-  function remove(id: number) {
+  async function rename(study: Study) {
+    await $fetch(`/api/studies/${study.id}`, { method: "PATCH", body: { name: study.name } });
+  }
+
+  async function remove(id: number) {
+    await $fetch(`/api/studies/${id}`, { method: "DELETE" });
     studies.value = studies.value.filter((s) => s.id !== id);
   }
 
-  function get(id: number) {
-    return studies.value.find((s) => s.id === id);
-  }
-
-  return { studies, add, remove, get };
+  return { studies, load, add, rename, remove };
 }

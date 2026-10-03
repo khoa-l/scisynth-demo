@@ -17,6 +17,31 @@
   --ui-primary: var(--ui-color-primary-500);
 }
 
+/* grey node borders (also drives the node's handles and selected outline) */
+.vue-flow__node-default {
+  --vf-node-color: var(--ui-color-neutral-400);
+}
+
+/* Node categories: core, fields and defects each get a colour (background + icon) */
+.cat-core {
+  --cat-bg: var(--ui-color-primary-100);
+  --cat-fg: var(--ui-color-primary-700);
+}
+
+.cat-fields {
+  --cat-bg: var(--ui-color-success-100);
+  --cat-fg: var(--ui-color-success-700);
+}
+
+.cat-defects {
+  --cat-bg: var(--ui-color-warning-100);
+  --cat-fg: var(--ui-color-warning-700);
+}
+
+.vue-flow__node-default[class*="cat-"] {
+  --vf-node-bg: var(--cat-bg);
+}
+
 /* No bold anywhere unless explicitly requested; overrides Nuxt UI component weights */
 *,
 *::before,
