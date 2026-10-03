@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "@fontsource/inclusive-sans/400.css";
+
+@theme static {
+  --font-sans: "Inclusive Sans", system-ui, sans-serif;
+}
+
+:root {
+  /* smaller default border radius (Nuxt UI default: 0.25rem) */
+  --ui-radius: 0.125rem;
+  /* primary shade; the color itself is set in app.config.ts */
+  --ui-primary: var(--ui-color-primary-600);
+}
+
+.dark {
+  --ui-primary: var(--ui-color-primary-500);
+}
+
+/* No bold anywhere unless explicitly requested; overrides Nuxt UI component weights */
+*,
+*::before,
+*::after {
+  font-weight: 400 !important;
+}
