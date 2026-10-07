@@ -27,18 +27,20 @@ const kind = computed(() => kindOf(props.type));
     }"
   >
     <div
-      class="relative flex items-center justify-center gap-1.5"
+      class="grid grid-cols-[1fr_auto_1fr] items-center"
       :class="body && 'border-b px-2.5 py-2.5 -mx-2.5 -mt-2.5 rounded-t-[2px]'"
       :style="body ? { backgroundColor: 'var(--cat-bg)', borderColor: 'var(--vf-node-color)' } : {}"
     >
-      <UIcon :name="kind.icon" class="size-3.5 shrink-0" :style="{ color: 'var(--cat-fg)' }" />
-      <span>{{ label ?? kind.label }}</span>
+      <span class="col-start-2 flex items-center gap-1.5">
+        <UIcon :name="kind.icon" class="size-3.5 shrink-0" :style="{ color: 'var(--cat-fg)' }" />
+        <span>{{ label ?? kind.label }}</span>
+      </span>
       <NuxtLink
         v-if="link"
         :to="link.to"
         :title="link.title"
         :aria-label="link.title"
-        class="nodrag absolute right-1.5 text-muted hover:text-highlighted"
+        class="nodrag col-start-3 justify-self-end text-muted hover:text-highlighted"
       >
         <UIcon name="i-lucide-list-checks" class="size-3.5" />
       </NuxtLink>

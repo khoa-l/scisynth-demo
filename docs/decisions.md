@@ -676,6 +676,7 @@ and the conversation, so they carry no dates.
   removed), plainer editor. Plot: Interactive and
   Colors switches (an earlier show/hide switch was a misreading). Edit / Preview is a tab toggle.
 - **2026-10-06** The edit list is as wide as the preview (one shared `max-w-2xl` column).
+- **2026-10-07** Fix: the node header's link icon was absolutely positioned, which made the header a positioned element and painted it over the node's handles (the half of an input or output inside the card was covered, so it could not be grabbed). The header is now a three-column grid (title in the middle, link at the end) with nothing positioned.
 - **2026-10-07** Frontend cleanup after the latest changes: the source bar's sync state is one `status` (`gone`, `waiting`, `stale`, `synced`) instead of three flags; `ClusterSettings` computes the color column's values and range once; `DATA_PREVIEW.rows` (unused since the Cluster table went) is gone.
 - **2026-10-07** Backend split into modules (one 670-line `main.py` held everything). `main.py` is
   only the app (`main:app` still starts it), the lifespan and the health check. `db.py`: the
