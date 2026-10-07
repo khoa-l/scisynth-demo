@@ -1,4 +1,4 @@
-// plotly.js-dist-min ships no types; only the bits PreviewPlot uses are described
+// plotly.js-dist-min ships no types; only the bits NodePlot uses are described
 declare module "plotly.js-dist-min" {
   interface PlotlyFigure {
     data: unknown[];

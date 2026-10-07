@@ -23,6 +23,10 @@ export interface AxisData {
   unit: string;
 }
 
+// How a Data node shows what a sampler outputs: the first rows only, in a list that renders just the
+// ones in view
+export const DATA_PREVIEW = { rows: 50, visible: 5, rowHeight: 24 };
+
 const DEFAULT_AXIS_NAMES = ["x", "y", "z"];
 
 // Next axis for a Domain: the first of obskit's default names (x, y, z, then x3, x4, ...)
@@ -49,7 +53,7 @@ export const PREVIEW_PLOT = { width: 760, height: 380, dotSize: 3 };
 const NODE_CHROME_WIDTH = 22;
 
 // Node categories; each maps to a colour via the .cat-* classes in main.css
-export type NodeCategory = "core" | "fields" | "defects";
+export type NodeCategory = "core" | "sampling" | "fields" | "defects";
 
 // A parameter of an obskit class, edited as an input on the node: a number (whole or not),
 // or one of a fixed set of choices. A null default means "unset": the input starts empty and
@@ -119,13 +123,32 @@ export interface NodeKind {
   accepts?: InputRule;
   // inputs next to a field of the node
   ports?: Port[];
+  // a sampler that draws at random (its plot depends on a seed)
+  seeded?: boolean;
 }
 
 export const nodeWidth = (kind: NodeKind) => kind.width ?? NODE_SIZE.width;
 
+// A random draw (of a run, a preview, a plot or a field): the same seed always gives the same result
+const SEED: ParamSpec = {
+  name: "seed",
+  default: 0,
+  min: 0,
+  max: 2147483647,
+  step: 1,
+  integer: true,
+};
+
 // A defect's input takes another defect: connected defects form a chain, an ordered list of
 // stages (see "Defect chains" in docs/decisions.md)
-const DEFECT_INPUT: InputRule = { categories: ["defects"] };
+// (a sampler outside an Observer may feed the first of them)
+const DEFECT_INPUT: InputRule = {
+  categories: ["defects"],
+  types: ["gridSampler", "pointSampler"],
+};
+
+// A sampler outside an Observer takes a latent: a field
+const SAMPLER_INPUT: InputRule = { categories: ["fields"] };
 
 // The kinds of node that can be dragged onto the canvas, named after their obskit classes.
 // Icon names must stay literal strings so Nuxt Icon bundles them.
@@ -161,28 +184,69 @@ export const NODE_KINDS: NodeKind[] = [
     input: false,
     ports: [{ id: "latent", label: "latent", accepts: { categories: ["fields"] } }],
     // the seed of the run: the same seed always gives the same observation
-    params: [{ name: "seed", default: 0, min: 0, max: 2147483647, step: 1, integer: true }],
+    params: [SEED],
   },
-  {
-    type: "domain",
-    label: "Domain",
-    icon: "i-lucide-box",
-    category: "core",
-    width: 460,
-    input: false,
-  },
-  { type: "gridSampler", label: "GridSampler", icon: "i-lucide-grid-3x3", category: "core" },
-  { type: "pointSampler", label: "PointSampler", icon: "i-lucide-chart-scatter", category: "core" },
   {
     type: "preview",
     label: "Preview",
     icon: "i-lucide-chart-line",
     category: "core",
     expandedWidth: PREVIEW_PLOT.width + NODE_CHROME_WIDTH,
-    // the random draw behind the plot; the same seed always gives the same preview
-    params: [{ name: "seed", default: 0, min: 0, max: 2147483647, step: 1, integer: true }],
+    params: [SEED],
     output: false,
     accepts: { categories: ["defects"] },
+  },
+  {
+    type: "plot",
+    label: "Plot",
+    icon: "i-lucide-chart-spline",
+    category: "core",
+    expandedWidth: PREVIEW_PLOT.width + NODE_CHROME_WIDTH,
+    // shown only for a sampler that draws at random (NodePlot)
+    params: [SEED],
+    output: false,
+    // a sampler's plot, once the sampler has a latent
+    accepts: { types: ["gridSampler", "pointSampler"] },
+  },
+  {
+    type: "data",
+    label: "Data",
+    icon: "i-lucide-table",
+    category: "core",
+    expandedWidth: 420,
+    // the sampler's random draw, shown only for a sampler that draws at random (as on a Plot)
+    params: [SEED],
+    output: false,
+    // what a sampler outputs, as rows
+    accepts: { types: ["gridSampler", "pointSampler"] },
+  },
+  {
+    type: "domain",
+    label: "Domain",
+    icon: "i-lucide-box",
+    category: "sampling",
+    width: 460,
+    input: false,
+  },
+  {
+    type: "gridSampler",
+    label: "GridSampler",
+    icon: "i-lucide-grid-3x3",
+    category: "sampling",
+    accepts: SAMPLER_INPUT,
+    // samples per axis: one number for every axis (obskit also takes one per axis of the field's
+    // domain, which this node cannot see)
+    params: [{ name: "shape", default: 64, min: 1, step: 1, integer: true }],
+  },
+  {
+    type: "pointSampler",
+    label: "PointSampler",
+    icon: "i-lucide-chart-scatter",
+    category: "sampling",
+    accepts: SAMPLER_INPUT,
+    // how many random points are drawn
+    params: [{ name: "n", default: 100, min: 0, step: 10, integer: true }],
+    seeded: true,
   },
   // fields
   {
@@ -203,6 +267,8 @@ export const NODE_KINDS: NodeKind[] = [
       // interpolation spline order between grid points: 0 nearest, 1 linear, 3 cubic (obskit
       // accepts 0 to 5)
       { name: "order", default: 1, min: 0, max: 5, step: 1, integer: true },
+      // the random draw of the field: the same seed always gives the same realization
+      SEED,
     ],
   },
   { type: "analyticField", label: "AnalyticField", icon: "i-lucide-sigma", category: "fields" },

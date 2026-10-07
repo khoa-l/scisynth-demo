@@ -50,10 +50,15 @@
   }
 }
 
-/* Node categories: core, fields and defects each get a colour (background + icon) */
+/* Node categories: core, sampling, fields and defects each get a colour (background + icon) */
 .cat-core {
   --cat-bg: var(--ui-color-primary-100);
   --cat-fg: var(--ui-color-primary-700);
+}
+
+.cat-sampling {
+  --cat-bg: var(--ui-color-secondary-100);
+  --cat-fg: var(--ui-color-secondary-700);
 }
 
 .cat-fields {
@@ -66,17 +71,65 @@
   --cat-fg: var(--ui-color-warning-700);
 }
 
+/* The body of a node (under its colored header) and the shaded band inside it */
+:root {
+  --node-surface: #fff;
+  --node-sunk: rgb(0 0 0 / 0.04);
+}
+.dark {
+  --node-surface: var(--ui-bg-elevated);
+  --node-sunk: rgb(255 255 255 / 0.05);
+}
+
 /* Node outline and handles use the same colour as the node's icon */
-/* The colour fills are light in both colour modes, so keep the text dark (as on the nodes) */
+/* The fills are light in light mode, so the text is dark (dark mode: see below) */
 .cat-core,
+.cat-sampling,
 .cat-fields,
 .cat-defects {
   color: var(--vf-node-text);
 }
 
+/* Dark mode, for nodes and sidebar items alike: an opaque dim tint of the category color (opaque, so
+   the canvas and connections do not show through a node), a lighter icon and outline, and the
+   normal text color. */
+.dark .cat-core {
+  --cat-bg: color-mix(in oklab, var(--ui-color-primary-500) 22%, var(--ui-bg));
+  --cat-fg: var(--ui-color-primary-300);
+}
+.dark .cat-sampling {
+  --cat-bg: color-mix(in oklab, var(--ui-color-secondary-500) 22%, var(--ui-bg));
+  --cat-fg: var(--ui-color-secondary-300);
+}
+.dark .cat-fields {
+  --cat-bg: color-mix(in oklab, var(--ui-color-success-500) 22%, var(--ui-bg));
+  --cat-fg: var(--ui-color-success-300);
+}
+.dark .cat-defects {
+  --cat-bg: color-mix(in oklab, var(--ui-color-warning-500) 22%, var(--ui-bg));
+  --cat-fg: var(--ui-color-warning-300);
+}
+.dark .cat-core,
+.dark .cat-sampling,
+.dark .cat-fields,
+.dark .cat-defects,
+.dark .vue-flow__node-default {
+  --vf-node-text: var(--ui-text);
+  color: var(--ui-text);
+}
+
 .vue-flow__node-default[class*="cat-"] {
   --vf-node-bg: var(--cat-bg);
   --vf-node-color: var(--cat-fg);
+}
+
+/* The selected node (and its row in the sidebar list): a ring in the page's strongest text color,
+   with a gap, so it stands out against every category color in both color modes */
+.vue-flow__node.selected .vue-flow__node-default,
+.node-row.selected {
+  box-shadow:
+    0 0 0 2px var(--ui-bg),
+    0 0 0 4px var(--ui-text-highlighted);
 }
 
 /* every handle, including ones next to a field in the body: category colour, and bigger than
@@ -92,6 +145,29 @@
 [class*="cat-"] > .vue-flow__handle-left,
 [class*="cat-"] > .vue-flow__handle-right {
   top: 20px;
+}
+
+/* The canvas's controls and minimap take the page's colors, so they follow the color mode (the
+   .vue-flow prefix outranks the libraries' own styles, which load after this file) */
+.vue-flow .vue-flow__controls {
+  box-shadow: 0 0 0 1px var(--ui-border);
+}
+.vue-flow .vue-flow__controls-button {
+  background: var(--ui-bg);
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-text);
+}
+.vue-flow .vue-flow__controls-button:hover {
+  background: var(--ui-bg-elevated);
+}
+.vue-flow .vue-flow__controls-button svg {
+  fill: currentColor;
+}
+.vue-flow .vue-flow__minimap {
+  --minimap-node: var(--ui-bg-accented);
+  --minimap-mask: color-mix(in srgb, var(--ui-bg) 60%, transparent);
+  background-color: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
 }
 
 /* No bold anywhere unless explicitly requested; overrides Nuxt UI component weights */

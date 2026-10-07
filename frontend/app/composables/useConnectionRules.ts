@@ -11,14 +11,13 @@ interface ConnectionLike {
 //
 // Outside a list, defects connected one to the next form a chain, an ordered list of stages. To
 // stay a list it may not loop back on itself, and a defect has one successor (but may also feed a
-// Preview). Inside a container's list the list sets the connections instead (useContainers): the
-// links between neighbors are made by it, never by hand, and a list item's side output only feeds
-// a Preview.
+// Preview). Inside a container the list sets the connections instead (useContainers): the links
+// between neighbors are made by it, never by hand, and an item's side output only feeds a Preview.
 export function useConnectionRules() {
   const { edges, findNode, onConnect, addEdges, removeEdges } = useVueFlow(FLOW_ID);
 
   const isDefect = (id: string) => isDefectKind(findNode(id)?.data?.type);
-  const isListed = (id: string) => isDefect(id) && !!findNode(id)?.parentNode;
+  const isContained = (id: string) => !!findNode(id)?.parentNode;
 
   function leadsTo(from: string, to: string): boolean {
     if (from === to) return true;
@@ -27,7 +26,8 @@ export function useConnectionRules() {
     );
   }
 
-  // The list's own vertical link ("next" to "prev"): only between two defects in the same container.
+  // The list's own vertical link ("next" to "prev"): only between a container's sampler or defect and
+  // a defect in the same container.
   // VueFlow runs the validity check for connections added by code too, so the list's links pass
   // through here; the handles cannot be dragged from, so nothing else can ask for them.
   function isListLink(c: ConnectionLike) {
@@ -37,7 +37,6 @@ export function useConnectionRules() {
       c.targetHandle === "prev" &&
       !!parent &&
       parent === findNode(c.target)?.parentNode &&
-      isDefect(c.source) &&
       isDefect(c.target)
     );
   }
@@ -46,7 +45,7 @@ export function useConnectionRules() {
   // a Domain into a GaussianField's domain, a field into an Observer's latent input, ...)
   function isValidConnection(c: ConnectionLike) {
     if (c.sourceHandle === "next" || c.targetHandle === "prev") return isListLink(c);
-    if (isDefect(c.target) && isListed(c.source)) return false;
+    if (isDefect(c.target) && isContained(c.source)) return false;
     const accepted = canConnect(
       findNode(c.source)?.data?.type,
       findNode(c.target)?.data?.type,

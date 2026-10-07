@@ -8,10 +8,10 @@ export type ZoneHit = { container: GraphNode; zone: Zone };
 // not free: the container stacks its children (containerLayout), and it grows with them.
 //
 // The order of an ordered zone (the stages) is what sets the connections: each item is connected to
-// the next by a vertical link (bottom handle "next" to top handle "prev"). So putting an item in the
-// list breaks the item's other defect-to-defect connections and connects it to its neighbors, taking
-// it out joins the neighbors, and reordering the list rewires it. A connection to a Preview is
-// never touched.
+// the next by a vertical link (bottom handle "next" to top handle "prev"), and the sampler, if there
+// is one, heads the chain. So putting an item in the list breaks the item's other connections into
+// a defect and connects it to its neighbors, taking it out joins the neighbors, and reordering the
+// list rewires it. A connection to a Preview is never touched.
 export function useContainers() {
   const {
     nodes,
@@ -97,14 +97,20 @@ export function useContainers() {
     return [...others.slice(0, index), id, ...others.slice(index)];
   };
 
-  // Make the connections match `order`: each item linked to the next, every other defect-to-defect
-  // connection of the items broken
+  // the sampler: the node in the first zone that is not a list, which heads the chain
+  const headOf = (container: GraphNode) =>
+    layoutOf(container).zones.find((b) => !b.zone.ordered)?.members[0];
+
+  // Make the connections match `order` (the stages, behind the sampler): each linked to the next,
+  // every other connection into a defect of the items (from a defect or a sampler) broken
   function applyOrder(container: GraphNode, order: string[]) {
     knownOrder.set(container.id, order);
-    const members = new Set(order);
-    const links = order.slice(1).map((target, i) => ({
-      id: `chain:${order[i]}>${target}`, // the same neighbors keep the same connection
-      source: order[i]!,
+    const head = headOf(container);
+    const chain = head ? [head, ...order] : order;
+    const members = new Set(chain);
+    const links = chain.slice(1).map((target, i) => ({
+      id: `chain:${chain[i]}>${target}`, // the same neighbors keep the same connection
+      source: chain[i]!,
       target,
       sourceHandle: "next",
       targetHandle: "prev",
@@ -113,10 +119,7 @@ export function useContainers() {
     const keep = new Set(links.map((l) => l.id));
     const stale = edges.value.filter(
       (e) =>
-        (members.has(e.source) || members.has(e.target)) &&
-        isDefect(e.source) &&
-        isDefect(e.target) &&
-        !keep.has(e.id),
+        (members.has(e.source) || members.has(e.target)) && isDefect(e.target) && !keep.has(e.id),
     );
     if (stale.length) removeEdges(stale.map((e) => e.id));
     const present = new Set(edges.value.map((e) => e.id));
@@ -126,7 +129,7 @@ export function useContainers() {
 
   // Put `id` (already a child of the container) into the hit zone's list at height `y`
   function placeInList(hit: ZoneHit, id: string, y: number) {
-    if (!hit.zone.ordered) return;
+    if (!hit.zone.ordered) return; // a sampler joins the chain when it becomes a child (see below)
     const order = insertAt(orderWithout(hit.container, id), id, indexAt(hit.container, y, id));
     applyOrder(hit.container, order);
   }
@@ -178,6 +181,12 @@ export function useContainers() {
     () => {
       for (const id of knownOrder.keys()) if (!findNode(id)) knownOrder.delete(id);
       for (const c of containers()) if (orderedZone(c)) applyOrder(c, orderWithout(c));
+      // a sampler placed in a container has no input, so nothing connected to it remains
+      const placed = new Set(
+        nodes.value.filter((n) => n.parentNode && !isDefect(n.id)).map((n) => n.id),
+      );
+      const loose = edges.value.filter((e) => placed.has(e.target));
+      if (loose.length) removeEdges(loose.map((e) => e.id));
     },
     { flush: "post", immediate: true },
   );

@@ -6,11 +6,17 @@ const props = defineProps<NodeProps>();
 const kind = computed(() => kindOf(props.data?.type));
 const nodeType = computed(() => props.data?.type);
 
-// A defect in a container's list (the Observer's stages) is connected to its neighbors vertically
-// (top handle to the one above, bottom handle to the one below), by the list, not by hand. It has
-// no side input any more, only the side output, which still feeds a Preview.
-const { edges, findNode } = useVueFlow(FLOW_ID);
-const listed = computed(() => isDefectKind(props.data?.type) && !!findNode(props.id)?.parentNode);
+// A node in a container (a sampler or defect in the Observer) is connected to its neighbors
+// vertically by the container's list, not by hand: its bottom handle to the next node, and (a
+// defect) its top handle to the one above. It has no side input, only the side output, which
+// still feeds a Preview or a Plot.
+const { edges, findNode, updateNodeInternals } = useVueFlow(FLOW_ID);
+const contained = computed(() => !!findNode(props.id)?.parentNode);
+// VueFlow measures where a node's handles are only when the node is resized, so when a node joins or
+// leaves a container (its handles change) it has to be told to measure again; otherwise connections
+// keep going to the handles it used to have (a defect taken out of a list was connected at its top)
+watch(contained, () => updateNodeInternals([props.id]), { flush: "post" });
+
 const hasPrev = computed(() =>
   edges.value.some((e) => e.target === props.id && e.targetHandle === "prev"),
 );
@@ -30,20 +36,32 @@ const body = computed(() =>
       !!kind.value.ports ||
       !!kind.value.zones,
 );
+// A node a task uses as a source links to that task
+const route = useRoute();
+const tasks = inject(NODE_TASKS, {})[props.id] ?? [];
+const link = tasks.length
+  ? {
+      to: `/admin/studies/${route.params.id}/tasks?task=${tasks[0]}`,
+      title: tasks.length === 1 ? "Used in a task" : `Used in ${tasks.length} tasks`,
+    }
+  : undefined;
+
 const width = computed(() => (connected.value ? kind.value.expandedWidth : undefined));
 </script>
 
 <template>
   <!-- the category class sets the colours shared by the card's outline and the handles -->
   <div :class="`cat-${kind.category}`">
-    <Handle v-if="kind.input !== false && !listed" type="target" :position="Position.Left" />
+    <Handle v-if="kind.input !== false && !contained" type="target" :position="Position.Left" />
     <!-- The side output comes before the list's links on purpose: a connection saved without a
          handle name (every Preview connection) attaches to the first handle of its kind, in this
          order, so it must be the side output, not the "next" handle at the bottom. -->
     <Handle v-if="kind.output !== false" type="source" :position="Position.Right" />
-    <!-- the vertical links of a list item: drawn only while they are in use, never started by hand -->
-    <template v-if="listed">
+    <!-- the vertical links of the container's list: drawn only while they are in use, never started
+         by hand. The sampler heads the list, so it has nothing above it. -->
+    <template v-if="contained">
       <Handle
+        v-if="isDefectKind(data?.type)"
         id="prev"
         type="target"
         :position="Position.Top"
@@ -64,10 +82,16 @@ const width = computed(() => (connected.value ? kind.value.expandedWidth : undef
       :width="width"
       :container="!!kind.zones"
       :body="body"
+      :link="link"
     >
       <ContainerBody v-if="kind.zones" :id="id" :type="data?.type" :params="data?.params" />
       <DomainAxes v-else-if="data?.type === 'domain'" :id="id" :axes="data.axes ?? []" />
-      <PreviewPlot v-else-if="data?.type === 'preview'" :id="id" />
+      <DataTable v-else-if="data?.type === 'data'" :id="id" />
+      <NodePlot
+        v-else-if="nodeType === 'preview' || nodeType === 'plot'"
+        :id="id"
+        :type="nodeType"
+      />
       <ParamInputs v-else-if="kind.params" :id="id" :type="data?.type" :params="data?.params" />
     </KindCard>
   </div>

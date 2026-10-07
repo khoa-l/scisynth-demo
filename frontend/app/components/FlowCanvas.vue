@@ -11,8 +11,16 @@ const props = defineProps<{
   initialEdges: SavedEdge[];
 }>();
 
-const { setNodes, setEdges, addNodes, screenToFlowCoordinate, onNodesInitialized, fitView } =
-  useVueFlow(FLOW_ID);
+const {
+  setNodes,
+  setEdges,
+  addNodes,
+  screenToFlowCoordinate,
+  onNodesInitialized,
+  fitView,
+  findNode,
+  addSelectedNodes,
+} = useVueFlow(FLOW_ID);
 
 // ---- loading the saved study
 
@@ -55,12 +63,16 @@ const { zoneAt, showHover, placeInList } = useContainers();
 useGraphSave(props.studyId, { nodes: initialNodes, edges: props.initialEdges });
 
 // Once the saved nodes are measured, center the view on them, close up (padding 10%, zoomed in at
-// most 150%). Nodes added later by dropping also trigger this event, so only fit the first time.
+// most 150%), or, coming from a task (`?node=`), on the node it uses, selected. Nodes added later
+// by dropping also trigger this event, so only fit the first time.
+const focus = useRoute().query.node;
 let fitted = props.initialNodes.length === 0;
 onNodesInitialized(() => {
   if (fitted) return;
   fitted = true;
-  fitView({ maxZoom: 1.5, padding: 0.1 });
+  const node = typeof focus === "string" ? findNode(focus) : undefined;
+  if (node) addSelectedNodes([node]);
+  fitView({ maxZoom: 1.5, padding: node ? 1 : 0.1, nodes: node ? [node.id] : undefined });
 });
 
 // ---- dragging a new node in from the sidebar
@@ -104,7 +116,7 @@ useDragDropMonitor({
       </template>
       <Background />
       <Controls />
-      <MiniMap />
+      <MiniMap node-color="var(--minimap-node)" mask-color="var(--minimap-mask)" />
     </VueFlow>
   </div>
 </template>

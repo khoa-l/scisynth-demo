@@ -14,7 +14,7 @@ const { isDragSource } = useDraggable({
 <template>
   <div
     ref="element"
-    class="flex cursor-grab items-center gap-2 rounded-md border border-default px-3 py-2 select-none touch-none"
+    class="side-item flex cursor-grab items-center gap-2 rounded-md border border-default px-3 py-2 select-none touch-none"
     :class="[`cat-${kind.category}`, { 'opacity-60': isDragSource }]"
     :style="{ backgroundColor: 'var(--cat-bg)' }"
   >

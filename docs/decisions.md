@@ -33,7 +33,10 @@ and the conversation, so they carry no dates.
   sidebar. The behavior lives in composables that each use the same canvas store (`FLOW_ID`):
   `useConnectionRules` (which connections are allowed and what a new one replaces),
   `useContainers` (zones, the list's order and its connections, dragging in and out, layers of
-  connections, deleting what is inside a container) and `useGraphSave` (autosave). Create them after
+  connections, deleting what is inside a container) and `useGraphSave` (autosave).
+  `app/utils/sources.ts` turns a plain graph (the canvas's, via `useFlowGraph`, or a saved study's,
+  via `graphOf`) into the request a Data, Plot or Preview node asks the backend for (`requestOf`),
+  so the canvas and the tasks run a node the same way. Create them after
   the study is loaded, since some start working on the loaded nodes straight away.
 - A container's layout is computed in one place and used by both the canvas (to place the nodes)
   and `ContainerBody.vue` (to draw the zones and size the node), so they cannot disagree.
@@ -66,9 +69,90 @@ and the conversation, so they carry no dates.
   (a Domain's `axes`, a node's `params`). Node ids are generated in the browser, without
   `crypto.randomUUID()`, which needs a secure context.
 - **Schema changes migrate on startup** (`ALTER TABLE ... ADD COLUMN` when a column is missing):
-  `nodes.type`, `nodes.data`, `edges.source_handle`, `edges.target_handle`. The old node type
-  `gaussianRandomField` is rewritten to `gaussianField` (obskit renamed the class).
-- Deleting a study deletes its nodes and connections (foreign keys with cascade).
+  `nodes.type`, `nodes.data`, `nodes.parent`, `edges.source_handle`, `edges.target_handle`, and the
+  `position` of studies and tasks.
+- Deleting a study deletes its nodes, connections and tasks (foreign keys with cascade).
+- **Tasks:** a study can have tasks (table `tasks`: id, study_id, name, position;
+  `POST /api/studies/{id}/tasks` names the new one "Task n", `PATCH` and `DELETE /api/tasks/{id}`).
+  `GET /api/studies` returns each study with its `tasks`. On the home page each task is its own card
+  under its study, indented, with a rename pencil, an edit button and a delete button.
+- **The tasks screen** (`/admin/studies/{id}/tasks`, from the clipboard button on a study card, or
+  from a task's edit button with `?task=`): a sidebar with Back and the study's name, its tasks (a
+  New task button, and the tasks as links, sortable, the current one outlined) and a Components
+  section; the main area is the open task, one big list that the components are dragged into, with an
+  Edit / Preview toggle. Its route sits beside the canvas (`/admin/studies/{id}`), not under it.
+- **Task components** (`utils/taskComponents.ts`): Text (a text box), Table and Plot. The task's mode
+  (Edit / Preview) is a tab toggle like the login's Admin / User, with icons. They are saved with
+  the task (`tasks.components`, JSON: `{uid, type, data}` in order; `GET /api/tasks/{id}`, `PUT
+  /api/tasks/{id}/components`; `useTaskComponents` loads a task's when it is first shown and saves
+  300 ms after a change).
+- **Sources:** every Data, Plot and Preview node of the study's workflow is available to a task, with
+  no switch, named by kind and order ("Data 1", "Plot 2"; `useTaskSources`). A Table shows a Data
+  node, a Plot component a Plot or a Preview node (`SourceBar.vue`: a picker, the sync state, and
+  Refresh). Picking one copies its request (`SourceSnapshot`: node id, name and the `SourceRequest`,
+  seeds included) into the component, so it keeps showing the same data when the workflow changes.
+  The component only shows the copy; the state beside the picker compares the copy with the node as
+  the workflow has it now: in sync, out of sync (Refresh copies it again), not ready, or gone. The
+  preview and the participant never show that. A node with nothing connected (or still waiting for
+  a latent or domain) is listed but not selectable.
+- **Serving a copy:** `GET /api/tasks/{id}/components/{uid}/data` (a Table) and `/figure` (a Plot)
+  take only the task and the component and run the request saved in it, never one from the browser,
+  so what a component can show is only what was copied into it. The components flush a pending save
+  first (`TaskContext.flush`), since the backend runs what it has saved.
+- **Cluster** (the task component for the clustering task; the editor side is built so far): its
+  source is an Observer (never a Data or Plot node). In the editor it loads the Observer's output
+  (up to 5,000 rows, `GET /api/tasks/{id}/components/{uid}/points`; the `/data` rows stay at 50)
+  and draws a scatter plot of it (`ClusterPlot.vue`, Plotly, dark-aware, no mode bar: drag to zoom,
+  double-click to reset). Pickers choose the X and Y columns (the first two until chosen) and a
+  Color by column (or None). Colored, the column's values are split into groups by number ranges:
+  `breaks`, the values where one range ends and the next begins (n breaks, n + 1 groups; a value
+  equal to a break starts the range above it; `utils/clusters.ts`). Choosing a column starts with
+  three groups of about the same size (quantiles). The breaks are handles on a bar from the column's
+  lowest value to its highest, colored by the ranges they make (`RangeBreaks.vue`, a Nuxt UI `USlider`
+  with a handle per break: drag one to move it (it stays between its neighbors), arrow keys nudge it,
+  double-click it or press Delete to remove it, Add break puts a new one in the middle of the widest
+  range; hovering a handle shows its value. The bar's colors are a hard-edged gradient set through
+  a CSS variable on the slider's track). One trace per group (legend: "value < 2", "2 ≤ value < 5",
+  "value ≥ 5"); a sample with no value to color by is grey, "no value", last. A point with no x or y
+  is not plotted. Every column is a number so far, so every column groups by ranges; a column of
+  categories would color by its values instead (not built). The choices (`x`, `y`, `color`,
+  `breaks`) are saved in the component. The component shows, top to
+  bottom, the source picker, the plot, then the plot's settings (X, Y, Color by, ranges); there is no
+  data grid. Each range
+  is an item in a list under the slider, with a box to name it (`names`, by place; empty shows the
+  range, as a placeholder and in the legend); adding or removing a range starts the names over,
+  moving a break keeps them. Points with no value to color by are left out unless "Plot points with
+  no value" is on (`showNoValue`). The preview shows the plot in one color (what the participant
+  gets for now), with none of the settings; it leaves out the points with no value as the editor does. Not built:
+  the participant's grouping and scoring; the `/points` endpoint returns every column, so the
+  participant view needs its own endpoint that leaves the color column out.
+- **Observer as a source:** `requestOf` builds an Observer's request (`observerRequest`): its
+  sampler, its stages (the defects, in the order `chainOrder` gives from their links), the latent at
+  its port (the field and its domain, the same `latentOf` a sampler uses) and the Observer's own
+  seed. The backend (`ObserverRequest`, a `PlotRequest` plus `stages`; `POST /api/observer`, and the
+  component's `/data`) runs `obskit.Observer(sampler, stages).run(latent, seed)` and returns the same
+  rows as a Data node: the coordinates and `value` (empty where a stage dropped the sample). An
+  Observer with no sampler or no latent is "not ready". Its `Observation.truth` (the noise-free
+  sample) is not sent; it is the likely truth for scoring later.
+- Table: the first rows of the Data node (the same 50 as the node), in a table at most 16rem tall,
+  so a longer table scrolls with its header kept. (The typed-in table, with its rows and columns to
+  add, delete and sort, is gone.)
+- Plot: the figure of the Plot or Preview node, drawn with Plotly and dark-aware. Two switches in the
+  editor (the preview shows the result): Interactive (zoom, pan, hover; off is a still picture,
+  `staticPlot`) and Colors (as the source colors its points; off is every point in one color).
+  Both start on. The backend's figures are drawn for a still picture (no zoom, pan or hover, and a
+  mode bar with its tools removed), so Interactive gives them back what they need
+  (`interactiveLayout`, `utils/plotly.ts`). A plot fills the task's width and keeps it when a
+  setting changes: it is drawn into an element that is hidden by its height, never `display: none`
+  (Plotly would measure no width and use its default size), and the element Plotly draws into has no
+  Vue-bound `class` (Vue would overwrite the classes Plotly keeps on it, and its styles stop applying).
+- Each placed component keeps its `data`, changed in place; `TaskBody` shows it as an editor in the
+  list or as plain content in the preview. Preview hides the list's chrome and the Components
+  section: the task is its components in a single column. The list to edit and the preview share
+  one centered column. The edit column is wider by the padding around a component (3.75rem), so a
+  component, and a plot in it, has the width and proportions it has in the preview.
+- **Collapse:** a chevron on a study that has tasks hides or shows them, with "n tasks" beside the
+  name while hidden. Adding a task shows them. Kept in memory only (a reload shows everything).
 
 ## Nodes
 
@@ -202,6 +286,35 @@ and the conversation, so they carry no dates.
   the header's), so a node with a port and a header input stays unambiguous.
 - Deleting a node removes its connections (VueFlow does this; the next save drops them).
 
+## Data
+
+- A **Data** node takes a sampler (a GridSampler or PointSampler, in or out of an Observer) and
+  shows what it outputs as rows, like a table in a data explorer: the coordinates (one column per
+  axis of the field's domain), then `value`. A sample that is not valid has no value ("—").
+  It is a viewer like Plot: input on the side, no output, category `core`, plain until a sampler is
+  connected and then 420 px wide.
+- It runs the sampler the way a Plot does and shares the request (`requestOf`, `utils/sources.ts`): the field
+  on the sampler's input (or the Observer's latent port) and its Domain. The same things are
+  missing in the same words ("Connect a latent to the sampler", "Connect a domain to the field"),
+  and only a GaussianField is supported so far. Its seed field is the sampler's and appears only
+  for a sampler that draws at random (a PointSampler); the field's own seed is on the field.
+- `POST /api/data` (the same request as `/api/plot`) returns `{columns, rowCount, rows}` with the
+  **first 50 rows** (`DATA_ROWS`; for a grid, row i is the i-th point in grid order, computed
+  without building the whole grid), cached like plots. A sampler's output of any size costs the
+  same to show.
+- **The list is virtualized** (Nuxt UI `UScrollArea` with `virtualize`, fixed 24 px rows): only the
+  rows in view are in the page, five and a half at a time (the half hints that it scrolls). A
+  header row stays above, the table scrolls sideways when there are many columns (80 px minimum),
+  numbers are shown to 5 significant digits, and a caption says how many rows there are and that
+  the first 50 are shown. The numbers are `DATA_PREVIEW`.
+- **A size limit.** `/api/plot` and `/api/data` refuse a field or a grid of more than 20 million
+  cells (`MAX_CELLS`) with a 422 and a message, before anything is allocated. A Domain with five
+  axes and the field's default resolution of 128 is 34 billion cells; without the limit the backend
+  kept trying to realize it, the machine ran out of memory, and every reload sent the same requests
+  again (a white page that froze). The node shows the message instead.
+- (An earlier version of this node held an uploaded CSV. That was a misreading and was removed,
+  with its `datasets` table and endpoints; a `datasets` table in an older database is unused.)
+
 ## Containers (the Observer)
 
 - The Observer is a **container** with **zones**, not a free parent: nodes dropped into it are laid
@@ -239,6 +352,11 @@ and the conversation, so they carry no dates.
     Preview as before; the top and bottom handles are drawn only while a link is on them, and
     cannot be dragged from. A list item's side output cannot connect to another defect; only
     the list makes defect-to-defect links there.
+  **A node that joins or leaves a list is measured again** (`updateNodeInternals` in `KindNode.vue`):
+  VueFlow reads where a node's handles are only when the node is resized, so after the list swaps
+  its side input for the top and bottom handles (or back), connections kept going to the handles it
+  used to have. A defect taken out of a list ended its incoming connection at its top instead of
+  its left side.
   **Handle order matters:** a connection saved without a handle name (every Preview connection)
   attaches to the first handle of its kind in the node's markup. The side output is therefore
   declared before the list's `prev` / `next` handles in `KindNode.vue`; with the bottom `next`
@@ -278,6 +396,16 @@ and the conversation, so they carry no dates.
   from a list item to a defect outside is broken, and the converted study is saved at once. Connections
   saved against the Observer's old `sampler` input are dropped too.
   A saved sampler that was only connected to it stays an ordinary canvas node.
+- **The sampler heads the Observer's chain.** A sampler in the sampler zone is linked to the first
+  stage by the same vertical link as the stages (its bottom handle `next` to the stage's `prev`), so
+  the chain is sampler, stage 1, stage 2, ... It has no side input (the latent is the Observer's) but
+  keeps its side output, for a Plot. It has no top handle. `applyOrder` builds the chain from the
+  sampler (`headOf`) plus the list; a connection into a placed sampler is dropped. In `KindNode.vue`
+  `contained` (any node with a parent) replaces the old `listed` / `placed` pair, and the list-link
+  rule in `useConnectionRules` now allows a sampler as the source.
+  Outside it a sampler takes a latent (a field) on its input and its output feeds a defect (the
+  head of a chain); a Preview still takes only defects. A defect put in the list loses any
+  connection coming from a sampler outside it.
 - **Not decided yet:** how the Observer reads its sampler and stages (the structure is built,
   nothing consumes it yet), whether a chain must lie inside one Observer (it is not enforced), and
   whether a defect chain made outside a list should still exist now that a list builds them.
@@ -300,6 +428,46 @@ and the conversation, so they carry no dates.
   changes.
 - The preview does not use the study's own pipeline yet: the signal is fixed.
 
+## Plot
+
+- A Plot takes one sampler (a GridSampler or PointSampler, in or out of an Observer) and draws
+  `sampler.plot(latent, seed)`. It needs a **latent**: the field on the sampler's input, or for a
+  sampler in an Observer the field on the Observer's latent port. Until there is one the node says
+  what is missing ("Connect a latent to the sampler", "Connect a domain to the field").
+- **Only a GaussianField can be plotted so far**: obskit needs a realized latent, and the nodes can
+  only describe that one (its parameters and its Domain's axes). AnalyticField takes a function, so
+  it says "cannot be plotted yet".
+- **Seeds:** the field's seed belongs to the GaussianField (a `seed` parameter, default 0) and
+  realizes it. The Plot's own seed is the sampler's and is shown only when the connected sampler
+  draws at random (`seeded` in the registry: PointSampler yes, GridSampler no). Before, one Plot
+  seed did both, so it changed the field.
+- `POST /api/plot` takes the sampler type and parameters, the domain's axes, the field's parameters,
+  the field's seed and the sampler's seed; the figure is static like the Preview's, cached by the
+  whole request (64). obskit's own errors (a 1-D or 3-D observation, a shape that does not fit the domain) are a 422, shown in
+  the node.
+- The node is as wide as the Preview once connected, and shares its component (`NodePlot.vue`,
+  once `PreviewPlot.vue`), plot size and seed field (`SEED` in `utils/node.ts`).
+
+## Speed
+
+- Measured on the backend (no network): a Data request takes 2 to 60 ms cold and under 1 ms cached,
+  because it only builds the first 50 rows; a 64 x 64 plot takes about 50 ms cold and sends 170 kB
+  (a 256 x 256 grid, 2.6 MB). So what is felt is mostly in the browser.
+- **plotly.js is preloaded** in the background (`preloadPlotly`, on idle) when a study page opens,
+  so the first plot does not wait for its 5 MB download. It is still not loaded with the app, nor
+  on the pages that never plot.
+- **One request at a time, latest wins** (`useLatestRequest`, used by `NodePlot` and `DataTable`).
+  A change to what the node asks for cancels the request in flight (`AbortController`) and, after
+  the 250 ms pause, a refresh shows the outcome for the key it finds. **A bug this replaced:** a
+  result that arrived after the inputs had changed was dropped, and when the inputs then went back
+  to what had been requested, the refresh saw "already shown" and did nothing, leaving the node on
+  "Loading Plot" / "Loading Data" for good (seen when changing a seed). The refresh now puts back
+  the outcome that is on screen when the key is the one already shown, and a refresh that arrives
+  while a request is running is remembered and run after it. Tested with a slow backend and
+  changes spaced from 40 to 900 ms.
+- Not done (suggested): a shorter pause after a parameter change (now 250 ms), and thinning very
+  large plots (a 65k-point plot sends 2.6 MB).
+
 ## Canvas and drag and drop
 
 - The sidebar's top section lists the nodes on the canvas (delete removes one, as does selecting it
@@ -309,16 +477,130 @@ and the conversation, so they carry no dates.
 - Opening a study fits the view to its nodes once (10% padding, at most 150% zoom, minimum zoom
   0.1). An empty study opens at the default view, and adding nodes does not move the view.
 
+## Selection
+
+- A selected node is drawn with a two-ring outline (a gap in the page background, then the page's
+  strongest text color), which stands out on every category color in both color modes. The same
+  ring marks its row in the sidebar list (`.selected` in `main.css`).
+- Selection is shared both ways through the flow store. Picking a row (a button, so the keyboard
+  works) selects that node alone and glides the canvas to it at the zoom it already has, easing in
+  and out (cubic) over 400 to 900 ms depending on the distance; selecting
+  a node on the canvas scrolls its row into view (`block: "nearest"`, so a visible row does not
+  move). The canvas does not pan when the node itself is clicked.
+
+## Sidebars
+
+- Both sidebars (the study page and the task page) are tinted (`bg-elevated`) with a stronger right
+  border, so they read as a panel next to the canvas or the blank area. Each section is a
+  `SidebarSection`: a labelled bar (small uppercase, muted, on a darker tint) over a scrolling list
+  on the page's own background, set off from the one above by a stronger line, so the cards in it
+  stand out. Study page sections: "On the canvas" and "Add a node"; task page: "Tasks".
+
 ## Look
 
 - Theming goes through Nuxt UI (`app.config.ts` for the colors, CSS variables for the rest).
   Primary color blue; border radius `0.125rem`; font Inclusive Sans, self-hosted at weight 400.
 - **Nothing is bold** unless asked: one global rule sets `font-weight: 400`. Add exceptions in
   `main.css` when bold is wanted.
-- Light mode only for node fills and text (they do not adapt to dark mode).
+- **Dark mode** covers the nodes and the sidebar items alike: a category is an opaque dim tint of its
+  color (22% over the page background, opaque so connections do not show through) with a lighter
+  icon and outline and the normal text color (`.dark .cat-*` in `main.css`). A node's body and the
+  shaded band in it are `--node-surface` and `--node-sunk`. Plots dim their plot area and grid in
+  dark mode and redraw when the mode changes. Not done yet: the minimap and the zoom controls are
+  still light. (Earlier, node fills were light in both modes; that is no longer so.)
 
 ## Change log
 
+- **2026-10-05** Cleanup. Backend: the unused `GET /api/tasks/{id}` and the one-off
+  `gaussianRandomField` rename are gone, a study and a task share one `Rename` body, the plot and data
+  endpoints share their request handling, and the size check is one small function. Frontend: the
+  "drag a clone" plugins (`CLONE_PLUGINS`), the sidebar's Back and title (`SidebarHeader`), the
+  inline rename of a study or task (`useRename`) and the sidebar component's drag id
+  (`componentTypeOf`) were each written twice and now exist once. One behaviour change: a study can
+  no longer be renamed to an empty name (the old name comes back), as for a task.
+- **2026-10-05** Fixed a removed component staying on screen in a task's list after the list had been
+  sorted (it went only when another was removed, and the last one never did). The list sorts by
+  moving its elements, and Vue removes a `<template v-for>` item by walking from its first node to
+  its last, which misses an element that was moved. The rows are now one element each, with no
+  fragment around them (a placeholder is a row too). Do not wrap the items of a sortable list in a
+  `<template v-for>`.
+- **2026-10-05** Task list: a component dragged in from the sidebar shows where it will land (a
+  dashed placeholder among the items, at the pointer's index), and the list's own items sort like any
+  other list (they move, with the usual drop animation, and no overlay). The list has a drag and drop
+  area of its own for sorting; the page's area handles the sidebar's components, which are the only
+  thing held in an overlay (`TaskDragOverlay`).
+- **2026-10-05** Task components (and the items of a task's list) no longer animate back when
+  dropped: they are held as a `DragOverlay` without a drop animation (`TaskDragOverlay`), like the
+  node components.
+- **2026-10-05** The tasks screen: a study's Task button now opens one screen with all its tasks
+  (`/admin/studies/{id}/tasks`; the canvas moved to `/admin/studies/{id}`), and New task is on that
+  screen. A task's edit button opens that task there (`?task=`). The sidebar has the tasks (sortable)
+  and a Components section of placeholders (Text block, Question, Image, Rating scale); the main
+  area is one big list per task that they are dragged into, placed where dropped, and sorted by
+  their grip. What is in a task's list is kept in memory only (placeholders), not saved. The old
+  `/admin/tasks/{id}` page and its `GET /api/tasks/{id}` endpoint are gone.
+- **2026-10-05** The tasks in a task page's sidebar can be sorted by dragging (a grip on each, its own
+  drag and drop area, `TaskLink`). The order is saved (`PUT /api/studies/{id}/tasks/order`, the same
+  as on the home page) and the home page shows it, also after a reload.
+- **2026-10-05** Fixed Plot and Data failing after an axis was added or deleted: a per-axis list (the
+  field's resolution) kept its old length and obskit rejected it ("Expected 4 positive sizes, got
+  5"). `samplerRequest` now fits such a list to the Domain's axes (extra values dropped, missing ones
+  repeat the last).
+- **2026-10-05** Fixed a white, frozen page on reload: a Domain with 5 axes feeding a field at
+  resolution 128 asked the backend for 34 billion cells. Plot and Data requests over 20 million cells
+  now get a 422 with a message (`MAX_CELLS`).
+- **2026-10-05** Speed: plotly.js is preloaded when a study page opens, and an in-flight plot or data
+  request is cancelled when a newer one starts.
+- **2026-10-05** Fixed Plot, Preview and Data staying on "Loading ..." after their inputs changed
+  and changed back (a seed edit); the request handling is now one shared composable
+  (`useLatestRequest`).
+- **2026-10-05** Added the Data node: it takes a sampler and lists its output as rows (a virtualized
+  list of the first 50; `POST /api/data`). Plot and Data share `useSamplerRequest`. A first version
+  that held an uploaded CSV was a misreading and was removed.
+- **2026-10-05** Sidebars and their sections are easier to tell apart: tinted sidebar, labelled section
+  bars, stronger dividers (`SidebarSection`).
+- **2026-10-05** Each task has an edit button that opens its page: a sidebar with the study's tasks
+  and a blank main area.
+- **2026-10-05** Open tasks stay open while their study is dragged (the study's drop target is just its
+  card), replacing the fold-away during a drag.
+- **2026-10-05** Tasks are auto-numbered, can be renamed, and tasks and studies can be sorted by
+  dragging (and the order is saved); a study's tasks can be collapsed.
+- **2026-10-05** A Task is its own card just under its study, indented, not a row inside the study's card.
+- **2026-10-05** The clipboard button on a study adds a Task under it (new `tasks` table and endpoints);
+  tasks are listed under the study and can be deleted.
+- **2026-10-05** The Study card is a filled, raised card (elevated background, stronger border, a
+  small shadow) instead of an outline. A new icon button on it (clipboard) is meant to turn the
+  study's data workflow into a user study task; it does nothing yet.
+- **2026-10-05** The neutral color is `zinc` instead of `slate`, so the dark background and the grays
+  are no longer blue-tinted (`app.config.ts`). Say if it should be more or less neutral: `neutral`
+  is pure gray, `stone` is warm.
+- **2026-10-05** Dark-mode axes on every panel of a figure: only the first axis pair (the "before"
+  panel) was recolored, so a Preview's "after" panel kept white grid lines and a pale plot area.
+- **2026-10-05** Dark mode for the nodes themselves (see Look), plots included.
+- **2026-10-05** Dark mode for the sidebar items (palette and node list): a dim tint of the category
+  color, a lighter icon and normal text (`.side-item`). Nodes on the canvas stay light.
+- **2026-10-05** Smoother pan to a picked row: eased in and out, and a longer trip takes longer.
+- **2026-10-05** Clearer selection ring, and selection shared between the sidebar list and the canvas
+  (centering on a picked row, scrolling to a picked node's row).
+- **2026-10-05** The palette lists Observer, Preview and Plot together at the top, then Domain and the
+  samplers. The Observer is back to the core (blue) color: a separate `observer` category (pink) that
+  had been added to the working tree was removed.
+- **2026-10-05** Domain, GridSampler and PointSampler have their own category, `sampling`, in violet
+  (Nuxt UI's `secondary`, set in `app.config.ts`); Observer, Preview and Plot stay in `core` (blue).
+- **2026-10-05** The GaussianField has its own seed; the Plot's seed is the sampler's and appears only
+  for a random sampler (PointSampler).
+- **2026-10-05** Added the Plot node: a sampler's plot on its latent (`POST /api/plot`), GaussianField
+  only for now. `PreviewPlot` renamed `NodePlot` and shared; the seed field is one constant.
+- **2026-10-04** Sampler parameters: GridSampler `shape` (one number for every axis, default 64) and
+  PointSampler `n` (default 100). A per-axis `shape` is not offered: the sampler does not see the
+  field's domain.
+- **2026-10-04** A sampler outside an Observer takes a field on its input and can feed a defect.
+- **2026-10-04** The sampler in the Observer is the first link of its chain (sampler to stage 1),
+  with its side output back and no side input. Observer code reviewed: `listed` and `placed` merged
+  into `contained`, nothing else found to be dead.
+- **2026-10-03** Fixed defects that have been in a list connecting side to top once they are out:
+  VueFlow had kept the old handle positions. The node is now measured again when it joins or leaves
+  a list (`updateNodeInternals`).
 - **2026-10-03** Code clean-up, no behavior change. `FlowCanvas.vue` (500 lines doing four jobs) is
   split into `useConnectionRules`, `useContainers` and `useGraphSave` (110 lines left). One shared
   layout helper replaces three copies of "a container's children as layout items" (and the
@@ -390,6 +672,44 @@ and the conversation, so they carry no dates.
   a `domain` port that accepts a Domain, with its handle next to the field. Connections now record
   which input they end on (`edges.source_handle`, `edges.target_handle`, migrated on startup).
   Parameter labels share one column per node. This file started.
+- **2026-10-06** Tables: delete rows and columns, sort rows (columns were sortable briefly, then
+  removed), plainer editor. Plot: Interactive and
+  Colors switches (an earlier show/hide switch was a misreading). Edit / Preview is a tab toggle.
+- **2026-10-06** The edit list is as wide as the preview (one shared `max-w-2xl` column).
+- **2026-10-07** Links between canvas and tasks. A node that a task uses as a source shows a small
+  checklist icon in its header that opens that task (the first one, if several; the title says how
+  many). `GET /api/studies/{id}/usage` gives node id -> task ids from the saved components, read
+  when the canvas page opens (it provides it as `NODE_TASKS`). Back the other way, the source bar
+  of a component has a workflow icon that opens the canvas at `?node=<id>`: the node is selected and
+  the view fitted to it. Hidden when the node is gone from the workflow.
+- **2026-10-07** The canvas controls and minimap use the page colors (`--ui-*`) in both color modes: the minimap's background, nodes and mask (`--minimap-node`, `--minimap-mask`, passed as props), and the control buttons. The rules are prefixed `.vue-flow` because the libraries' stylesheets load after ours.
+- **2026-10-07** The Data node's table is styled like `DataGrid` (rows `bg-default`, header `bg-accented`), in light and dark mode.
+- **2026-10-07** `DataGrid` has its own background (rows `bg-default`, header `bg-accented`) so it stands apart from the component card in the editor and the page in the preview.
+- **2026-10-07** Cluster cleanup: the settings are their own component (`ClusterSettings`), `groupColor(i)` replaces the repeated palette lookup, and the plot keys the no-value group as `Infinity` so groups sort plainly. Components change `data` in place (an emitted copy is not picked up by the list).
+- **2026-10-07** Cluster: the preview also leaves out points with no value to color by.
+- **2026-10-07** Cluster: a named category per range, points with no value left out by default, preview plots one color.
+- **2026-10-07** Cluster: order is source, plot, settings; the data grid is removed.
+- **2026-10-07** The edit column is widened by the list and item padding, so components are as wide as in the preview.
+- **2026-10-06** Cleanup of the task code: `usePlotly` (themed Plotly drawing, shared by the task Plot
+  and the Cluster plot; the Plot no longer refetches when a switch changes), `RequestNote`,
+  `UFormField` and `UBadge` in place of hand-made markup, the Cluster ranges on a `USlider`
+  (clicking the bar no longer adds a break: Add break does), `ONE_COLOR` shared.
+- **2026-10-06** Cluster ranges are a slider bar with break handles (click to add, drag, double-click
+  to remove) in place of number inputs.
+- **2026-10-06** Cluster scatter plot: choose the X, Y and Color by columns, and group a numeric
+  color column by number ranges (editable breaks); `GET .../points` returns up to 5,000 rows.
+- **2026-10-06** Cluster component (source only): an Observer is a task source; the backend runs it
+  (`ObserverRequest`, `/api/observer`) and the component shows its columns and rows. `DataGrid` and
+  `useCopiedRows` are shared with the Table.
+- **2026-10-06** Task plots: they fill the component from the first draw and keep that size when a
+  setting changes, and Interactive works (it did nothing, since the figures are drawn still).
+- **2026-10-06** Tasks use the workflow's data: components are saved with the task; Table and Plot
+  show a copy of a Data / Plot / Preview node, with sync state and Refresh; the backend serves a copy
+  by task and component. `useSamplerRequest` became `requestOf` (a pure function of the graph) with
+  `useFlowGraph`; the typed-in table was removed. `GET /api/tasks/{id}` is back (it returns the
+  components).
+- **2026-10-06** Task components: Text, Table and Plot replace the four placeholders, and the tasks
+  screen has an Edit / Preview toggle (the preview is the task without the list).
 - Before 2026-10-03 (in order): Nuxt UI and Nuxt replaced PrimeVue; SQLite persistence; node kinds
   and categories; Domain axes; connections, Preview and its plots; RandomDropout parameter and the
   Preview's seed; parameters for the other defects; number inputs with arrows left and right;

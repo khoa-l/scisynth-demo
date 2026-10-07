@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import { DragDropProvider } from "@dnd-kit/vue";
+
 const { logout } = useSession();
-const { studies, load, add, rename, remove } = useStudies();
+const { studies, load, add, moveStudy } = useStudies();
 
 await load();
 
-const editingId = ref<number | null>(null);
-
-async function finishEdit(study: Study) {
-  if (editingId.value !== study.id) return;
-  editingId.value = null;
-  await rename(study);
+// Dropping a study in a new place (its tasks have a list of their own, in StudyRow)
+function onDragEnd(event: Parameters<typeof sortedMove>[0]) {
+  const move = sortedMove(event);
+  if (move) void moveStudy(move.from, move.to);
 }
 
 function signOut() {
@@ -28,52 +28,16 @@ function signOut() {
       <div class="flex justify-end">
         <UButton label="New Study" icon="i-lucide-plus" @click="add" />
       </div>
-      <ul class="mt-4 flex flex-col gap-2">
-        <li
-          v-for="study in studies"
-          :key="study.id"
-          class="flex items-center justify-between rounded-md border border-default py-1 pl-4 pr-2"
-        >
-          <span class="flex items-center gap-1">
-            <UInput
-              v-if="editingId === study.id"
-              v-model="study.name"
-              autofocus
-              :aria-label="`Name of ${study.name}`"
-              @keydown.enter="finishEdit(study)"
-              @keydown.esc="finishEdit(study)"
-              @blur="finishEdit(study)"
-            />
-            <template v-else>
-              <span>{{ study.name }}</span>
-              <UButton
-                icon="i-lucide-pencil"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                :aria-label="`Rename ${study.name}`"
-                @click="editingId = study.id"
-              />
-            </template>
-          </span>
-          <span class="flex gap-1">
-            <UButton
-              icon="i-lucide-workflow"
-              color="neutral"
-              variant="ghost"
-              :aria-label="`Open ${study.name}`"
-              :to="`/admin/studies/${study.id}`"
-            />
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              :aria-label="`Delete ${study.name}`"
-              @click="remove(study.id)"
-            />
-          </span>
-        </li>
-      </ul>
+      <DragDropProvider @drag-end="onDragEnd">
+        <ul class="mt-4 flex flex-col gap-2">
+          <StudyRow
+            v-for="(study, index) in studies"
+            :key="study.id"
+            :study="study"
+            :index="index"
+          />
+        </ul>
+      </DragDropProvider>
       <p v-if="studies.length === 0" class="mt-4">No studies yet.</p>
     </main>
   </div>

@@ -107,8 +107,8 @@ const sections = computed(() => {
 const MAX_SECTION_ROWS = 4;
 const sectionStyle = {
   maxHeight: `${MAX_SECTION_ROWS * 28 + 17}px`,
-  // neutral and a shade darker than the white card (a faint black overlay, no color cast)
-  backgroundColor: "rgb(0 0 0 / 0.04)",
+  // neutral and a shade darker than the card (a faint overlay, no color cast)
+  backgroundColor: "var(--node-sunk)",
   borderColor: catTint(45),
 };
 

@@ -23,7 +23,7 @@ const isHovered = (zone: string) => hovered.value?.id === props.id && hovered.va
        then the body with its zones. The negative margins run both out to the card's edges. -->
   <div
     v-if="topHeight"
-    class="-mx-2.5 shrink-0 border-b bg-white px-2.5 py-2"
+    class="-mx-2.5 shrink-0 border-b bg-(--node-surface) px-2.5 py-2"
     :style="{ height: `${topHeight}px`, borderColor: catTint(45) }"
   >
     <!-- compact, like the Preview's seed (w-44): the fields do not stretch across the node -->
@@ -53,9 +53,10 @@ const isHovered = (zone: string) => hovered.value?.id === props.id && hovered.va
         borderStyle: isHovered(box.zone.id) ? 'dashed' : 'solid',
       }"
     >
-      <span class="absolute -top-2 left-2 bg-white px-1 text-[10px] leading-4 text-muted">{{
-        box.zone.label
-      }}</span>
+      <span
+        class="absolute -top-2 left-2 bg-(--node-surface) px-1 text-[10px] leading-4 text-muted"
+        >{{ box.zone.label }}</span
+      >
       <span
         v-if="!box.members.length"
         class="absolute inset-0 flex items-center justify-center text-muted"
