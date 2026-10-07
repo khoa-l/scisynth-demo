@@ -3,7 +3,6 @@ const props = defineProps<{ table: DataRows }>();
 const data = defineModel<ClusterData>({ required: true });
 
 const breaks = computed(() => data.value.breaks ?? []);
-const groups = computed(() => breaks.value.length + 1);
 
 // Coloring by a column: its values are split into groups by number ranges, three of about the same
 // size to start with
@@ -12,13 +11,18 @@ const colorChoices = computed(() => [
   { label: "None", value: NONE },
   ...props.table.columns.map((c) => ({ label: c, value: c })),
 ]);
+// where the color column's values run from and to, for the slider of ranges
 const colorValues = computed(() =>
   data.value.color ? columnValues(props.table, data.value.color) : [],
 );
+const colorRange = computed(() => ({
+  min: Math.min(...colorValues.value),
+  max: Math.max(...colorValues.value),
+}));
 function colorBy(column: string) {
   const d = data.value;
   d.color = column === NONE ? undefined : column;
-  d.breaks = d.color ? quantileBreaks(columnValues(props.table, d.color), 3) : [];
+  d.breaks = d.color ? quantileBreaks(colorValues.value, 3) : [];
   d.names = [];
 }
 
@@ -62,25 +66,22 @@ function rename(group: number, name: string) {
         </span>
         <RangeBreaks
           :model-value="breaks"
-          :min="Math.min(...colorValues)"
-          :max="Math.max(...colorValues)"
+          :min="colorRange.min"
+          :max="colorRange.max"
           @update:model-value="setBreaks"
         />
       </div>
       <!-- a category for each range, to name -->
       <ul class="flex flex-col gap-2">
-        <li v-for="group in groups" :key="group" class="flex items-center gap-2">
-          <span
-            class="size-3 shrink-0 rounded-full"
-            :style="{ background: groupColor(group - 1) }"
-          />
+        <li v-for="(_, group) in breaks.length + 1" :key="group" class="flex items-center gap-2">
+          <span class="size-3 shrink-0 rounded-full" :style="{ background: groupColor(group) }" />
           <UInput
-            :model-value="data.names?.[group - 1] ?? ''"
-            :placeholder="rangeLabel(group - 1, breaks, data.color)"
-            :aria-label="`Name of range ${group}`"
+            :model-value="data.names?.[group] ?? ''"
+            :placeholder="rangeLabel(group, breaks, data.color)"
+            :aria-label="`Name of range ${group + 1}`"
             size="sm"
             class="flex-1"
-            @update:model-value="rename(group - 1, String($event))"
+            @update:model-value="rename(group, String($event))"
           />
         </li>
       </ul>

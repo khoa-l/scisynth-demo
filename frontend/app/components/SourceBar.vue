@@ -31,14 +31,14 @@ const nodeLink = computed(
 const state = computed(() => {
   if (!snapshot.value) return undefined;
   const live = sources.value.find((s) => s.nodeId === snapshot.value!.nodeId);
-  if (!live) return { text: "The node is gone from the workflow", refresh: false, gone: true };
+  if (!live) return { status: "gone", text: "The node is gone from the workflow" };
   if (!live.request || live.request.waiting) {
-    return { text: "The node is not ready in the workflow", refresh: false };
+    return { status: "waiting", text: "The node is not ready in the workflow" };
   }
   if (JSON.stringify(live.request) !== JSON.stringify(snapshot.value.request)) {
-    return { text: "Out of sync with the workflow", refresh: true };
+    return { status: "stale", text: "Out of sync with the workflow" };
   }
-  return { text: "In sync with the workflow", refresh: false, ok: true };
+  return { status: "synced", text: "In sync with the workflow" };
 });
 </script>
 
@@ -54,7 +54,7 @@ const state = computed(() => {
       @update:model-value="copy"
     />
     <UButton
-      v-if="snapshot && !state?.gone"
+      v-if="state && state.status !== 'gone'"
       :to="nodeLink"
       icon="i-lucide-workflow"
       size="xs"
@@ -64,9 +64,13 @@ const state = computed(() => {
       title="Go to the node in the workflow"
     />
     <template v-if="state">
-      <UBadge :label="state.text" :color="state.ok ? 'neutral' : 'warning'" variant="subtle" />
+      <UBadge
+        :label="state.text"
+        :color="state.status === 'synced' ? 'neutral' : 'warning'"
+        variant="subtle"
+      />
       <UButton
-        v-if="state.refresh"
+        v-if="state.status === 'stale'"
         label="Refresh"
         icon="i-lucide-refresh-cw"
         size="xs"

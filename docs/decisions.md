@@ -676,6 +676,7 @@ and the conversation, so they carry no dates.
   removed), plainer editor. Plot: Interactive and
   Colors switches (an earlier show/hide switch was a misreading). Edit / Preview is a tab toggle.
 - **2026-10-06** The edit list is as wide as the preview (one shared `max-w-2xl` column).
+- **2026-10-07** Frontend cleanup after the latest changes: the source bar's sync state is one `status` (`gone`, `waiting`, `stale`, `synced`) instead of three flags; `ClusterSettings` computes the color column's values and range once; `DATA_PREVIEW.rows` (unused since the Cluster table went) is gone.
 - **2026-10-07** Backend split into modules (one 670-line `main.py` held everything). `main.py` is
   only the app (`main:app` still starts it), the lifespan and the health check. `db.py`: the
   schema, `db()`, `init_db()` (tables and added columns), `require_study`, `task_components`,

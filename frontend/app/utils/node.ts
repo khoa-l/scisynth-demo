@@ -23,9 +23,8 @@ export interface AxisData {
   unit: string;
 }
 
-// How a Data node shows what a sampler outputs: the first rows only, in a list that renders just the
-// ones in view
-export const DATA_PREVIEW = { rows: 50, visible: 5, rowHeight: 24 };
+// How a Data node shows what a sampler outputs: a list that renders just the rows in view
+export const DATA_PREVIEW = { visible: 5, rowHeight: 24 };
 
 const DEFAULT_AXIS_NAMES = ["x", "y", "z"];
 
