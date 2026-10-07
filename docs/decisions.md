@@ -676,6 +676,15 @@ and the conversation, so they carry no dates.
   removed), plainer editor. Plot: Interactive and
   Colors switches (an earlier show/hide switch was a misreading). Edit / Preview is a tab toggle.
 - **2026-10-06** The edit list is as wide as the preview (one shared `max-w-2xl` column).
+- **2026-10-07** Backend split into modules (one 670-line `main.py` held everything). `main.py` is
+  only the app (`main:app` still starts it), the lifespan and the health check. `db.py`: the
+  schema, `db()`, `init_db()` (tables and added columns), `require_study`, `task_components`,
+  `set_order`. `schemas.py`: what the API accepts. `pipeline.py`: obskit behind the API (defects,
+  samplers, `PlotRequest`/`ObserverRequest`, the cached builders, `rows_json`). `routes/`: one
+  `APIRouter` per area: `studies` (studies, canvas, usage), `tasks`, `observe` (preview, plot, data,
+  observer) and `components` (what a task's saved copies show). Same endpoints, no behavior change.
+  `set_order` takes the ids, not the request model, so `db.py` does not depend on `schemas.py`.
+- **2026-10-07** obskit update. Its `Observation.values` and `truth` now end in a channel axis, `(*spatial, d)` (a grid is `(8, 8, 1)`, points `(n, 1)`); `mask` stays spatial. `_rows_json` works from `spatial_shape`, so a grid's rows were wrong (the grid Data table gave a 422) and a count of `values.size` would be too large with several channels. It now gives one row per location, with the column `value` for one channel (so the frontend is unchanged) and `value_1`, `value_2`... for several, a dropped location empty in all of them. The size limit moved into obskit: the backend passes `max_cells=MAX_CELLS` to `GaussianField` (and to `GridSampler`), overriding what a request sends, and the 422 carries obskit's message; the demo's own `_cells`/`_check_size` are gone. Not used yet: `Multichannel`, per-channel defect parameters, named stages.
 - **2026-10-07** Links between canvas and tasks. A node that a task uses as a source shows a small
   checklist icon in its header that opens that task (the first one, if several; the title says how
   many). `GET /api/studies/{id}/usage` gives node id -> task ids from the saved components, read
