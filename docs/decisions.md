@@ -676,6 +676,17 @@ and the conversation, so they carry no dates.
   removed), plainer editor. Plot: Interactive and
   Colors switches (an earlier show/hide switch was a misreading). Edit / Preview is a tab toggle.
 - **2026-10-06** The edit list is as wide as the preview (one shared `max-w-2xl` column).
+- **2026-10-07** A Plot node takes an Observer (as well as a sampler), using obskit's `Observer.plot`:
+  one panel per step, led by the latent (drawn on a 64-per-axis grid, `show_latent`), titled with the
+  step names (`latent`, `sampler`, `gaussian_noise`...), at most four panels a row with one shared
+  color bar. `POST /api/observer/plot` takes the same body as `/api/observer` (the Observer's own
+  seed is the run's); the Plot node's own seed is hidden since an Observer has one. The frontend asks
+  for it when a Plot's source is an Observer (`endpointOf`). A figure of more than one row of panels
+  sets its own height and margin (obskit does, past four panels), so the node and the task's Plot
+  component keep those instead of the fixed sizes. As before, only a 2-D observation can be drawn
+  (obskit's scatter), so more axes is a 422. A task's Plot component can copy such a Plot (the
+  copy's `type` is `observer`); note it then shows the latent panel, which a participant must not
+  see: decide before the participant view whether the task's copy leaves it out (`show_latent`).
 - **2026-10-07** Fix: the node header's link icon was absolutely positioned, which made the header a positioned element and painted it over the node's handles (the half of an input or output inside the card was covered, so it could not be grabbed). The header is now a three-column grid (title in the middle, link at the end) with nothing positioned.
 - **2026-10-07** Frontend cleanup after the latest changes: the source bar's sync state is one `status` (`gone`, `waiting`, `stale`, `synced`) instead of three flags; `ClusterSettings` computes the color column's values and range once; `DATA_PREVIEW.rows` (unused since the Cluster table went) is gone.
 - **2026-10-07** Backend split into modules (one 670-line `main.py` held everything). `main.py` is
@@ -725,3 +736,41 @@ and the conversation, so they carry no dates.
   and categories; Domain axes; connections, Preview and its plots; RandomDropout parameter and the
   Preview's seed; parameters for the other defects; number inputs with arrows left and right;
   closer zoom on open; the `venv` workaround.
+
+- **2026-10-07** obskit review (commit "add stage list"). Observers now hold their stages in a
+  `StageList`, `Observer.trace` returns a `Trace`, and `observer[i]` / name slicing are gone
+  (`with_stages` replaces them). The demo uses none of that, only `Observer(sampler, stages)`,
+  `run` and `plot`, so nothing needed to change; the backend tests pass against it. Tidied
+  `pipeline.py` (return types on the two builders, one awkward `except`). New and not used yet:
+  `Trace.plot` draws the steps without the latent panel, which would be the participant-safe copy
+  of a Plot of an Observer (no `show_latent` flag needed).
+- **2026-10-07** obskit review (commit "add ids to points diff", plus its uncommitted point-set work).
+  New stages `PositionJitter(sigma)`, `RandomInsertion(n)` and `Downsample(factor)` are nodes
+  (category defects, so they chain and preview like the others). The first two need a points
+  observation (PointSampler) and `Downsample` a grid (GridSampler); the wrong sampler is obskit's
+  `ValueError`, which comes back as a 422 with its message. `DEFECTS` and `DEFECT_PARAMS` in
+  `pipeline.py` were two tables to keep in step; they are one, `DEFECTS[type] = (class, params)`.
+  Not adopted: `Observation.spatial_coords` for `rows_json` (it broadcasts a grid's coordinates to
+  every cell, up to `MAX_CELLS`, where `rows_json` computes only the rows it sends). Still unused:
+  `Trace` diffs and links, `Observer.plot(kind="trace")` (the 3-D view).
+- **2026-10-07** Duplication cleanup.
+  - `NodePlot` draws through `usePlotly` like `TaskPlot` (it fetches the figure into a ref; the
+    dark-mode axes and the purge are `usePlotly`'s). `usePlotly` also redraws when its element
+    changes, since `NodePlot`'s element comes and goes with the connection.
+  - One table: `DataGrid` (Nuxt UI `UTable`, sticky header, virtualized rows, `height` caps it) serves
+    both the Data node and the Table component; `DataTable` is only the node's fetching around it.
+    `DATA_PREVIEW.rowHeight` is 28 now (`UTable` rows with `py-1`), so the half row of hint is
+    approximate; look at it in the browser.
+  - `RequestNote` also shows what is missing (the `waiting` message), so the nodes no longer write
+    their own loading, waiting and error lines.
+  - Sortable lists: `useSortableRow` (the row's element, grip and dragging state), `onSorted` and
+    `moveItem` (`utils/dnd.ts`) replace four copies of the setup and five of the drag-end code.
+    `EditableName` is the rename-in-place field of a study and a task (the task's field is `sm` in
+    both now). `AppHeader` is the header of the admin and user pages.
+  - `routes/components.py` runs a copied request through one `_run`, instead of two switches.
+- **2026-10-07** obskit review again (commits "cleanup and fix bugs", "cleanup docs, docstrings..."). The
+  public names the backend uses are unchanged (`observe` was removed; the demo never used it).
+  `rows_json` takes the row count from `Observation.size`. Checked against the new obskit: every
+  defect's preview, Data / Plot / Observer / Observer plot for grid and point samplers in 2 and 3
+  axes, the right and wrong sampler for each point-set stage, the size limit and an unknown defect
+  all answer as expected; obskit's own 333 tests pass.

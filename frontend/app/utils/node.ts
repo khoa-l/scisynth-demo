@@ -24,7 +24,7 @@ export interface AxisData {
 }
 
 // How a Data node shows what a sampler outputs: a list that renders just the rows in view
-export const DATA_PREVIEW = { visible: 5, rowHeight: 24 };
+export const DATA_PREVIEW = { visible: 5, rowHeight: 28 };
 
 const DEFAULT_AXIS_NAMES = ["x", "y", "z"];
 
@@ -204,8 +204,8 @@ export const NODE_KINDS: NodeKind[] = [
     // shown only for a sampler that draws at random (NodePlot)
     params: [SEED],
     output: false,
-    // a sampler's plot, once the sampler has a latent
-    accepts: { types: ["gridSampler", "pointSampler"] },
+    // a sampler's plot, once the sampler has a latent, or an Observer's: its latent and every step
+    accepts: { types: ["gridSampler", "pointSampler", "observer"] },
   },
   {
     type: "data",
@@ -374,6 +374,32 @@ export const NODE_KINDS: NodeKind[] = [
     category: "defects",
     accepts: DEFECT_INPUT,
     params: [{ name: "shift", default: 0, step: 0.1 }],
+  },
+  // for points: PointSampler's output
+  {
+    type: "positionJitter",
+    label: "PositionJitter",
+    icon: "i-lucide-vibrate",
+    category: "defects",
+    accepts: DEFECT_INPUT,
+    params: [{ name: "sigma", default: 0, min: 0, step: 0.01 }],
+  },
+  {
+    type: "randomInsertion",
+    label: "RandomInsertion",
+    icon: "i-lucide-circle-plus",
+    category: "defects",
+    accepts: DEFECT_INPUT,
+    params: [{ name: "n", default: 10, min: 0, step: 1, integer: true }],
+  },
+  // for a grid: GridSampler's output
+  {
+    type: "downsample",
+    label: "Downsample",
+    icon: "i-lucide-shrink",
+    category: "defects",
+    accepts: DEFECT_INPUT,
+    params: [{ name: "factor", default: 2, min: 1, step: 1, integer: true }],
   },
 ];
 

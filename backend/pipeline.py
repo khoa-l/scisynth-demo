@@ -13,34 +13,22 @@ import obskit
 from fastapi import HTTPException, Response
 from pydantic import BaseModel
 
-# Defect node types -> obskit classes (all constructible with their default parameters)
-DEFECTS = {
-    "randomDropout": obskit.RandomDropout,
-    "gaussianNoise": obskit.GaussianNoise,
-    "poissonNoise": obskit.PoissonNoise,
-    "quantize": obskit.Quantize,
-    "clip": obskit.Clip,
-    "saturate": obskit.Saturate,
-    "valueOffset": obskit.ValueOffset,
-    "gain": obskit.Gain,
-    "drift": obskit.Drift,
-    "coordinateShift": obskit.CoordinateShift,
-}
-
-
-# Parameters a defect node exposes, as query parameters of its preview (name -> type).
-# Optional ones (obskit default None) are simply left out of the query when unset.
-DEFECT_PARAMS: dict[str, dict[str, type]] = {
-    "randomDropout": {"p": float},
-    "gaussianNoise": {"sigma": float, "mean": float},
-    "poissonNoise": {"scale": float},
-    "quantize": {"levels": int, "vmin": float, "vmax": float},
-    "clip": {"lo": float, "hi": float},
-    "saturate": {"ceiling": float},
-    "valueOffset": {"value": float},
-    "gain": {"factor": float},
-    "drift": {"rate": float, "axis": str},
-    "coordinateShift": {"shift": float},
+# Defect node types -> (obskit class, the parameters its node exposes: name -> type). A preview takes
+# them as query parameters; any left out keep obskit's defaults (an optional one is simply unset).
+DEFECTS: dict[str, tuple[type[obskit.Stage], dict[str, type]]] = {
+    "randomDropout": (obskit.RandomDropout, {"p": float}),
+    "gaussianNoise": (obskit.GaussianNoise, {"sigma": float, "mean": float}),
+    "poissonNoise": (obskit.PoissonNoise, {"scale": float}),
+    "quantize": (obskit.Quantize, {"levels": int, "vmin": float, "vmax": float}),
+    "clip": (obskit.Clip, {"lo": float, "hi": float}),
+    "saturate": (obskit.Saturate, {"ceiling": float}),
+    "valueOffset": (obskit.ValueOffset, {"value": float}),
+    "gain": (obskit.Gain, {"factor": float}),
+    "drift": (obskit.Drift, {"rate": float, "axis": str}),
+    "coordinateShift": (obskit.CoordinateShift, {"shift": float}),
+    "positionJitter": (obskit.PositionJitter, {"sigma": float}),  # needs points
+    "randomInsertion": (obskit.RandomInsertion, {"n": int}),  # needs points
+    "downsample": (obskit.Downsample, {"factor": int}),  # needs a grid
 }
 
 
@@ -50,20 +38,20 @@ def _preview_json(
 ) -> str:
     # Deterministic (the demo signal is fixed and the seed is explicit), so equal inputs
     # give equal figures
-    figure = DEFECTS[node_type](**dict(params)).preview(seed=seed, interactive=False)
+    figure = DEFECTS[node_type][0](**dict(params)).preview(seed=seed, interactive=False)
     return figure.to_json()
 
 
 def preview_response(node_type: str, raw_params: Mapping[str, Any]) -> Response:
     """A defect's preview plot (before / after on its demo signal) as a Plotly figure.
 
-    The defect's parameters (see ``DEFECT_PARAMS``) are given by name; any left out keep
+    The defect's parameters (see ``DEFECTS``) are given by name; any left out keep
     obskit's defaults. ``seed`` (a non-negative integer, default 0) sets the random draw, so
     the same seed always gives the same preview.
     """
     if node_type not in DEFECTS:
         raise HTTPException(status_code=404, detail=f"No preview for {node_type!r}")
-    allowed = DEFECT_PARAMS.get(node_type, {})
+    allowed = DEFECTS[node_type][1]
     params: dict[str, Any] = {}
     seed = 0
     for name, raw in raw_params.items():
@@ -88,9 +76,7 @@ def preview_response(node_type: str, raw_params: Mapping[str, Any]) -> Response:
         params[name] = value
     try:
         body = _preview_json(node_type, tuple(sorted(params.items())), seed)
-    except (
-        ValueError
-    ) as exc:  # obskit rejecting a value (e.g. p outside [0, 1], seed < 0)
+    except ValueError as exc:  # obskit rejecting a value (p outside [0, 1], seed < 0)
         raise HTTPException(status_code=422, detail=str(exc)) from None
     return Response(content=body, media_type="application/json")
 
@@ -132,7 +118,7 @@ class ObserverRequest(PlotRequest):
 MAX_CELLS = 20_000_000  # about 270 x 270 x 270; more than this would exhaust memory
 
 
-def sampler_and_latent(req: PlotRequest):
+def sampler_and_latent(req: PlotRequest) -> tuple[obskit.Sampler, obskit.Latent]:
     """The sampler, and the field it samples realized from its own seed (seeds are explicit, so
     equal requests give equal results). obskit refuses a field or grid over `MAX_CELLS` cells before
     allocating (a field on 5 axes at 128 each is 34 billion), which comes back as a 422."""
@@ -178,7 +164,7 @@ def rows_json(obs: obskit.Observation, limit: int) -> str:
     (empty where invalid; a column `value`, or `value_1`, `value_2`... for several channels), and
     how many rows there are in all."""
     names = list(obs.coords)
-    count = int(np.prod(obs.spatial_shape))
+    count = obs.size
     first = np.arange(min(count, limit))
     if obs.layout == "grid":  # one 1-D coordinate array per axis: row i is a grid point
         index = np.unravel_index(first, obs.spatial_shape)
@@ -209,12 +195,26 @@ def data_json(request_json: str, limit: int) -> str:
     return rows_json(sampler.run(latent, req.seed), limit)
 
 
-@lru_cache(maxsize=64)
-def observer_json(request_json: str, limit: int) -> str:
-    req = ObserverRequest.model_validate_json(request_json)
+def observer_and_latent(req: ObserverRequest) -> tuple[obskit.Observer, obskit.Latent]:
+    """The Observer (the sampler, then the stages) and the field it observes."""
     sampler, latent = sampler_and_latent(req)
     unknown = [s.type for s in req.stages if s.type not in DEFECTS]
     if unknown:
         raise ValueError(f"Unknown defect {unknown[0]!r}")
-    stages = [DEFECTS[s.type](**s.params) for s in req.stages]
-    return rows_json(obskit.Observer(sampler, stages).run(latent, req.seed), limit)
+    stages = [DEFECTS[s.type][0](**s.params) for s in req.stages]
+    return obskit.Observer(sampler, stages), latent
+
+
+@lru_cache(maxsize=64)
+def observer_json(request_json: str, limit: int) -> str:
+    req = ObserverRequest.model_validate_json(request_json)
+    observer, latent = observer_and_latent(req)
+    return rows_json(observer.run(latent, req.seed), limit)
+
+
+@lru_cache(maxsize=64)
+def observer_plot_json(request_json: str) -> str:
+    """The plot of every step of an Observer: the latent, then each step's output, as panels."""
+    req = ObserverRequest.model_validate_json(request_json)
+    observer, latent = observer_and_latent(req)
+    return observer.plot(latent, req.seed, interactive=False).to_json()

@@ -20,11 +20,6 @@ async function newTask() {
   await router.replace({ query: { task: study.value.tasks.at(-1)?.id } });
 }
 
-function onTaskDragEnd(event: Parameters<typeof sortedMove>[0]) {
-  const move = sortedMove(event);
-  if (move && study.value) void moveTask(study.value, move.from, move.to);
-}
-
 // What is in each task's list (saved), and what a component can show: the study's workflow
 const { items, setItems, flush } = useTaskComponents(computed(() => task.value?.id));
 const sources = await useTaskSources(computed(() => study.value?.id));
@@ -41,12 +36,6 @@ const preview = computed(() => mode.value === "preview");
 function addItem(type: string, index: number) {
   const next = [...items.value];
   next.splice(index, 0, { uid: nextUid++, type, data: initialData(type) });
-  setItems(next);
-}
-
-function moveItem(from: number, to: number) {
-  const next = [...items.value];
-  next.splice(to, 0, ...next.splice(from, 1));
   setItems(next);
 }
 </script>
@@ -67,7 +56,7 @@ function moveItem(from: number, to: number) {
             @click="newTask"
           />
           <!-- its own drag and drop area, so tasks are only sorted among themselves -->
-          <DragDropProvider @drag-end="onTaskDragEnd">
+          <DragDropProvider @drag-end="onSorted((from, to) => moveTask(study!, from, to))">
             <ul class="flex flex-col gap-2">
               <TaskLink
                 v-for="(t, index) in study.tasks"
@@ -109,7 +98,7 @@ function moveItem(from: number, to: number) {
               v-else
               :items="items"
               @add="addItem"
-              @move="moveItem"
+              @move="(from, to) => setItems(moveItem(items, from, to))"
               @remove="(uid) => setItems(items.filter((i) => i.uid !== uid))"
             />
           </div>

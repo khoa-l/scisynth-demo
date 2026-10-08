@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useSortable } from "@dnd-kit/vue/sortable";
-
 const props = defineProps<{
   task: { id: number; name: string };
   current: boolean;
@@ -8,14 +6,7 @@ const props = defineProps<{
 }>();
 
 // sorted among the study's tasks (the list has its own drag and drop area), by the grip
-const element = ref<HTMLElement>();
-const handle = ref<HTMLElement>();
-const { isDragging } = useSortable({
-  id: `task-${props.task.id}`,
-  index: () => props.index,
-  element,
-  handle,
-});
+const { element, handle, isDragging } = useSortableRow(`task-${props.task.id}`, () => props.index);
 </script>
 
 <template>

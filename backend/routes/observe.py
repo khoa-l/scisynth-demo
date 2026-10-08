@@ -8,6 +8,7 @@ from pipeline import (
     PlotRequest,
     data_json,
     observer_json,
+    observer_plot_json,
     plot_json,
     preview_response,
     sampler_response,
@@ -39,3 +40,9 @@ def observer(req: ObserverRequest) -> Response:
     """The first rows of an Observer's output: the sampler and then the stages, on the given field
     (the same rows as ``data``)."""
     return sampler_response(observer_json, req, DATA_ROWS)
+
+
+@router.post("/observer/plot")
+def observer_plot(req: ObserverRequest) -> Response:
+    """The plot of an Observer: the latent, then the output of the sampler and of each stage."""
+    return sampler_response(observer_plot_json, req)

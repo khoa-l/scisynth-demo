@@ -36,11 +36,18 @@ export interface SourceRequest {
   waiting?: string; // what is still missing when it cannot be run yet
 }
 
-// How to ask for a request, as `$fetch` options
+// How to ask for a request, as `$fetch` options (a Plot of an Observer plots every step)
 export const endpointOf = (request: SourceRequest) =>
   request.kind === "preview"
     ? { url: `/api/preview/${request.type}`, query: request.query }
-    : { url: `/api/${request.kind}`, method: "POST" as const, body: request.body };
+    : {
+        url:
+          request.kind === "plot" && request.type === "observer"
+            ? "/api/observer/plot"
+            : `/api/${request.kind}`,
+        method: "POST" as const,
+        body: request.body,
+      };
 
 // The rows a Data node shows
 export interface DataRows {
@@ -162,7 +169,7 @@ function observerRequest(graph: GraphLike, observer: GraphNodeLike): SourceReque
 
 // What to ask the backend for to run the Data, Plot, Preview or Observer node `id`, from what is connected to
 // its input; nothing if nothing is. A Preview shows the connected defect on the demo signal (the seed
-// is the Preview's, the rest the defect's); a Data node and a Plot show the connected sampler.
+// is the Preview's, the rest the defect's); a Data node and a Plot show the connected sampler (a Plot also takes an Observer).
 export function requestOf(graph: GraphLike, id: string): SourceRequest | undefined {
   const node = nodeOf(graph, id);
   const kind = node?.data?.type as SourceKind | undefined;
@@ -170,6 +177,9 @@ export function requestOf(graph: GraphLike, id: string): SourceRequest | undefin
   if (kind === "observer") return observerRequest(graph, node);
   const source = nodeOf(graph, edgeInto(graph, id)?.source);
   if (!source?.data?.type) return undefined;
+  if (kind === "plot" && source.data.type === "observer") {
+    return { ...observerRequest(graph, source), kind };
+  }
   const own = paramsOf(kindOf(kind), node.data?.params);
   if (kind === "preview") {
     return { kind, type: source.data.type, query: { ...valuesOf(source), ...own } };

@@ -14,6 +14,7 @@ from pipeline import (
     PlotRequest,
     data_json,
     observer_json,
+    observer_plot_json,
     plot_json,
     preview_response,
     sampler_response,
@@ -39,39 +40,35 @@ def _copied_request(task_id: int, uid: int, kinds: tuple[str, ...]) -> dict:
     return request
 
 
-def _sampler_request(request: dict, model: type[PlotRequest]) -> PlotRequest:
+def _run(request: dict, limit: int) -> Response:
+    """Run a copied request the way its own endpoint (see ``observe``) would."""
+    if request["kind"] == "preview":
+        query = {k: str(v) for k, v in request.get("query", {}).items()}
+        return preview_response(request["type"], query)
+    observer = request["type"] == "observer"  # an Observer, or a Plot of one
+    model = ObserverRequest if observer else PlotRequest
     try:
-        return model.model_validate(request["body"])
+        req = model.model_validate(request["body"])
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
-
-
-def _component_rows(task_id: int, uid: int, limit: int) -> Response:
-    request = _copied_request(task_id, uid, ("data", "observer"))
-    if request["kind"] == "observer":
-        build, model = observer_json, ObserverRequest
-    else:
-        build, model = data_json, PlotRequest
-    return sampler_response(build, _sampler_request(request, model), limit)
+    if request["kind"] == "plot":
+        return sampler_response(observer_plot_json if observer else plot_json, req)
+    return sampler_response(observer_json if observer else data_json, req, limit)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/data")
 def component_data(task_id: int, uid: int) -> Response:
     """The first rows of the Data node or Observer a component copied (see ``data``, ``observer``)."""
-    return _component_rows(task_id, uid, DATA_ROWS)
+    return _run(_copied_request(task_id, uid, ("data", "observer")), DATA_ROWS)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/points")
 def component_points(task_id: int, uid: int) -> Response:
     """The same rows, up to ``MAX_POINTS`` of them: what a component needs to plot every point."""
-    return _component_rows(task_id, uid, MAX_POINTS)
+    return _run(_copied_request(task_id, uid, ("data", "observer")), MAX_POINTS)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/figure")
 def component_figure(task_id: int, uid: int) -> Response:
     """The plot of the Plot or Preview node a component copied (see ``plot`` and ``preview``)."""
-    request = _copied_request(task_id, uid, ("plot", "preview"))
-    if request["kind"] == "preview":
-        query = {k: str(v) for k, v in request.get("query", {}).items()}
-        return preview_response(request["type"], query)
-    return sampler_response(plot_json, _sampler_request(request, PlotRequest))
+    return _run(_copied_request(task_id, uid, ("plot", "preview")), 0)

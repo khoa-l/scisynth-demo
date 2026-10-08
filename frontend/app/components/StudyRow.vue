@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { DragDropProvider } from "@dnd-kit/vue";
-import { useSortable } from "@dnd-kit/vue/sortable";
 
 const props = defineProps<{ study: Study; index: number }>();
 
@@ -9,30 +8,15 @@ const { rename, remove, isCollapsed, toggleCollapsed, moveTask } = useStudies();
 // the tasks are shown unless hidden
 const showTasks = computed(() => props.study.tasks.length > 0 && !isCollapsed(props.study.id));
 
-function onTaskDragEnd(event: Parameters<typeof sortedMove>[0]) {
-  const move = sortedMove(event);
-  if (move) void moveTask(props.study, move.from, move.to);
-}
-
 // the study (with its tasks) is sorted among the studies, by the grip on its card. Only the card is
 // what other studies collide with (`target`): a study with a long list of tasks is a tall target that
 // a dragged study would not swap places with.
-const element = ref<HTMLElement>();
-const handle = ref<HTMLElement>();
 const card = ref<HTMLElement>();
-const { isDragging } = useSortable({
-  id: `study-${props.study.id}`,
-  index: () => props.index,
-  element,
-  target: card,
-  handle,
-});
-
-const {
-  editing,
-  start: startEdit,
-  finish: finishEdit,
-} = useRename(props.study, () => rename(props.study));
+const { element, handle, isDragging } = useSortableRow(
+  `study-${props.study.id}`,
+  () => props.index,
+  card,
+);
 </script>
 
 <template>
@@ -57,29 +41,11 @@ const {
           @click="toggleCollapsed(study.id)"
         />
         <span v-else class="w-7" />
-        <UInput
-          v-if="editing"
-          v-model="study.name"
-          autofocus
-          :aria-label="`Name of ${study.name}`"
-          @keydown.enter="finishEdit"
-          @keydown.esc="finishEdit"
-          @blur="finishEdit"
-        />
-        <template v-else>
-          <span>{{ study.name }}</span>
-          <UButton
-            icon="i-lucide-pencil"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :aria-label="`Rename ${study.name}`"
-            @click="startEdit"
-          />
+        <EditableName :item="study" :save="() => rename(props.study)">
           <span v-if="isCollapsed(study.id)" class="text-muted">
             {{ study.tasks.length }} {{ study.tasks.length === 1 ? "task" : "tasks" }}
           </span>
-        </template>
+        </EditableName>
       </span>
       <span class="flex gap-1">
         <!-- the study's tasks, all on one screen -->
@@ -109,7 +75,10 @@ const {
     </div>
     <!-- the study's tasks: their own cards just under it, indented -->
     <!-- its own drag and drop area, so a task can only be sorted among this study's tasks -->
-    <DragDropProvider v-if="showTasks" @drag-end="onTaskDragEnd">
+    <DragDropProvider
+      v-if="showTasks"
+      @drag-end="onSorted((from, to) => moveTask(study, from, to))"
+    >
       <ul class="ml-8 flex flex-col gap-1">
         <TaskRow
           v-for="(task, index) in study.tasks"

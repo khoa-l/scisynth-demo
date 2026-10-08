@@ -1,20 +1,11 @@
 <script setup lang="ts">
-import { useSortable } from "@dnd-kit/vue/sortable";
-
 const props = defineProps<{ item: PlacedComponent; index: number }>();
 defineEmits<{ remove: [] }>();
 
 const component = computed(() => taskComponentOf(props.item.type));
 
 // sorted within the list, by the grip
-const element = ref<HTMLElement>();
-const handle = ref<HTMLElement>();
-const { isDragging } = useSortable({
-  id: `item-${props.item.uid}`,
-  index: () => props.index,
-  element,
-  handle,
-});
+const { element, handle, isDragging } = useSortableRow(`item-${props.item.uid}`, () => props.index);
 </script>
 
 <template>

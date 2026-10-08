@@ -55,11 +55,6 @@ useDragDropMonitor({
     if (dropped && !event.canceled) emit("add", dropped.type, dropped.index);
   },
 });
-
-function onSortEnd(event: Parameters<typeof sortedMove>[0]) {
-  const move = sortedMove(event);
-  if (move) emit("move", move.from, move.to);
-}
 </script>
 
 <template>
@@ -69,7 +64,7 @@ function onSortEnd(event: Parameters<typeof sortedMove>[0]) {
     :class="isDropTarget ? 'border-primary bg-primary/5' : 'border-accented'"
   >
     <p v-if="items.length === 0 && !preview" class="text-muted">Drag components here.</p>
-    <DragDropProvider @drag-end="onSortEnd">
+    <DragDropProvider @drag-end="onSorted((from, to) => emit('move', from, to))">
       <ul class="flex flex-col gap-2">
         <!-- one element per row, and no <template v-for> around them: the list sorts by moving these
              elements around, and Vue removes a fragment by walking from its first node to its last,

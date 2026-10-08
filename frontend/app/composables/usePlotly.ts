@@ -40,7 +40,7 @@ export function usePlotly(element: Ref<HTMLElement | undefined>, spec: () => Plo
   }
 
   onMounted(draw);
-  watch([spec, dark], draw, { flush: "post" });
+  watch([spec, dark, element], draw, { flush: "post" }); // a new element needs drawing into too
   onBeforeUnmount(async () => {
     const el = element.value; // gone from the ref by the time plotly.js has loaded
     if (el) (await import("plotly.js-dist-min")).default.purge(el);

@@ -29,8 +29,9 @@ const element = ref<HTMLElement>();
 usePlotly(element, () => {
   if (!figure.value) return undefined;
   const { interactive, colors } = data.value;
-  // the figure's own size is dropped: it fills the task, at a height of its own
-  const { width: _w, height: _h, ...layout } = figure.value.layout as Record<string, any>;
+  // the figure's own width is dropped: it fills the task. Its height stays if it has one (several
+  // rows of panels), else it is 360.
+  const { width: _w, ...layout } = figure.value.layout as Record<string, any>;
   return {
     data: (figure.value.data as { marker?: object }[]).map((trace) => ({
       ...trace,
@@ -45,8 +46,8 @@ usePlotly(element, () => {
     layout: {
       ...(interactive ? interactiveLayout(layout) : layout),
       autosize: true,
-      height: 360,
-      margin: { l: 45, r: 10, t: 35, b: 40 },
+      height: layout.height ?? 360,
+      margin: { l: 45, r: 10, t: 35, b: 40, ...layout.margin },
     },
     config: interactive ? { displaylogo: false } : { staticPlot: true },
   };

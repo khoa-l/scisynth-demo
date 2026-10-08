@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// What a component says while its data is not there: the refusal, or that it is loading
+// What a component says while its data is not there: the refusal, what is missing, or that it is
+// loading
 defineProps<{ status: RequestStatus; message: string; what: string }>();
 </script>
 
@@ -7,5 +8,6 @@ defineProps<{ status: RequestStatus; message: string; what: string }>();
   <p v-if="status === 'error'" class="text-error">
     {{ what }} unavailable{{ message ? `: ${message}` : "" }}
   </p>
+  <p v-else-if="status === 'waiting' && message" class="text-muted">{{ message }}</p>
   <p v-else-if="status === 'loading'" class="text-muted">Loading {{ what.toLowerCase() }}…</p>
 </template>
