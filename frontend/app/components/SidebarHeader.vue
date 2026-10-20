@@ -3,7 +3,6 @@ defineProps<{ title?: string; missing: string }>();
 </script>
 
 <template>
-  <!-- the top of a study's sidebar: back to the list, and what this page is of -->
   <div class="p-4">
     <UButton
       label="Back"

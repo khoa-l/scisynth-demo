@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// What a component says while its data is not there: the refusal, what is missing, or that it is
-// loading
+// What a component says while its data is missing: the refusal, what is missing, or loading
 defineProps<{ status: RequestStatus; message: string; what: string }>();
 </script>
 

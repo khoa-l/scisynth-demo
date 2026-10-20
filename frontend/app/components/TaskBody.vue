@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// What a placed component shows: its editor in the list, or just its content in the preview. The
-// editors change the item's data in place.
+// A placed component: its editor in the list, or just its content in the preview
 defineProps<{ item: PlacedComponent; editing: boolean }>();
 </script>
 

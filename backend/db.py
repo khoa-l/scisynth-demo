@@ -1,4 +1,4 @@
-"""The SQLite database: its schema, connections, and the lookups every route shares."""
+"""The SQLite database: schema, connections and shared lookups."""
 
 import json
 import os
@@ -62,7 +62,7 @@ def db():
 def ensure_column(
     conn: sqlite3.Connection, table: str, column: str, definition: str
 ) -> None:
-    """Add a column that databases created before it existed do not have."""
+    """Add a column older databases lack."""
     existing = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
     if column not in existing:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
@@ -89,7 +89,7 @@ def task_components(conn: sqlite3.Connection, task_id: int) -> list[dict]:
 def set_order(
     conn: sqlite3.Connection, table: str, where: str, args: tuple, ids: list[int]
 ) -> None:
-    """Save the order of a list (the studies, or one study's tasks): ids must be exactly its rows."""
+    """Save a list's order; `ids` must be exactly its rows."""
     current = {
         r["id"] for r in conn.execute(f"SELECT id FROM {table} WHERE {where}", args)
     }
@@ -104,7 +104,7 @@ def set_order(
 
 
 def init_db() -> None:
-    """Create the tables, and add the columns that databases made before them do not have."""
+    """Create the tables and add columns older databases lack."""
     with db() as conn:
         conn.executescript(SCHEMA)
         ensure_column(conn, "studies", "position", "INTEGER NOT NULL DEFAULT 0")

@@ -11,17 +11,15 @@ const emit = defineEmits<{
   remove: [uid: number];
 }>();
 
-// The task: one big list that components are dragged into and stacked in, top to bottom. It is a drop
-// area for the sidebar's components (this component is inside the page's drag and drop area) and, for
-// sorting its own items, has a drag and drop area of its own, so they sort like any other list.
+// One list that components are dragged into and stacked in. A drop area for the sidebar's
+// components and, for sorting its own items, a drag area of its own.
 const element = ref<HTMLElement>();
 const { isDropTarget } = useDroppable({ id: "task-list", element });
 
-// A component dragged over the list shows where it would go: a placeholder among the items, at the
-// index the pointer is at (the number of items whose middle is above it)
+// A dragged component shows a placeholder at the pointer's index (items whose middle is above it)
 const preview = ref<{ type: string; index: number }>();
 
-// The rows: the items, with the placeholder among them while a component is dragged over
+// the items, with the placeholder among them
 interface Row {
   key: string;
   item?: PlacedComponent; // none for the placeholder
@@ -66,9 +64,8 @@ useDragDropMonitor({
     <p v-if="items.length === 0 && !preview" class="text-muted">Drag components here.</p>
     <DragDropProvider @drag-end="onSorted((from, to) => emit('move', from, to))">
       <ul class="flex flex-col gap-2">
-        <!-- one element per row, and no <template v-for> around them: the list sorts by moving these
-             elements around, and Vue removes a fragment by walking from its first node to its last,
-             which misses a row (it stays on screen) once they have been moved -->
+        <!-- one element per row, no <template v-for>: sorting moves these elements, and Vue removes a
+             fragment from its first node to its last, missing a moved row -->
         <component
           :is="row.item ? TaskListItem : TaskPlaceholder"
           v-for="row in rows"

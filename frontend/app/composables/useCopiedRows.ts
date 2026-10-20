@@ -1,6 +1,5 @@
-// The rows of the copy of a source a component keeps (a Data node or an Observer), from the backend,
-// which runs the copy it has saved. Changes with the copy. The first rows, or (`points`) all the rows
-// there is room for, to plot them.
+// The rows of a component's copied source (a Data node or Observer), run by the backend from the
+// saved copy. The first rows, or with `points` as many as can be plotted.
 export function useCopiedRows(
   uid: number,
   source: Ref<SourceSnapshot | undefined>,

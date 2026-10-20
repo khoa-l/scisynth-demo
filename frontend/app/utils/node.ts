@@ -1,7 +1,7 @@
-// Size of VueFlow's default node (theme-default.css), used to center it on the pointer
+// VueFlow's default node size, used to center a dropped node on the pointer
 export const NODE_SIZE = { width: 180, height: 40 };
 
-// Shared by the canvas and the sidebar list so both use the same flow store
+// Flow store id shared by the canvas and the sidebar list
 export const FLOW_ID = "study-flow";
 
 // A node as stored in the database
@@ -11,7 +11,7 @@ export interface SavedNode {
   label: string;
   x: number;
   y: number;
-  // id of the container this node sits inside (x and y are then relative to it), or null
+  // container this node sits in (x, y are then relative to it)
   parent: string | null;
   data: Record<string, unknown>;
 }
@@ -23,13 +23,12 @@ export interface AxisData {
   unit: string;
 }
 
-// How a Data node shows what a sampler outputs: a list that renders just the rows in view
+// Data node table: rows shown and row height
 export const DATA_PREVIEW = { visible: 5, rowHeight: 28 };
 
 const DEFAULT_AXIS_NAMES = ["x", "y", "z"];
 
-// Next axis for a Domain: the first of obskit's default names (x, y, z, then x3, x4, ...)
-// that is not already taken, with a unit-interval extent
+// Next Domain axis: the first free default name (x, y, z, x3, ...) over [0, 1]
 export function newAxis(existing: AxisData[]): AxisData {
   const taken = new Set(existing.map((a) => a.name));
   let i = 0;
@@ -41,23 +40,20 @@ export function newAxis(existing: AxisData[]): AxisData {
   return { name, extent: [0, 1], unit: "" };
 }
 
-// crypto.randomUUID() needs a secure context, so build the id by hand
+// (crypto.randomUUID needs a secure context)
 export function newNodeId() {
   return `node-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// Size of a Preview node's plot (2:1) and of its dots (obskit leaves both to the caller),
-// plus the extra width of the node's padding and border
+// Plot size and dot size, and the node's padding and border width
 export const PREVIEW_PLOT = { width: 760, height: 380, dotSize: 3 };
 const NODE_CHROME_WIDTH = 22;
 
-// Node categories; each maps to a colour via the .cat-* classes in main.css
+// Each maps to a colour via .cat-* in main.css
 export type NodeCategory = "core" | "sampling" | "fields" | "defects";
 
-// A parameter of an obskit class, edited as an input on the node: a number (whole or not),
-// or one of a fixed set of choices. A null default means "unset": the input starts empty and
-// obskit uses its own default (e.g. Clip's lo/hi have no bound).
-// (a number list holds one value per axis of a connected Domain, see `perAxisOf`)
+// A number, a choice, or (with `perAxisOf`) a list with one number per axis. A null default means
+// unset: obskit uses its own.
 export type ParamValue = number | string | null | number[];
 
 export interface ParamSpec {
@@ -65,39 +61,39 @@ export interface ParamSpec {
   default: ParamValue;
   step?: number;
   min?: number;
-  minExclusive?: boolean; // the value must be greater than min, not equal to it
+  minExclusive?: boolean; // must be greater than min
   max?: number;
   integer?: boolean;
-  options?: { label: string; value: string }[]; // makes it a choice instead of a number
-  placeholder?: string; // what an unset optional value is called (e.g. "none")
-  // id of a port: while a Domain is connected there, show one field per axis of that Domain
-  // (saved as a list); otherwise a single field (saved as one number, applied to every axis)
+  options?: { label: string; value: string }[]; // a choice instead of a number
+  text?: boolean; // typed text instead of a number
+  placeholder?: string; // shown while unset
+  // port id: with a Domain connected there, one field per axis (saved as a list)
   perAxisOf?: string;
 }
 
-// Which nodes may be connected to an input: any node of the listed categories or kinds
+// What may connect to an input: nodes of these categories or types
 export interface InputRule {
   categories?: NodeCategory[];
   types?: string[];
 }
 
-// An input that belongs to a field of the node (e.g. GaussianField's domain): its handle sits
-// next to that field instead of in the header
+// An input with its handle next to a field instead of in the header
 export interface Port {
   id: string;
   label: string;
   accepts: InputRule;
+  multiple?: boolean; // takes any number of connections, in connection order
 }
 
 // An area of a container that takes the nodes its rule accepts
 export interface Zone {
   id: string;
-  label: string; // shown on the area's edge
-  hint: string; // shown while the area is empty
+  label: string;
+  hint: string; // shown while empty
   accepts: InputRule;
-  max?: number; // how many nodes it takes (unlimited if omitted)
-  minHeight: number; // the area is at least this tall; it grows with what it holds
-  ordered?: boolean; // its nodes are listed in the order they are connected in
+  max?: number; // unlimited if omitted
+  minHeight: number; // grows with what it holds
+  ordered?: boolean; // nodes are listed in connection order
 }
 
 export interface NodeKind {
@@ -105,30 +101,28 @@ export interface NodeKind {
   label: string;
   icon: string;
   category: NodeCategory;
-  // node width in px when it needs more than NODE_SIZE.width
+  // px, if wider than NODE_SIZE.width
   width?: number;
-  // zones make the node a container (the Observer): areas below its header in which nodes can be
-  // placed. A node placed in a zone is laid out by the container (see containerLayout), so the
-  // container grows with what it holds
+  // makes the node a container (the Observer); see containerLayout
   zones?: Zone[];
-  // width once the node has something to show (e.g. a Preview with a connected defect)
+  // width once it has something to show
   expandedWidth?: number;
-  // parameters edited on the node body (stored in the node's data as `params`)
+  // edited on the node body, stored in data.params
   params?: ParamSpec[];
-  // every kind has an input on the left and an output on the right unless it has none
+  // an input and an output unless false
   input?: boolean;
   output?: boolean;
-  // what may be connected to the header input (nothing if omitted)
+  // header input rule (nothing connects if omitted)
   accepts?: InputRule;
-  // inputs next to a field of the node
+  // inputs beside a field
   ports?: Port[];
-  // a sampler that draws at random (its plot depends on a seed)
+  // draws at random, so its plot depends on a seed
   seeded?: boolean;
 }
 
 export const nodeWidth = (kind: NodeKind) => kind.width ?? NODE_SIZE.width;
 
-// A random draw (of a run, a preview, a plot or a field): the same seed always gives the same result
+// The same seed always gives the same result
 const SEED: ParamSpec = {
   name: "seed",
   default: 0,
@@ -138,18 +132,18 @@ const SEED: ParamSpec = {
   integer: true,
 };
 
-// A defect's input takes another defect: connected defects form a chain, an ordered list of
-// stages (see "Defect chains" in docs/decisions.md)
-// (a sampler outside an Observer may feed the first of them)
+// Defects chain (see "Defect chains" in docs/decisions.md); a sampler may feed the first
 const DEFECT_INPUT: InputRule = {
   categories: ["defects"],
   types: ["gridSampler", "pointSampler"],
 };
 
-// A sampler outside an Observer takes a latent: a field
+// A sampler's latent is a field
 const SAMPLER_INPUT: InputRule = { categories: ["fields"] };
 
-// The kinds of node that can be dragged onto the canvas, named after their obskit classes.
+// What a Multichannel or a Math takes: one field per channel or term (a Multichannel is not one)
+const FIELD_TERMS = ["gaussianField", "analyticField", "math"];
+
 // Icon names must stay literal strings so Nuxt Icon bundles them.
 export const NODE_KINDS: NodeKind[] = [
   // core
@@ -159,8 +153,7 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-eye",
     category: "core",
     width: 280,
-    // two areas under the white inputs section: one for the sampler, and a list of the defects
-    // (stages), which grows as they are added and is in the order they are connected in
+    // the sampler, and the defects (stages) in connection order
     zones: [
       {
         id: "sampler",
@@ -179,11 +172,18 @@ export const NODE_KINDS: NodeKind[] = [
         ordered: true,
       },
     ],
-    // inputs live in the white section above the zones (see ContainerBody)
+    // inputs sit above the zones (see ContainerBody)
     input: false,
     ports: [{ id: "latent", label: "latent", accepts: { categories: ["fields"] } }],
-    // the seed of the run: the same seed always gives the same observation
     params: [SEED],
+  },
+  {
+    type: "trace",
+    label: "Trace",
+    icon: "i-lucide-route",
+    category: "core",
+    // the Observer's run with every step kept; plot it
+    accepts: { types: ["observer"] },
   },
   {
     type: "preview",
@@ -201,11 +201,9 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-chart-spline",
     category: "core",
     expandedWidth: PREVIEW_PLOT.width + NODE_CHROME_WIDTH,
-    // shown only for a sampler that draws at random (NodePlot)
     params: [SEED],
     output: false,
-    // a sampler's plot, once the sampler has a latent, or an Observer's: its latent and every step
-    accepts: { types: ["gridSampler", "pointSampler", "observer"] },
+    accepts: { types: ["gridSampler", "pointSampler", "observer", "trace"] },
   },
   {
     type: "data",
@@ -213,10 +211,8 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-table",
     category: "core",
     expandedWidth: 420,
-    // the sampler's random draw, shown only for a sampler that draws at random (as on a Plot)
     params: [SEED],
     output: false,
-    // what a sampler outputs, as rows
     accepts: { types: ["gridSampler", "pointSampler"] },
   },
   {
@@ -233,8 +229,7 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-grid-3x3",
     category: "sampling",
     accepts: SAMPLER_INPUT,
-    // samples per axis: one number for every axis (obskit also takes one per axis of the field's
-    // domain, which this node cannot see)
+    // one number for every axis
     params: [{ name: "shape", default: 64, min: 1, step: 1, integer: true }],
   },
   {
@@ -243,7 +238,6 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-chart-scatter",
     category: "sampling",
     accepts: SAMPLER_INPUT,
-    // how many random points are drawn
     params: [{ name: "n", default: 100, min: 0, step: 10, integer: true }],
     seeded: true,
   },
@@ -255,22 +249,68 @@ export const NODE_KINDS: NodeKind[] = [
     category: "fields",
     width: 240,
     input: false,
-    // GaussianField needs a Domain: its handle sits next to the domain field
     ports: [{ id: "domain", label: "domain", accepts: { types: ["domain"] } }],
     params: [
       { name: "length_scale", default: 0.1, min: 0, minExclusive: true, step: 0.05 },
       { name: "amplitude", default: 1, step: 0.1 },
       { name: "mean", default: 0, step: 0.1 },
-      // grid points per axis: one number for all axes, or one per axis of the connected Domain
       { name: "resolution", default: 128, min: 1, step: 1, integer: true, perAxisOf: "domain" },
-      // interpolation spline order between grid points: 0 nearest, 1 linear, 3 cubic (obskit
-      // accepts 0 to 5)
+      // spline order: 0 nearest, 1 linear, 3 cubic
       { name: "order", default: 1, min: 0, max: 5, step: 1, integer: true },
-      // the random draw of the field: the same seed always gives the same realization
       SEED,
     ],
   },
-  { type: "analyticField", label: "AnalyticField", icon: "i-lucide-sigma", category: "fields" },
+  {
+    type: "multichannel",
+    label: "Multichannel",
+    icon: "i-lucide-layers",
+    category: "fields",
+    width: 240,
+    input: false,
+    // each connected field is a channel, in connection order
+    ports: [{ id: "fields", label: "fields", accepts: { types: FIELD_TERMS }, multiple: true }],
+    // between every pair of channels; scisynth refuses 1 and anything below -1 / (channels - 1)
+    params: [{ name: "correlation", default: 0, min: -1, max: 1, step: 0.1 }],
+  },
+  {
+    type: "math",
+    label: "Math",
+    icon: "i-lucide-calculator",
+    category: "fields",
+    width: 240,
+    input: false,
+    // the fields combine pointwise, in connection order (they must share a domain)
+    ports: [{ id: "fields", label: "fields", accepts: { types: FIELD_TERMS }, multiple: true }],
+    params: [
+      {
+        name: "operation",
+        default: "sum",
+        options: [
+          { label: "Sum", value: "sum" },
+          { label: "Product", value: "product" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "analyticField",
+    label: "AnalyticField",
+    icon: "i-lucide-sigma",
+    category: "fields",
+    width: 300,
+    input: false,
+    ports: [{ id: "domain", label: "domain", accepts: { types: ["domain"] } }],
+    // one argument per axis, in order; the backend allows arithmetic, comparisons, sin, cos, sqrt,
+    // where, clip... (np.sin works too), and nothing else
+    params: [
+      {
+        name: "func",
+        default: "lambda x, y: 0.1 * x",
+        text: true,
+        placeholder: "lambda x, y: ...",
+      },
+    ],
+  },
   // defects
   {
     type: "randomDropout",
@@ -278,7 +318,6 @@ export const NODE_KINDS: NodeKind[] = [
     icon: "i-lucide-eraser",
     category: "defects",
     accepts: DEFECT_INPUT,
-    // probability that each entry is dropped; obskit requires 0 <= p <= 1
     params: [{ name: "p", default: 0.1, min: 0, max: 1, step: 0.05 }],
   },
   {
@@ -355,7 +394,7 @@ export const NODE_KINDS: NodeKind[] = [
     accepts: DEFECT_INPUT,
     params: [
       { name: "rate", default: 0, step: 0.1 },
-      // the preview signal has axes x and y; unset drifts along the sample order instead
+      // the preview signal has axes x and y
       {
         name: "axis",
         default: null,
@@ -403,7 +442,7 @@ export const NODE_KINDS: NodeKind[] = [
   },
 ];
 
-// Nodes saved before a kind existed (e.g. the old "placeholder") still need to render
+// For nodes saved before their kind existed
 const FALLBACK_KIND: Omit<NodeKind, "type" | "label"> = {
   icon: "i-lucide-box",
   category: "core",
@@ -416,14 +455,13 @@ export function kindOf(type: string | undefined, label = ""): NodeKind {
 // The height of a node's header
 export const HEADER_HEIGHT = NODE_SIZE.height;
 
-// A container with inputs has a white section under its header: a row of fields is 28px (24px
-// plus a 4px gap), plus its padding
+// Inputs section under a container's header: 28px a row, plus padding
 export const containerTopHeight = (kind: NodeKind) => {
   const rows = (kind.ports?.length ?? 0) + (kind.params?.length ?? 0);
   return rows ? rows * 28 + 12 : 0;
 };
 
-// The zone of a container kind that takes nodes of the `child` kind, if any
+// The zone of `container` that takes `child`, if any
 export function zoneFor(container: NodeKind, child: string | undefined) {
   const kind = kindOf(child);
   return container.zones?.find(
@@ -434,8 +472,7 @@ export function zoneFor(container: NodeKind, child: string | undefined) {
 // Whether a node type is one of the defects
 export const isDefectKind = (type: string | undefined) => kindOf(type).category === "defects";
 
-// Whether an output of the `source` kind may be connected to an input of the `target` kind:
-// the header input, or the port with id `handle`
+// Whether `source` may connect to `target`'s header input, or its port `handle`
 export function canConnect(
   source: string | undefined,
   target: string | undefined,
@@ -452,8 +489,7 @@ export function canConnect(
   );
 }
 
-// A connection between two nodes as stored in the database; the handles say which output /
-// input of the nodes it uses (null = the header's)
+// A connection as stored; null handles are the header's
 export interface SavedEdge {
   id: string;
   source: string;
@@ -462,8 +498,7 @@ export interface SavedEdge {
   targetHandle: string | null;
 }
 
-// A kind's parameters at their defaults; saved values for its declared parameters override them
-// (anything else saved on the node is ignored)
+// A kind's parameters: saved values that fit override the defaults
 export function paramsOf(
   kind: NodeKind,
   saved?: Record<string, ParamValue>,
@@ -472,11 +507,12 @@ export function paramsOf(
     (kind.params ?? []).map((spec) => {
       const value = saved?.[spec.name];
       const isNumber = typeof value === "number";
-      const fits = spec.options
-        ? typeof value === "string"
-        : spec.perAxisOf
-          ? isNumber || (Array.isArray(value) && value.every((v) => typeof v === "number"))
-          : isNumber || (value === null && spec.default === null);
+      const fits =
+        spec.options || spec.text
+          ? typeof value === "string"
+          : spec.perAxisOf
+            ? isNumber || (Array.isArray(value) && value.every((v) => typeof v === "number"))
+            : isNumber || (value === null && spec.default === null);
       return [spec.name, fits ? (value as ParamValue) : spec.default];
     }),
   );

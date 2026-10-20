@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
 
-// The rows of a table as a grid: the header stays and only the rows in view are drawn. It is as tall
-// as `height` (a CSS length) at most, and scrolls beyond that, sideways too.
+// A table as a grid: the header stays and only rows in view are drawn; at most `height` (a CSS
+// length) tall, then scrolls, sideways too.
 const props = withDefaults(defineProps<{ table: DataRows; height?: string }>(), {
   height: "16rem",
 });
 
-// a row is a list: a column is read by its place (not its name, which may hold a dot)
+// rows are lists: read a column by position (a name may hold a dot)
 const columns = computed<TableColumn<(number | null)[]>[]>(() =>
   props.table.columns.map((name, i) => ({
     id: name,

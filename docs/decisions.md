@@ -160,8 +160,47 @@ and the conversation, so they carry no dates.
   category, width, parameters and connection rules. The palette, the node list, the drag card and
   the drop handling all read it. A new kind is one entry.
 - Labels are obskit's class names. Only **implemented** obskit classes get a node: the ten
-  defects, `Observer`, `Domain`, `GridSampler`, `PointSampler`, `GaussianField`, `AnalyticField`.
+  defects, `Observer`, `Domain`, `GridSampler`, `PointSampler`, `GaussianField`, `AnalyticField`, `Multichannel`, and `Sum` and `Product` (as the one Math node).
   Stubs (`BlockGaps`, `RegionMask`, `UniformNoise`, `MultiplicativeNoise`) are left out.
+- **Multichannel** (fields): a `fields` port that takes any number of GaussianFields or AnalyticFields (the first
+  port with `multiple: true`; a new connection is added, not swapped in), and one `correlation`
+  between every pair of channels (default 0). Each connected field is a channel, in connection
+  order, with its own parameters and seed, as in scisynth, where a `Multichannel` takes realized
+  fields. The fields must share one domain (the node says so otherwise). The request sends a
+  `channels` list (`FieldSpec`: `field_params`, `field_seed`) and `correlation`; without `channels`
+  the single `field_params` and `field_seed` are used as before. The mix assumes channels of equal
+  variance (scisynth's note), so unequal amplitudes blend. A Multichannel goes wherever a field does
+  (a sampler's input, an Observer's latent port). One shared correlation is the simplest thing that
+  gives correlated channels; groups of channels (two clusters) need a matrix and are not built yet.
+  At most 16 fields in all (`MAX_FIELDS`); a correlation scisynth refuses (1, or below
+  -1 / (channels - 1)) comes back as its 422 message. Plot shows channel 0, as scisynth does.
+- **Math** (fields): one node for scisynth's `Sum` and `Product`, with an `operation` choice (Sum,
+  default, or Product) and a `fields` port that takes any number of GaussianFields, AnalyticFields
+  or other Maths, in connection order. They combine pointwise on one shared domain (the node says so
+  otherwise), at least two of them. In the request a field is a tree: `FieldSpec` gained `operation`
+  and `terms` (a list of `FieldSpec`), so a Math can be a sampler's latent, a term of another Math,
+  or a Multichannel channel (a GaussianField plus an offset per channel, for the cluster data). A
+  Multichannel is not a term (scisynth stacks channels of fields). A loop of Maths is caught on the
+  frontend ("The fields loop back on themselves"). All the GaussianFields in one latent, over its
+  channels and terms, count towards one limit of 16 (`MAX_FIELDS`), since each is a realized
+  field in memory. A choice that is not optional (`default` not null) has no "none" entry in its
+  dropdown (`ParamInputs`).
+- **AnalyticField** (fields): a `domain` port and one text parameter, `func`, a lambda typed as in
+  scisynth (`lambda x, y: 0.1 * x`, one argument per axis, in order; default as given). It is sent
+  as `expression` (on `FieldSpec`, which `PlotRequest` extends, and so on each Multichannel channel)
+  and the backend builds `AnalyticField(func, domain)`. **The text is never passed to `eval` as it
+  is** (the API has no sign-in, and the text comes from the browser): `backend/expressions.py`
+  parses it and accepts only a lambda of plain arguments whose body is arithmetic (`+ - * / // % **`,
+  `& | ~`), comparisons, numbers, the arguments, `pi`, `e`, and these numpy functions, called by
+  name or as `np.<name>`: sin cos tan arcsin arccos arctan arctan2 sinh cosh tanh exp log log10
+  sqrt abs sign floor ceil hypot minimum maximum where clip. No other attribute, call, subscript,
+  comprehension, string or `if` expression (use `where`). Numbers become floats (so `9 ** 9 ** 9`
+  overflows at once), the text is at most 300 characters, and the compiled lambda has no builtins.
+  This keeps typos and stray requests from running anything but math; it is not a sandbox against
+  a hostile user. A wrong argument count, a non-lambda, a scalar result and a result that is not
+  finite (JSON cannot carry it) are 422s with a message. A new kind of text parameter (`text` on a
+  `ParamSpec`) is typed into a monospace input. It is a source for a sampler or a Multichannel
+  channel like a GaussianField; added to a GaussianField (`a + b`) is not built yet.
 - **Categories and colors:** core (blue), fields (green), defects (orange). The samplers and the
   Preview are core. Each category sets a light background and a darker icon color; the node's
   outline and handles use the icon color. Fills stay light in dark mode, so their text is
@@ -434,9 +473,9 @@ and the conversation, so they carry no dates.
   `sampler.plot(latent, seed)`. It needs a **latent**: the field on the sampler's input, or for a
   sampler in an Observer the field on the Observer's latent port. Until there is one the node says
   what is missing ("Connect a latent to the sampler", "Connect a domain to the field").
-- **Only a GaussianField can be plotted so far**: obskit needs a realized latent, and the nodes can
-  only describe that one (its parameters and its Domain's axes). AnalyticField takes a function, so
-  it says "cannot be plotted yet".
+- **Only a GaussianField and an AnalyticField can be plotted so far**: scisynth needs a realized
+  latent, and the nodes can only describe those two (a GaussianField by its parameters, an
+  AnalyticField by its lambda), each with its Domain's axes.
 - **Seeds:** the field's seed belongs to the GaussianField (a `seed` parameter, default 0) and
   realizes it. The Plot's own seed is the sampler's and is shown only when the connected sampler
   draws at random (`seeded` in the registry: PointSampler yes, GridSampler no). Before, one Plot
@@ -447,6 +486,12 @@ and the conversation, so they carry no dates.
   the node.
 - The node is as wide as the Preview once connected, and shares its component (`NodePlot.vue`,
   once `PreviewPlot.vue`), plot size and seed field (`SEED` in `utils/node.ts`).
+- **Trace:** a node that takes an Observer and outputs its trace (`Observer.trace`: every step's
+  output kept). A Plot accepts it and draws `observer.plot(kind="trace")`, obskit's 3-D view of the
+  steps, through `POST /api/trace/plot` (cached like the Observer's plot). The Trace has no
+  parameters and no figure of its own: the Plot sends the Observer's request (run with the
+  Observer's seed) with type `trace`, and says "Connect an Observer to the Trace" until there is one.
+  It is not a source for a task; a Plot of it can be copied into one (`_run` routes the type).
 
 ## Speed
 
@@ -774,3 +819,48 @@ and the conversation, so they carry no dates.
   defect's preview, Data / Plot / Observer / Observer plot for grid and point samplers in 2 and 3
   axes, the right and wrong sampler for each point-set stage, the size limit and an unknown defect
   all answer as expected; obskit's own 333 tests pass.
+- **2026-10-08** Trace node (Observer in, Plot out): `trace_plot_json`, `POST /api/trace/plot`, the
+  `trace` kind, and a Plot of a Trace in `requestOf` / `endpointOf` and in the copied-component
+  routes. The trace figure has surfaces, which have no dots, so `NodePlot` sizes dots only on traces
+  that have markers.
+- **2026-10-08** A Plot of a Trace drew nothing: Plotly's `staticPlot` leaves a 3-D scene blank (only
+  the legend showed; checked in headless Chrome, with and without the figure hidden while it was
+  drawn). `NodePlot` draws a figure with a `scene` non-static (still without the mode bar); a Trace
+  with no stage is a 422 from obskit ("a trace needs a sampler and at least one stage"), shown in the node.
+- **2026-10-08** A Plot of a Trace is interactive: its plot area is `nodrag nowheel nopan`, so dragging turns the
+  3-D view and scrolling zooms it, instead of moving the node or the canvas. Other plots stay still pictures.
+- **2026-10-08** Comments shortened across the backend and frontend: one or two lines each, no restating what the
+  code says. No behavior changed.
+- **2026-10-13** The library `obskit` was renamed `scisynth` (now `../scisynth`). The backend imports `scisynth`
+  and `pyproject.toml` depends on it at `../../scisynth` (editable); `uv sync` replaced the old install. The
+  backend would not start because `obskit` was gone from disk and the venv's `.pth` pointed at it.
+- **2026-10-20** Added `README.md` with the backend (`uv run uvicorn main:app --reload --port 8000`) and frontend
+  (`pnpm dev`) start commands. The frontend proxies `/api` to port 8000, so the backend starts first.
+- **2026-10-20** Added the Multichannel node (see Nodes): a `fields` port that takes several GaussianFields
+  (`multiple` on a port: `useConnectionRules` keeps every connection to it, `ParamInputs` shows "n fields")
+  and a `correlation`. `latentOf` (`sources.ts`) is now `fieldOf` (one GaussianField and its axes) plus
+  the Multichannel case; `PlotRequest` gained `channels: list[FieldSpec]` and `correlation`, and
+  `sampler_and_latent` builds a scisynth `Multichannel` when `channels` is given. A first version took one
+  field and a `channels` count (seeds `field_seed + i`); that was replaced, since the cluster data needs
+  channels that differ. Checked through the API (3 and 6 channels with their own seeds and amplitudes, plot,
+  Observer; a correlation of 1 and 17 channels are 422s) and with `nuxt typecheck`; not yet looked at on the
+  canvas.
+- **2026-10-20** AnalyticField node: type a lambda, evaluated as scisynth's `AnalyticField` does. `ParamSpec`
+  gained `text` (a text parameter, in `ParamInputs`), the node got a `domain` port, `fieldOf`
+  (`sources.ts`) sends `{ expression }`, `FieldSpec` gained `expression` (`PlotRequest` extends it) and the
+  new `backend/expressions.py` checks and compiles the text (see Nodes). A Multichannel's `fields` port
+  accepts AnalyticFields too. Checked through the API (five valid lambdas, a Multichannel with an
+  analytic channel, a plot, and 18 refused ones: attribute access, `__import__`, `open`, a call of a
+  call, a comprehension, a string, `**kwargs`, `9 ** 9 ** 9`, a division by zero, wrong argument
+  count, over-long) and `nuxt typecheck`; not yet looked at on the canvas.
+- **2026-10-20** Added the Math node (Sum or Product of the fields on its `fields` port; see Nodes).
+  `fieldOf` (`sources.ts`) became recursive and shares `fieldsAt` with the Multichannel case;
+  `FieldSpec` gained `operation` and `terms`; `sampler_and_latent` builds scisynth's `Sum` or
+  `Product`; `MAX_CHANNELS` became `MAX_FIELDS` and counts every realized field. Fixed a mistake in the
+  previous entry: the Multichannel's `fields` port still accepted only GaussianFields (a replacement had
+  silently not applied, after the formatter reflowed the line), although this file said AnalyticFields
+  too. It now takes AnalyticFields and Maths (`FIELD_TERMS`). Checked: through the API (sum and product
+  equal the sum and product of their parts, nested, a Multichannel of two "GaussianField + step"
+  channels, one term, no terms, 17 fields, a bad operation) and through the frontend's `requestOf`, run on
+  graphs of the nodes (sum, nested, channels, an analytic channel, a loop, two domains, no domain), and that
+  request sent to the backend; `nuxt typecheck`. Not yet looked at on the canvas.

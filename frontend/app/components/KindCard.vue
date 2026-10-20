@@ -3,22 +3,21 @@ const props = defineProps<{
   type?: string;
   label?: string;
   width?: number;
-  container?: boolean; // a container's card is see-through; its parts paint themselves
+  container?: boolean; // see-through; its parts paint themselves
   body?: boolean;
-  link?: { to: string; title: string }; // an icon in the header that goes elsewhere
+  link?: { to: string; title: string }; // header icon linking elsewhere
 }>();
 
 const kind = computed(() => kindOf(props.type));
 </script>
 
 <template>
-  <!-- With a body, only the header carries the category colour and the body stays neutral -->
+  <!-- with a body, only the header is coloured -->
   <div
     class="vue-flow__node-default"
     :class="`cat-${kind.category}`"
     :style="{
       width: `${width ?? nodeWidth(kind)}px`,
-      // a container's card is see-through: its white section and its body paint themselves
       ...(container
         ? { '--vf-node-bg': 'transparent' }
         : body

@@ -3,7 +3,7 @@ import { useDraggable } from "@dnd-kit/vue";
 
 const props = defineProps<{ component: TaskComponent }>();
 
-// a component in the sidebar: dragged into the task's list (a copy is placed, this stays)
+// a sidebar component; dragging places a copy
 const element = ref<HTMLElement>();
 const { isDragSource } = useDraggable({ id: `${COMPONENT_ID}${props.component.type}`, element });
 </script>

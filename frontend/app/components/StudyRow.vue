@@ -5,12 +5,11 @@ const props = defineProps<{ study: Study; index: number }>();
 
 const { rename, remove, isCollapsed, toggleCollapsed, moveTask } = useStudies();
 
-// the tasks are shown unless hidden
+// tasks show unless hidden
 const showTasks = computed(() => props.study.tasks.length > 0 && !isCollapsed(props.study.id));
 
-// the study (with its tasks) is sorted among the studies, by the grip on its card. Only the card is
-// what other studies collide with (`target`): a study with a long list of tasks is a tall target that
-// a dragged study would not swap places with.
+// The grip sorts the study with its tasks; only the card is the collision `target`, since a tall
+// task list would not swap places
 const card = ref<HTMLElement>();
 const { element, handle, isDragging } = useSortableRow(
   `study-${props.study.id}`,
@@ -29,7 +28,6 @@ const { element, handle, isDragging } = useSortableRow(
         <span ref="handle" class="cursor-grab touch-none text-muted" aria-label="Drag to reorder">
           <UIcon name="i-lucide-grip-vertical" class="size-4" />
         </span>
-        <!-- hides or shows the tasks (only a study that has some) -->
         <UButton
           v-if="study.tasks.length"
           :icon="isCollapsed(study.id) ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
@@ -48,7 +46,6 @@ const { element, handle, isDragging } = useSortableRow(
         </EditableName>
       </span>
       <span class="flex gap-1">
-        <!-- the study's tasks, all on one screen -->
         <UButton
           icon="i-lucide-clipboard-list"
           color="neutral"
@@ -73,8 +70,7 @@ const { element, handle, isDragging } = useSortableRow(
         />
       </span>
     </div>
-    <!-- the study's tasks: their own cards just under it, indented -->
-    <!-- its own drag and drop area, so a task can only be sorted among this study's tasks -->
+    <!-- own drag area: tasks sort only within their study -->
     <DragDropProvider
       v-if="showTasks"
       @drag-end="onSorted((from, to) => moveTask(study, from, to))"

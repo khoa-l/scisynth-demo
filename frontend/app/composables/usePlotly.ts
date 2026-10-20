@@ -6,14 +6,13 @@ export interface PlotSpec {
   config?: Record<string, unknown>;
 }
 
-// Draws what `spec` describes (nothing while it returns nothing) into `element`, again whenever what
-// it reads changes or the color mode does, and clears it when the component goes. The plot is
-// themed: a transparent background, readable text, and dark grid lines in dark mode. plotly.js is
-// large, so it is only loaded once there is something to draw.
+// Draws `spec` into `element` (nothing while it returns nothing), again when what it reads or the
+// color mode changes, and clears it on unmount. Themed: transparent background, readable text, dark
+// grid in dark mode. plotly.js loads only once there is something to draw.
 export function usePlotly(element: Ref<HTMLElement | undefined>, spec: () => PlotSpec | undefined) {
   const colorMode = useColorMode();
   const dark = computed(() => colorMode.value === "dark");
-  let drawnWith: string | undefined; // the config the plot was drawn with
+  let drawnWith: string | undefined; // config of the current plot
 
   async function draw() {
     const el = element.value;
@@ -22,7 +21,7 @@ export function usePlotly(element: Ref<HTMLElement | undefined>, spec: () => Plo
     const { default: Plotly } = await import("plotly.js-dist-min");
     const config = JSON.stringify(wanted.config ?? {});
     if (config !== drawnWith) {
-      Plotly.purge(el); // a plot keeps the config (still or interactive) it was drawn with
+      Plotly.purge(el); // a plot keeps the config it was drawn with
       drawnWith = config;
     }
     const layout = {
@@ -40,9 +39,9 @@ export function usePlotly(element: Ref<HTMLElement | undefined>, spec: () => Plo
   }
 
   onMounted(draw);
-  watch([spec, dark, element], draw, { flush: "post" }); // a new element needs drawing into too
+  watch([spec, dark, element], draw, { flush: "post" }); // a new element needs drawing too
   onBeforeUnmount(async () => {
-    const el = element.value; // gone from the ref by the time plotly.js has loaded
+    const el = element.value; // gone from the ref once plotly.js has loaded
     if (el) (await import("plotly.js-dist-min")).default.purge(el);
   });
 }

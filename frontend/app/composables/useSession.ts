@@ -19,7 +19,7 @@ export function useSession() {
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // storage unavailable; session lasts until reload
+      // storage unavailable
     }
   }
 
@@ -27,9 +27,7 @@ export function useSession() {
     role.value = null;
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   return { role, login, logout };

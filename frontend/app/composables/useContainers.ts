@@ -3,15 +3,13 @@ import { useVueFlow, type GraphNode } from "@vue-flow/core";
 type Point = { x: number; y: number };
 export type ZoneHit = { container: GraphNode; zone: Zone };
 
-// Containers (the Observer) have zones that take nodes: the sampler zone takes one sampler, the
-// stages zone is a list of defects. A node in a zone is a child of the container, but its place is
-// not free: the container stacks its children (containerLayout), and it grows with them.
+// Containers (the Observer) have zones that take nodes. A node in a zone is a child of the
+// container, which stacks its children (containerLayout).
 //
-// The order of an ordered zone (the stages) is what sets the connections: each item is connected to
-// the next by a vertical link (bottom handle "next" to top handle "prev"), and the sampler, if there
-// is one, heads the chain. So putting an item in the list breaks the item's other connections into
-// a defect and connects it to its neighbors, taking it out joins the neighbors, and reordering the
-// list rewires it. A connection to a Preview is never touched.
+// The order of an ordered zone (the stages) sets the connections: each item links to the next
+// ("next" to "prev"), and the sampler heads the chain. Adding an item replaces its other defect
+// connections with links to its neighbors, removing one joins the neighbors, and reordering
+// rewires. Connections to a Preview are never touched.
 export function useContainers() {
   const {
     nodes,
@@ -27,7 +25,7 @@ export function useContainers() {
   } = useVueFlow(FLOW_ID);
 
   const hover = useHoverContainer();
-  const dragging = ref<string>(); // the node under the pointer: the layout leaves it alone
+  const dragging = ref<string>(); // the layout leaves it alone
 
   const isDefect = (id: string) => isDefectKind(findNode(id)?.data?.type);
   const childrenOf = (container: GraphNode) =>
@@ -38,8 +36,7 @@ export function useContainers() {
 
   // ---- finding a zone
 
-  // The zone (and its container) that a node of `childType` would land in at `point`; `self` is the
-  // node being moved, which does not count against a zone's capacity
+  // The zone a node of `childType` would land in at `point`; `self` is the node being moved
   function zoneAt(point: Point, childType: string | undefined, self?: string): ZoneHit | undefined {
     let found: ZoneHit | undefined;
     for (const container of nodes.value) {
@@ -57,19 +54,18 @@ export function useContainers() {
     return found;
   }
 
-  // Light up the zone being dragged over (or none)
+  // Light up the zone dragged over
   const showHover = (hit?: ZoneHit) => {
     hover.value = hit ? { id: hit.container.id, zone: hit.zone.id } : null;
   };
 
   // ---- the list's order and its connections
 
-  // The order each list was last given. The links between neighbors are what is saved, but they go
-  // when an item does (deleting a node removes its links), so when an item leaves, the order that
-  // is left is this one without it, not whatever the surviving links happen to say.
+  // The order each list was last given. Deleting an item removes its links, so the order left is
+  // this one without it, not what the surviving links say.
   const knownOrder = new Map<string, string[]>();
 
-  // the items of the ordered zone, top to bottom, as the connections order them
+  // the ordered zone's items, top to bottom
   const listOf = (container: GraphNode) =>
     layoutOf(container).zones.find((b) => b.zone.id === orderedZone(container)?.id)?.members ?? [];
 
@@ -78,11 +74,11 @@ export function useContainers() {
     const kept = (knownOrder.get(container.id) ?? []).filter(
       (id) => id !== gone && members.has(id),
     );
-    // anything not known yet (a loaded study, a new item) follows, in the order its links give
+    // anything not known yet follows, in link order
     return [...kept, ...listOf(container).filter((id) => id !== gone && !kept.includes(id))];
   }
 
-  // where `y` falls among the items of the list (not counting `self`): the index it would take
+  // the index `y` would take among the list's items (not counting `self`)
   function indexAt(container: GraphNode, y: number, self?: string) {
     return listOf(container)
       .filter((id) => id !== self)
@@ -97,19 +93,18 @@ export function useContainers() {
     return [...others.slice(0, index), id, ...others.slice(index)];
   };
 
-  // the sampler: the node in the first zone that is not a list, which heads the chain
+  // the sampler, which heads the chain
   const headOf = (container: GraphNode) =>
     layoutOf(container).zones.find((b) => !b.zone.ordered)?.members[0];
 
-  // Make the connections match `order` (the stages, behind the sampler): each linked to the next,
-  // every other connection into a defect of the items (from a defect or a sampler) broken
+  // Link the chain (sampler, then `order`) and break every other connection into its defects
   function applyOrder(container: GraphNode, order: string[]) {
     knownOrder.set(container.id, order);
     const head = headOf(container);
     const chain = head ? [head, ...order] : order;
     const members = new Set(chain);
     const links = chain.slice(1).map((target, i) => ({
-      id: `chain:${chain[i]}>${target}`, // the same neighbors keep the same connection
+      id: `chain:${chain[i]}>${target}`, // the same neighbors keep the same link
       source: chain[i]!,
       target,
       sourceHandle: "next",
@@ -127,35 +122,34 @@ export function useContainers() {
     if (missing.length) addEdges(missing);
   }
 
-  // Put `id` (already a child of the container) into the hit zone's list at height `y`
+  // Put `id` (already a child) into the zone's list at height `y`
   function placeInList(hit: ZoneHit, id: string, y: number) {
-    if (!hit.zone.ordered) return; // a sampler joins the chain when it becomes a child (see below)
+    if (!hit.zone.ordered) return; // a sampler joins the chain as a child
     const order = insertAt(orderWithout(hit.container, id), id, indexAt(hit.container, y, id));
     applyOrder(hit.container, order);
   }
 
   // ---- keeping the canvas in line with the lists
 
-  // Take a node out of its container, leaving it on the canvas where it is drawn (or at `at`)
+  // Take a node out of its container, leaving it where drawn (or at `at`)
   function eject(id: string, at?: Point) {
     const node = findNode(id);
     if (!node) return;
     const from = node.parentNode ? findNode(node.parentNode) : undefined;
     updateNode(id, { parentNode: undefined, position: at ?? { ...node.computedPosition } });
-    // its neighbors in the list are joined to each other, and it loses its links to them
     if (from && orderedZone(from)) applyOrder(from, orderWithout(from, id));
   }
 
   function relayout(container: GraphNode) {
     const layout = layoutOf(container);
     for (const [id, position] of layout.positions) {
-      if (id === dragging.value) continue; // it follows the pointer; it snaps into place on release
+      if (id === dragging.value) continue; // snaps into place on release
       const node = findNode(id);
       if (node && (node.position.x !== position.x || node.position.y !== position.y)) {
         updateNode(id, { position });
       }
     }
-    // what a zone cannot take (a second sampler, from older data) goes back onto the canvas beside it
+    // what a zone cannot take (a second sampler) goes back beside the container
     for (const id of layout.unplaced) {
       eject(id, {
         x: container.computedPosition.x + nodeWidth(kindOf(container.data?.type)) + 24,
@@ -166,8 +160,7 @@ export function useContainers() {
 
   const containers = () => nodes.value.filter((n) => kindOf(n.data?.type).zones);
 
-  // When what is in a list changes (an item removed, or an older study loaded) the connections
-  // are brought in line with the order that is left
+  // Bring the connections in line when a list's items change
   watch(
     () =>
       containers()
@@ -181,7 +174,7 @@ export function useContainers() {
     () => {
       for (const id of knownOrder.keys()) if (!findNode(id)) knownOrder.delete(id);
       for (const c of containers()) if (orderedZone(c)) applyOrder(c, orderWithout(c));
-      // a sampler placed in a container has no input, so nothing connected to it remains
+      // a sampler in a container has no input
       const placed = new Set(
         nodes.value.filter((n) => n.parentNode && !isDefect(n.id)).map((n) => n.id),
       );
@@ -191,8 +184,7 @@ export function useContainers() {
     { flush: "post", immediate: true },
   );
 
-  // The layout follows the children, their heights (known once measured, and when their fields
-  // change), and the connections that set the list's order
+  // The layout follows the children, their heights and the list's connections
   watch(
     () =>
       nodes.value
@@ -215,11 +207,8 @@ export function useContainers() {
     },
   );
 
-  // A connection with a node inside a container is drawn above the container so it stays visible
-  // across the container's body, but under the nodes inside. It takes the layer of the node inside
-  // (a node is drawn over a connection on the same layer): normally 1 against the container's 0,
-  // but VueFlow lifts a selected node by 1000 (the container too, and its children above it), so
-  // the connection follows. Everything else stays at 0, under all nodes. Derived, not saved.
+  // A connection to a node inside a container is drawn above the container but under the nodes
+  // inside, on the inner node's layer (VueFlow lifts a selected node by 1000). Others stay at 0.
   watch(
     () =>
       nodes.value.map((n) => `${n.id}>${n.parentNode ?? ""}@${n.computedPosition.z}`).join() +
@@ -238,12 +227,10 @@ export function useContainers() {
     { immediate: true },
   );
 
-  // ---- dragging nodes that are on the canvas
+  // ---- dragging
   //
-  // Dragging a node over a zone that takes it lights the zone up; letting go there puts the node in
-  // it (and snaps it back into its slot if it was already there), and letting go elsewhere takes it
-  // out. The list is sortable: moving an item up or down it reorders the list as it passes its
-  // neighbors, and the connections follow. Dragging a container moves what is inside it.
+  // Over a zone that takes it, a node lights the zone; letting go there puts it in, elsewhere takes
+  // it out. Moving an item past its neighbors reorders the list.
 
   const centerOf = (n: GraphNode): Point => ({
     x: n.computedPosition.x + n.dimensions.width / 2,
@@ -272,9 +259,8 @@ export function useContainers() {
     const center = centerOf(node);
     const hit = zoneAt(center, node.data?.type, node.id);
     if (hit && hit.container.id === node.parentNode) {
-      relayout(hit.container); // dropped inside its own zone: it snaps into its place in the list
+      relayout(hit.container); // snaps back into its slot
     } else if (hit) {
-      // moved into a zone; the container's layout sets its final place
       const abs = node.computedPosition;
       updateNode(node.id, {
         parentNode: hit.container.id,

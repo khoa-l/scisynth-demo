@@ -4,14 +4,13 @@ const data = defineModel<ClusterData>({ required: true });
 
 const breaks = computed(() => data.value.breaks ?? []);
 
-// Coloring by a column: its values are split into groups by number ranges, three of about the same
-// size to start with
+// Coloring by a column: its values split into three groups of about equal size to start
 const NONE = "none";
 const colorChoices = computed(() => [
   { label: "None", value: NONE },
   ...props.table.columns.map((c) => ({ label: c, value: c })),
 ]);
-// where the color column's values run from and to, for the slider of ranges
+// the color column's range, for the slider
 const colorValues = computed(() =>
   data.value.color ? columnValues(props.table, data.value.color) : [],
 );
@@ -26,7 +25,7 @@ function colorBy(column: string) {
   d.names = [];
 }
 
-// the names go by place, so adding or removing a range starts them over; moving a break keeps them
+// names go by position, so adding or removing a range resets them; moving a break keeps them
 function setBreaks(next: number[]) {
   const d = data.value;
   if (next.length !== breaks.value.length) d.names = [];
@@ -71,7 +70,7 @@ function rename(group: number, name: string) {
           @update:model-value="setBreaks"
         />
       </div>
-      <!-- a category for each range, to name -->
+      <!-- a category per range, to name -->
       <ul class="flex flex-col gap-2">
         <li v-for="(_, group) in breaks.length + 1" :key="group" class="flex items-center gap-2">
           <span class="size-3 shrink-0 rounded-full" :style="{ background: groupColor(group) }" />

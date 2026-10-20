@@ -1,7 +1,5 @@
-// What a node shows (a Data node's rows, a Plot's or a Preview's figure) comes from asking the backend
-// to run what is connected to it. Everything here works on a plain graph, the nodes and connections
-// as saved, so it serves both the canvas (whose graph is VueFlow's) and the tasks (which only have
-// the saved one).
+// What a node shows comes from asking the backend to run what is connected to it. This works on a
+// plain graph (nodes and edges as saved), so it serves both the canvas and the tasks.
 
 export interface GraphNodeLike {
   id: string;
@@ -13,7 +11,7 @@ export interface GraphLike {
   edges: { source: string; target: string; targetHandle?: string | null }[];
 }
 
-// A saved study's graph as one `GraphLike` (a saved node has its type beside its data)
+// A saved study's graph as a `GraphLike`
 export const graphOf = (saved: { nodes: SavedNode[]; edges: SavedEdge[] }): GraphLike => ({
   nodes: saved.nodes.map((n) => ({
     id: n.id,
@@ -23,27 +21,30 @@ export const graphOf = (saved: { nodes: SavedNode[]; edges: SavedEdge[] }): Grap
   edges: saved.edges,
 });
 
-// The nodes that show or output something, and so can be a source for a task
+// Nodes that can be a task's source
 export type SourceKind = "data" | "plot" | "preview" | "observer";
 export const SOURCE_KINDS: SourceKind[] = ["data", "plot", "preview", "observer"];
 
-// What to ask the backend for to run a node's source
+// What to ask the backend for
 export interface SourceRequest {
-  kind: SourceKind; // which of the nodes asks
-  type: string; // the type of the node connected to it (a sampler, or a defect; an Observer's own)
-  body?: object; // a sampler on its latent (Data and Plot), with its stages for an Observer
+  kind: SourceKind;
+  type: string; // the connected node's type (an Observer's own)
+  body?: object; // sampler on its latent, plus stages for an Observer
   query?: Record<string, ParamValue>; // a defect's parameters (Preview)
-  waiting?: string; // what is still missing when it cannot be run yet
+  waiting?: string; // what is missing when it cannot run
 }
 
-// How to ask for a request, as `$fetch` options (a Plot of an Observer plots every step)
+// A Plot of an Observer shows every step; of its Trace, the 3-D view
+const PLOTTED_OBSERVER = ["observer", "trace"];
+
+// As `$fetch` options
 export const endpointOf = (request: SourceRequest) =>
   request.kind === "preview"
     ? { url: `/api/preview/${request.type}`, query: request.query }
     : {
         url:
-          request.kind === "plot" && request.type === "observer"
-            ? "/api/observer/plot"
+          request.kind === "plot" && PLOTTED_OBSERVER.includes(request.type)
+            ? `/api/${request.type}/plot`
             : `/api/${request.kind}`,
         method: "POST" as const,
         body: request.body,
@@ -56,17 +57,17 @@ export interface DataRows {
   rows: (number | null)[][];
 }
 
-// four or five significant digits are plenty to read; an invalid sample has no value
+// five significant digits; an invalid sample has no value
 export const formatCell = (v: number | null) =>
   v === null ? "—" : String(Number(v.toPrecision(5)));
 
-// the connection into an input of `id` (the header's unless `handle` names a port)
+// the connection into `id`'s header input, or its port `handle`
 const edgeInto = (graph: GraphLike, id: string, handle?: string) =>
   graph.edges.find((e) => e.target === id && (e.targetHandle ?? undefined) === handle);
 
 const nodeOf = (graph: GraphLike, id: string | undefined) => graph.nodes.find((n) => n.id === id);
 
-// Parameter values for the backend; unset (null) ones are left out, so obskit uses its own default
+// Parameter values for the backend; unset (null) ones are left out
 const valuesOf = (node: GraphNodeLike) =>
   Object.fromEntries(
     Object.entries(paramsOf(kindOf(node.data?.type), node.data?.params)).filter(
@@ -74,26 +75,37 @@ const valuesOf = (node: GraphNodeLike) =>
     ),
   );
 
-// The field on a connection into a latent input (a sampler's, or an Observer's latent port) and that
-// field's domain, as the backend needs them; or what is missing
-function latentOf(
-  graph: GraphLike,
-  latentEdge: GraphLike["edges"][number] | undefined,
-  to: string, // what the latent is for, for the message
-) {
-  const field = nodeOf(graph, latentEdge?.source);
-  if (!field) return { waiting: `Connect a latent to ${to}` };
-  // a GaussianField is the one latent that can be built from what the nodes hold
-  if (field.data?.type !== "gaussianField") {
-    return { waiting: `${kindOf(field.data?.type).label} is not supported yet` };
+// A field and its domain's axes, as the backend needs them, or what is missing
+type Found =
+  | { field: Record<string, unknown>; axes: AxisData[]; waiting?: undefined }
+  | { field?: undefined; axes?: undefined; waiting: string };
+
+// A GaussianField, AnalyticField or Math (the sum or product of the fields on its port). `seen` are
+// the Math nodes above it, to stop a loop.
+function fieldOf(graph: GraphLike, field: GraphNodeLike, seen: string[] = []): Found {
+  const type = field.data?.type;
+  if (type === "math") {
+    if (seen.includes(field.id)) return { waiting: "The fields loop back on themselves" };
+    const terms = fieldsAt(graph, field, [...seen, field.id]);
+    if (!terms.fields) return { waiting: terms.waiting };
+    if (terms.fields.length < 2) return { waiting: "Connect at least two fields to the Math" };
+    const operation = String(valuesOf(field).operation);
+    return { axes: terms.axes, field: { operation, terms: terms.fields } };
+  }
+  if (type !== "gaussianField" && type !== "analyticField") {
+    return { waiting: `${kindOf(type).label} is not supported yet` };
   }
   const domainEdge = edgeInto(graph, field.id, "domain");
   const axes = nodeOf(graph, domainEdge?.source)?.data?.axes;
   if (!axes?.length) return { waiting: "Connect a domain to the field" };
+  if (type === "analyticField") {
+    const expression = String(valuesOf(field).func ?? "").trim();
+    if (!expression) return { waiting: "Type a lambda for the field" };
+    return { axes, field: { expression } };
+  }
   const { seed: fieldSeed, ...values } = valuesOf(field);
   const fieldParams: Record<string, unknown> = values;
-  // A per-axis list (the resolution) is saved with the axes it was edited for; after an axis is
-  // added or deleted its length no longer matches, and obskit rejects that. Fit it to the axes.
+  // A per-axis list is saved for the axes it was edited with; fit it to the current ones
   for (const spec of kindOf(field.data?.type).params ?? []) {
     const list = fieldParams[spec.name];
     if (spec.perAxisOf && Array.isArray(list)) {
@@ -103,12 +115,59 @@ function latentOf(
       );
     }
   }
-  return { latent: { axes, field_params: fieldParams, field_seed: fieldSeed } };
+  return { axes, field: { field_params: fieldParams, field_seed: fieldSeed } };
 }
 
-// The sampler on its latent: the field on the sampler's input (or, for a sampler inside an Observer,
-// on the Observer's latent port) and that field's domain. `seed` is the sampler's, used only if it
-// draws at random (the field's seed is the field's own).
+// The fields on `node`'s "fields" port, in connection order, which must share one domain
+function fieldsAt(graph: GraphLike, node: GraphNodeLike, seen: string[] = []) {
+  const found = graph.edges
+    .filter((e) => e.target === node.id && e.targetHandle === "fields")
+    .map((e) => nodeOf(graph, e.source))
+    .filter((n): n is GraphNodeLike => !!n)
+    .map((n) => fieldOf(graph, n, seen));
+  const label = kindOf(node.data?.type).label;
+  if (!found.length) return { waiting: `Connect fields to the ${label}` };
+  const missing = found.find((f) => !f.field);
+  if (missing) return { waiting: missing.waiting! };
+  const axes = found[0]!.axes!;
+  if (found.some((f) => JSON.stringify(f.axes) !== JSON.stringify(axes))) {
+    return { waiting: "The fields must share one domain" };
+  }
+  return { axes, fields: found.map((f) => f.field!) };
+}
+
+type Latent =
+  | { latent: Record<string, unknown>; waiting?: undefined }
+  | { latent?: undefined; waiting: string };
+
+// The latent on an input and its domain, as the backend needs it, or what is missing. A Multichannel
+// is its fields, one channel each.
+function latentOf(
+  graph: GraphLike,
+  latentEdge: GraphLike["edges"][number] | undefined,
+  to: string, // for the message
+): Latent {
+  const latent = nodeOf(graph, latentEdge?.source);
+  if (!latent) return { waiting: `Connect a latent to ${to}` };
+  if (latent.data?.type !== "multichannel") {
+    const found = fieldOf(graph, latent);
+    return found.field
+      ? { latent: { axes: found.axes, ...found.field } }
+      : { waiting: found.waiting };
+  }
+  const channels = fieldsAt(graph, latent);
+  if (!channels.fields) return { waiting: channels.waiting };
+  return {
+    latent: {
+      axes: channels.axes,
+      channels: channels.fields,
+      correlation: valuesOf(latent).correlation,
+    },
+  };
+}
+
+// The sampler on its latent (on the Observer's port inside one). `seed` is the sampler's, used only
+// if it draws at random.
 function samplerRequest(
   graph: GraphLike,
   kind: "data" | "plot",
@@ -135,8 +194,7 @@ function samplerRequest(
   };
 }
 
-// An Observer: its sampler, then its stages (the defects, in the order they are connected in), on
-// the latent at its port, run with its own seed
+// An Observer: sampler, then stages in connection order, on its latent, with its own seed
 function observerRequest(graph: GraphLike, observer: GraphNodeLike): SourceRequest {
   const kind = kindOf("observer");
   const waiting = (reason: string): SourceRequest => ({
@@ -167,9 +225,9 @@ function observerRequest(graph: GraphLike, observer: GraphNodeLike): SourceReque
   };
 }
 
-// What to ask the backend for to run the Data, Plot, Preview or Observer node `id`, from what is connected to
-// its input; nothing if nothing is. A Preview shows the connected defect on the demo signal (the seed
-// is the Preview's, the rest the defect's); a Data node and a Plot show the connected sampler (a Plot also takes an Observer).
+// What to ask the backend for to run node `id` from what is connected to it; nothing if nothing is.
+// A Preview shows the connected defect (seed is the Preview's); Data and Plot show the connected
+// sampler (a Plot also takes an Observer or its Trace).
 export function requestOf(graph: GraphLike, id: string): SourceRequest | undefined {
   const node = nodeOf(graph, id);
   const kind = node?.data?.type as SourceKind | undefined;
@@ -179,6 +237,11 @@ export function requestOf(graph: GraphLike, id: string): SourceRequest | undefin
   if (!source?.data?.type) return undefined;
   if (kind === "plot" && source.data.type === "observer") {
     return { ...observerRequest(graph, source), kind };
+  }
+  if (kind === "plot" && source.data.type === "trace") {
+    const observer = nodeOf(graph, edgeInto(graph, source.id)?.source);
+    if (!observer) return { kind, type: "trace", waiting: "Connect an Observer to the Trace" };
+    return { ...observerRequest(graph, observer), kind, type: "trace" };
   }
   const own = paramsOf(kindOf(kind), node.data?.params);
   if (kind === "preview") {

@@ -9,10 +9,8 @@ interface ConnectionLike {
 
 // Which connections the canvas allows, and what making one replaces.
 //
-// Outside a list, defects connected one to the next form a chain, an ordered list of stages. To
-// stay a list it may not loop back on itself, and a defect has one successor (but may also feed a
-// Preview). Inside a container the list sets the connections instead (useContainers): the links
-// between neighbors are made by it, never by hand, and an item's side output only feeds a Preview.
+// Outside a container, defects form a chain: no loops, one successor each (and they may also feed a
+// Preview). Inside one, the list makes the links (useContainers), never by hand.
 export function useConnectionRules() {
   const { edges, findNode, onConnect, addEdges, removeEdges } = useVueFlow(FLOW_ID);
 
@@ -26,10 +24,8 @@ export function useConnectionRules() {
     );
   }
 
-  // The list's own vertical link ("next" to "prev"): only between a container's sampler or defect and
-  // a defect in the same container.
-  // VueFlow runs the validity check for connections added by code too, so the list's links pass
-  // through here; the handles cannot be dragged from, so nothing else can ask for them.
+  // The list's own link ("next" to "prev"): between a container's sampler or defect and a defect in
+  // the same container. VueFlow validates code-added connections too, so they pass through here.
   function isListLink(c: ConnectionLike) {
     const parent = findNode(c.source)?.parentNode;
     return (
@@ -41,8 +37,7 @@ export function useConnectionRules() {
     );
   }
 
-  // Only connections that an input accepts are allowed (a defect into a Preview or another defect,
-  // a Domain into a GaussianField's domain, a field into an Observer's latent input, ...)
+  // Only what an input accepts
   function isValidConnection(c: ConnectionLike) {
     if (c.sourceHandle === "next" || c.targetHandle === "prev") return isListLink(c);
     if (isDefect(c.target) && isContained(c.source)) return false;
@@ -55,11 +50,14 @@ export function useConnectionRules() {
     return accepted && !loops;
   }
 
-  // An input takes one connection, so a new one replaces the old; a defect also has just one
-  // successor in its chain
+  // An input takes one connection (unless it is a `multiple` port), so a new one replaces the old; a
+  // defect has one successor
   onConnect((c) => {
+    const multiple = kindOf(findNode(c.target)?.data?.type).ports?.find(
+      (p) => p.id === c.targetHandle,
+    )?.multiple;
     const sameInput = (e: ConnectionLike) =>
-      e.target === c.target && (e.targetHandle ?? null) === (c.targetHandle ?? null);
+      !multiple && e.target === c.target && (e.targetHandle ?? null) === (c.targetHandle ?? null);
     const nextInChain = (e: ConnectionLike) =>
       e.source === c.source && isDefect(c.target) && isDefect(e.target);
     removeEdges(edges.value.filter((e) => sameInput(e) || nextInChain(e)).map((e) => e.id));

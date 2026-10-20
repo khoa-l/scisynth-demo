@@ -5,9 +5,8 @@ const props = defineProps<{ id: string; axes: AxisData[] }>();
 
 const { updateNodeData } = useVueFlow(FLOW_ID);
 
-// The axis list shows this many rows before it scrolls, plus half of the next one as a hint that
-// there is more. A row is 24px with an 8px gap,
-// and the list has 2px of padding on top (2 + 12 for the half row).
+// Rows shown before the list scrolls, plus half of the next as a hint (a row is 24px + 8px gap;
+// the list has 2px padding on top, and 12px for the half row)
 const MAX_AXIS_ROWS = 4;
 
 function add() {
@@ -18,25 +17,22 @@ function remove(index: number) {
   updateNodeData(props.id, { axes: props.axes.filter((_, i) => i !== index) });
 }
 
-// Number inputs emit null while empty; keep the last valid number instead
+// An empty input emits null; keep the last valid number
 function setExtent(axis: AxisData, index: 0 | 1, value: number | null | undefined) {
   if (typeof value === "number" && Number.isFinite(value)) axis.extent[index] = value;
 }
 
-// Mirrors obskit's checks: extent needs lo < hi, axis names must be unique
+// Mirrors obskit: extent needs lo < hi, names must be unique
 const invalidExtent = (axis: AxisData) => !(axis.extent[0] < axis.extent[1]);
 const invalidName = (axis: AxisData) =>
   axis.name.trim() === "" || props.axes.filter((a) => a.name === axis.name).length > 1;
 </script>
 
 <template>
-  <!-- nodrag/nowheel: let the inputs be used without dragging or zooming the canvas -->
   <div class="nodrag nowheel mt-2 flex flex-col gap-2 text-left">
     <UButton label="Add axis" icon="i-lucide-plus" size="xs" variant="soft" block @click="add" />
-    <!-- the axis rows scroll once there are more than MAX_AXIS_ROWS (half of the next row peeks
-         out), with a slim scrollbar in the node's side padding (see .node-scroll in main.css; it
-         takes no width from the rows). The left padding, cancelled by the negative margin, keeps
-         focus rings from clipping. "Add axis" stays above, always in reach. -->
+    <!-- scrolls past MAX_AXIS_ROWS (half the next row peeks); slim scrollbar in the side padding
+         (see .node-scroll); the negative margin keeps focus rings from clipping -->
     <div
       class="node-scroll -mr-2.5 -ml-1 flex flex-col gap-2 overflow-y-auto py-0.5 pl-1"
       :style="{ maxHeight: `${MAX_AXIS_ROWS * 32 + 14}px` }"

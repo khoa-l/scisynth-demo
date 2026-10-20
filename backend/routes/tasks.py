@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api")
 
 @router.post("/studies/{study_id}/tasks", status_code=201)
 def create_task(study_id: int) -> dict:
-    """Add a task to a study, last in its list, named "Task <n>" (one more than the highest n)."""
+    """Add a task, last in the list, named "Task <n>" (one more than the highest)."""
     with db() as conn:
         require_study(conn, study_id)
         names = [
@@ -49,7 +49,7 @@ def get_task(task_id: int) -> dict:
 
 @router.put("/tasks/{task_id}/components", status_code=204)
 def save_components(task_id: int, components: list[ComponentState]) -> Response:
-    """Replace what a task holds: its components, in order."""
+    """Replace a task's components, in order."""
     with db() as conn:
         task_components(conn, task_id)  # 404 for a task that is not there
         conn.execute(

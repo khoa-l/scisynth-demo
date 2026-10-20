@@ -1,10 +1,9 @@
 const SAVE_DELAY_MS = 300;
 
-// The components in each task's list. Loaded when a task is first shown, and saved shortly after any
-// change (an edit, an add, a move).
+// Each task's components, loaded when first shown and saved shortly after any change
 export function useTaskComponents(taskId: Ref<number | undefined>) {
   const placed = useState<Record<number, PlacedComponent[]>>("task-components", () => ({}));
-  const saved = new Map<number, string>(); // what the backend has, per task
+  const saved = new Map<number, string>(); // what the backend has
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const items = computed(() => (taskId.value ? (placed.value[taskId.value] ?? []) : []));
@@ -43,7 +42,7 @@ export function useTaskComponents(taskId: Ref<number | undefined>) {
     },
     { deep: true },
   );
-  onBeforeUnmount(() => void flush()); // don't lose a pending save when leaving the page
+  onBeforeUnmount(() => void flush()); // don't lose a pending save
 
   return { items, setItems, flush };
 }

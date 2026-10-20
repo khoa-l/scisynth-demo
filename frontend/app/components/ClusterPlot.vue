@@ -3,17 +3,17 @@ const props = defineProps<{
   table: DataRows;
   x: string;
   y: string;
-  color?: string; // the column the points are colored by, in groups of the ranges between `breaks`
-  oneColor?: boolean; // every point in one color, but the points with no value in `color` still left out
+  color?: string; // column the points are colored by, in ranges between `breaks`
+  oneColor?: boolean; // one color for every point; those with no `color` value are still left out
   breaks: number[]; // in order
-  names?: string[]; // what each range is called, by place
+  names?: string[]; // range names by position
   showNoValue?: boolean; // plot the points with no value to color by
 }>();
 
-// the group of the points with no value to color by: after every range
+// the group with no value to color by: after every range
 const NO_VALUE = Infinity;
 
-// A trace per group (so the legend names the ranges), or one trace of every point
+// A trace per group (the legend names the ranges), or one for all
 function traces() {
   const { columns, rows } = props.table;
   const [xi, yi] = [columns.indexOf(props.x), columns.indexOf(props.y)];
@@ -22,7 +22,7 @@ function traces() {
   const groups = new Map<number, { x: number[]; y: number[] }>();
   for (const row of rows) {
     const [x, y] = [row[xi], row[yi]];
-    if (x == null || y == null) continue; // an invalid sample has nothing to plot
+    if (x == null || y == null) continue; // an invalid sample
     const value = ci < 0 ? undefined : row[ci];
     if (ci >= 0 && value == null && !props.showNoValue) continue;
     const group = grouped ? (value == null ? NO_VALUE : groupOf(value, props.breaks)) : 0;
@@ -59,7 +59,7 @@ usePlotly(element, () => ({
     height: 360,
     plot_bgcolor: "rgba(0,0,0,0)",
   },
-  config: { displayModeBar: false }, // drag to zoom, double-click to reset
+  config: { displayModeBar: false }, // drag zooms, double-click resets
 }));
 </script>
 

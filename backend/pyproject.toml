@@ -4,9 +4,11 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.142.2",
-    "obskit",
+    "scisynth",
     "plotly>=7.1.0",
     "uvicorn[standard]>=0.54.0",
+    "scikit-learn>=1.9.1",
+    "umap-learn>=0.5.12",
 ]
 
 [dependency-groups]
@@ -15,4 +17,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-obskit = { path = "../../obskit", editable = true }
+scisynth = { path = "../../scisynth", editable = true }

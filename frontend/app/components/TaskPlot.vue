@@ -6,8 +6,7 @@ const data = defineModel<PlotData>({ required: true });
 
 const { taskId, flush } = inject(TASK_CONTEXT)!;
 
-// The figure of the copied Plot or Preview node: the backend runs the copy it has saved. The
-// switches only change how it is drawn.
+// The figure of the copied Plot or Preview: the backend runs the saved copy; the switches only change drawing
 const figure = ref<PlotlyFigure>();
 const { status, message, refresh } = useLatestRequest(
   computed(() => JSON.stringify(data.value.source ?? null)),
@@ -29,13 +28,12 @@ const element = ref<HTMLElement>();
 usePlotly(element, () => {
   if (!figure.value) return undefined;
   const { interactive, colors } = data.value;
-  // the figure's own width is dropped: it fills the task. Its height stays if it has one (several
-  // rows of panels), else it is 360.
+  // drop the figure's width (it fills the task); keep its height, else 360
   const { width: _w, ...layout } = figure.value.layout as Record<string, any>;
   return {
     data: (figure.value.data as { marker?: object }[]).map((trace) => ({
       ...trace,
-      // without colors: every point in one color, whatever the source colors it by
+      // without colors: one color for every point
       ...(colors
         ? {}
         : {
@@ -65,9 +63,8 @@ usePlotly(element, () => {
     </template>
     <RequestNote :status="status" :message="message" what="Plot" />
     <p v-if="!data.source && editing" class="text-muted">Choose a Plot or Preview to show.</p>
-    <!-- hidden by its height while there is nothing to show (not display: none, which Plotly would
-         measure as no width, and draw at its default size). The plot has an element of its own,
-         since Plotly keeps classes on it that Vue would overwrite. -->
+    <!-- hidden by height while empty (display: none would make Plotly draw at its default size); the
+         plot has its own element since Plotly keeps classes Vue would overwrite -->
     <div class="w-full" :class="{ 'h-0 overflow-hidden': status !== 'idle' || !data.source }">
       <div ref="element" class="w-full" />
     </div>

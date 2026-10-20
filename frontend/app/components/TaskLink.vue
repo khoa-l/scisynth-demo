@@ -5,7 +5,7 @@ const props = defineProps<{
   index: number;
 }>();
 
-// sorted among the study's tasks (the list has its own drag and drop area), by the grip
+// sorted among the study's tasks, by the grip
 const { element, handle, isDragging } = useSortableRow(`task-${props.task.id}`, () => props.index);
 </script>
 

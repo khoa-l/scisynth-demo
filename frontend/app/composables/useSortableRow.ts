@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/vue/sortable";
 
-// A row of a sortable list, dragged by its grip: bind `element` to the row and `handle` to the grip.
+// A sortable row dragged by its grip: bind `element` to the row and `handle` to the grip.
 // `target` is what other rows collide with, if not the whole row.
 export function useSortableRow(
   id: string,

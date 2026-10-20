@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DragOverlay, useDragDropMonitor } from "@dnd-kit/vue";
 
-// The overlay starts at the grabbed item's top-left; shift it so the node is centered on the pointer
+// The overlay starts at the item's top-left; center the node on the pointer
 const offset = ref({ x: 0, y: 0 });
 
 useDragDropMonitor({
@@ -18,7 +18,6 @@ useDragDropMonitor({
 </script>
 
 <template>
-  <!-- Held item looks like the node it will become -->
   <DragOverlay v-slot="{ source }" :drop-animation="null">
     <KindCard
       :type="source?.id as string"

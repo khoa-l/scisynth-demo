@@ -24,8 +24,7 @@ const {
 
 // ---- loading the saved study
 
-// A node can only point at a parent that is already there, so containers go first. The saved
-// order (and what counts as "unchanged" for saving) follows.
+// A node needs its parent present first, so containers go first.
 const initialNodes = [...props.initialNodes].sort(
   (a, b) => Number(!!a.parent) - Number(!!b.parent),
 );
@@ -41,8 +40,8 @@ setNodes(
   })),
 );
 
-// Connections saved against an input that no longer exists (the Observer's old sampler port, now
-// a zone) are dropped; the cleaned list is saved right after loading.
+// Drop connections to inputs that no longer exist (the Observer's old sampler port); the cleaned
+// list is saved after loading.
 const typeById = new Map(initialNodes.map((n) => [n.id, n.type]));
 setEdges(
   props.initialEdges
@@ -52,19 +51,18 @@ setEdges(
         e.targetHandle === "prev" ||
         kindOf(typeById.get(e.target)).ports?.some((port) => port.id === e.targetHandle),
     )
-    // the vertical links between neighbors in a list are straight
+    // list links are straight
     .map((e) => (e.targetHandle === "prev" ? { ...e, type: "straight" } : e)),
 );
 
-// ---- behavior (each needs the study loaded above)
+// ---- behavior
 
 const { isValidConnection } = useConnectionRules();
 const { zoneAt, showHover, placeInList } = useContainers();
 useGraphSave(props.studyId, { nodes: initialNodes, edges: props.initialEdges });
 
-// Once the saved nodes are measured, center the view on them, close up (padding 10%, zoomed in at
-// most 150%), or, coming from a task (`?node=`), on the node it uses, selected. Nodes added later
-// by dropping also trigger this event, so only fit the first time.
+// Once nodes are measured, fit the view (or, from a task's `?node=`, that node, selected). Dropped
+// nodes trigger this too, so only the first time.
 const focus = useRoute().query.node;
 let fitted = props.initialNodes.length === 0;
 onNodesInitialized(() => {
@@ -91,8 +89,7 @@ useDragDropMonitor({
     const kind = NODE_KINDS.find((k) => k.type === event.operation.source?.id);
     if (event.canceled || event.operation.target?.id !== "canvas" || !kind) return;
     const pointer = screenToFlowCoordinate(event.operation.position.current);
-    // dropped on a zone that takes it (a defect on the stages list, a sampler on the sampler
-    // zone): the node goes inside, and the container's layout puts it in its place
+    // dropped on a zone that takes it: it goes inside and the container places it
     const hit = zoneAt(pointer, kind.type);
     const id = newNodeId();
     addNodes({

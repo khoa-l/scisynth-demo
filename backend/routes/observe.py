@@ -1,4 +1,4 @@
-"""What a node shows: a defect's preview, a sampler's plot, and the rows of a sampler or Observer."""
+"""What a node shows: a defect's preview, a plot, or rows."""
 
 from fastapi import APIRouter, Request, Response
 
@@ -12,6 +12,7 @@ from pipeline import (
     plot_json,
     preview_response,
     sampler_response,
+    trace_plot_json,
 )
 
 router = APIRouter(prefix="/api")
@@ -24,25 +25,29 @@ def preview(node_type: str, request: Request) -> Response:
 
 @router.post("/plot")
 def plot(req: PlotRequest) -> Response:
-    """A sampler's plot: the sampler applied to a GaussianField on the given axes, as Plotly."""
+    """A sampler's plot on a GaussianField, as Plotly."""
     return sampler_response(plot_json, req)
 
 
 @router.post("/data")
 def data(req: PlotRequest) -> Response:
-    """The first rows of what a sampler outputs on the given field: its coordinates, then its
-    value (empty where the sample is invalid), and how many rows there are in all."""
+    """The first rows of what a sampler outputs: coordinates, then value (empty where invalid), and the row count."""
     return sampler_response(data_json, req, DATA_ROWS)
 
 
 @router.post("/observer")
 def observer(req: ObserverRequest) -> Response:
-    """The first rows of an Observer's output: the sampler and then the stages, on the given field
-    (the same rows as ``data``)."""
+    """The first rows of an Observer's output (like ``data``)."""
     return sampler_response(observer_json, req, DATA_ROWS)
 
 
 @router.post("/observer/plot")
 def observer_plot(req: ObserverRequest) -> Response:
-    """The plot of an Observer: the latent, then the output of the sampler and of each stage."""
+    """The latent, then each step's output, as panels."""
     return sampler_response(observer_plot_json, req)
+
+
+@router.post("/trace/plot")
+def trace_plot(req: ObserverRequest) -> Response:
+    """An Observer's trace in one 3-D view."""
+    return sampler_response(trace_plot_json, req)

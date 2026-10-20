@@ -1,4 +1,4 @@
-// Colors for the groups of a scatter plot, in order
+// Group colors, in order
 const GROUP_COLORS = [
   "#3b82f6",
   "#f97316",
@@ -10,19 +10,18 @@ const GROUP_COLORS = [
   "#ec4899",
 ];
 
-// the color of group `i`, which repeats after the last
+// the color of group `i`, repeating after the last
 export const groupColor = (i: number) => GROUP_COLORS[i % GROUP_COLORS.length];
 
 export const ONE_COLOR = GROUP_COLORS[0];
 export const NO_VALUE_COLOR = "#9ca3af";
 
-// Number ranges split a column's values into groups: `breaks` are where one range ends and the next
-// begins, so n breaks make n + 1 groups, and a value that is a break starts the range above it.
+// `breaks` split a column's values into n + 1 groups; a value equal to a break starts the range above
 
-// the group (0 is the lowest range) a value falls in
+// the group a value falls in (0 is the lowest)
 export const groupOf = (value: number, breaks: number[]) => breaks.filter((b) => value >= b).length;
 
-// how group `i` reads (the breaks in order): "value < 2", "2 ≤ value < 5", "value ≥ 5"
+// how group `i` reads: "value < 2", "2 ≤ value < 5", "value ≥ 5"
 export function rangeLabel(i: number, breaks: number[], column: string) {
   const lo = breaks[i - 1];
   const hi = breaks[i];
@@ -32,7 +31,7 @@ export function rangeLabel(i: number, breaks: number[], column: string) {
   return `${formatCell(lo)} ≤ ${column} < ${formatCell(hi)}`;
 }
 
-// the values of a column that have one
+// the column's values that exist
 export function columnValues(table: DataRows, column: string) {
   const index = table.columns.indexOf(column);
   return table.rows
@@ -40,7 +39,7 @@ export function columnValues(table: DataRows, column: string) {
     .filter((v): v is number => v !== null && v !== undefined);
 }
 
-// breaks that split the values into `groups` groups of about the same size
+// breaks splitting the values into `groups` groups of about equal size
 export function quantileBreaks(values: number[], groups: number) {
   const sorted = [...values].sort((a, b) => a - b);
   const breaks = Array.from(

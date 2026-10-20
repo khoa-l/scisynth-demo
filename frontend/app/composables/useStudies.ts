@@ -22,7 +22,7 @@ export function useStudies() {
     studies.value.push({ ...study, tasks: [] });
   }
 
-  // Studies whose tasks are hidden. Kept in memory, not saved: a reload shows everything again.
+  // Studies whose tasks are hidden (in memory only)
   const collapsed = useState<number[]>("collapsed-studies", () => []);
   const isCollapsed = (id: number) => collapsed.value.includes(id);
   function toggleCollapsed(id: number) {
@@ -48,7 +48,7 @@ export function useStudies() {
     });
   }
 
-  // Save the order of a study's tasks, and show it on the home page's list too if that is loaded
+  // Save a study's task order, and show it on the home list if loaded
   async function saveTaskOrder(studyId: number, tasks: Task[]) {
     const home = studies.value.find((s) => s.id === studyId);
     if (home) {

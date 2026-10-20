@@ -1,5 +1,4 @@
-// The nodes of a study's workflow that a task's components can show: every Data, Plot and Preview
-// node, as the workflow has them now, named by their kind and order ("Data 1", "Plot 2").
+// A study's Data, Plot and Preview nodes as they are now, named by kind and order ("Data 1")
 export async function useTaskSources(studyId: Ref<number | undefined>) {
   const saved = ref<{ nodes: SavedNode[]; edges: SavedEdge[] }>();
   if (studyId.value !== undefined) {

@@ -2,9 +2,7 @@ import { useVueFlow } from "@vue-flow/core";
 
 const SAVE_DELAY_MS = 300;
 
-// Saves the study's canvas state (nodes and connections) to the backend whenever anything is
-// added, moved or removed. `initial` is what was loaded, so nothing is sent until something
-// differs from it.
+// Saves the canvas (nodes and connections) whenever it differs from `initial`, what was loaded
 export function useGraphSave(studyId: number, initial: { nodes: SavedNode[]; edges: SavedEdge[] }) {
   const { nodes, edges } = useVueFlow(FLOW_ID);
 
@@ -18,7 +16,7 @@ export function useGraphSave(studyId: number, initial: { nodes: SavedNode[]; edg
         return {
           id: n.id,
           type: String(type ?? ""),
-          label: typeof n.label === "string" ? n.label : "", // ours are always text
+          label: typeof n.label === "string" ? n.label : "",
           x: n.position.x,
           y: n.position.y,
           parent: n.parentNode ?? null,
@@ -53,11 +51,10 @@ export function useGraphSave(studyId: number, initial: { nodes: SavedNode[]; edg
     },
   );
 
-  // Data cleaned up on loading (connections to an input that no longer exists, an older Observer
-  // converted to the list) is saved right away; when nothing changed, nothing differs, nothing is sent
+  // Data cleaned up on loading is saved right away
   onMounted(() => void save());
 
-  // Don't lose a pending save when leaving the page
+  // don't lose a pending save on leaving the page
   onBeforeUnmount(() => {
     if (timer) void save();
   });

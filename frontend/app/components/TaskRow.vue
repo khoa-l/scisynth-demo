@@ -3,7 +3,7 @@ const props = defineProps<{ study: Study; task: Task; index: number }>();
 
 const { renameTask, removeTask } = useStudies();
 
-// a task is sorted within its study (the list it is in has its own drag and drop area), by the grip
+// sorted within its study, by the grip
 const { element, handle, isDragging } = useSortableRow(`task-${props.task.id}`, () => props.index);
 </script>
 
@@ -21,7 +21,6 @@ const { element, handle, isDragging } = useSortableRow(`task-${props.task.id}`, 
       <EditableName :item="task" :save="() => renameTask(props.task)" />
     </span>
     <span class="flex gap-1">
-      <!-- opens the task's page -->
       <UButton
         icon="i-lucide-square-pen"
         color="neutral"

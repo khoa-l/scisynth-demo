@@ -1,34 +1,37 @@
-"""obskit behind the API: the nodes' defects and samplers, the requests that describe a pipeline, and
-the cached builders that run them (the same request always gives the same result: seeds are
-explicit)."""
+"""scisynth behind the API: the node tables, the pipeline requests, and the cached builders that
+run them (seeds are explicit, so equal requests give equal results)."""
 
 import json
 import math
 from collections.abc import Mapping
 from functools import lru_cache
-from typing import Any
+from importlib import import_module
+from typing import Any, Literal
 
 import numpy as np
-import obskit
+import scisynth
 from fastapi import HTTPException, Response
 from pydantic import BaseModel
+from scisynth.viz import plot_observations
 
-# Defect node types -> (obskit class, the parameters its node exposes: name -> type). A preview takes
-# them as query parameters; any left out keep obskit's defaults (an optional one is simply unset).
-DEFECTS: dict[str, tuple[type[obskit.Stage], dict[str, type]]] = {
-    "randomDropout": (obskit.RandomDropout, {"p": float}),
-    "gaussianNoise": (obskit.GaussianNoise, {"sigma": float, "mean": float}),
-    "poissonNoise": (obskit.PoissonNoise, {"scale": float}),
-    "quantize": (obskit.Quantize, {"levels": int, "vmin": float, "vmax": float}),
-    "clip": (obskit.Clip, {"lo": float, "hi": float}),
-    "saturate": (obskit.Saturate, {"ceiling": float}),
-    "valueOffset": (obskit.ValueOffset, {"value": float}),
-    "gain": (obskit.Gain, {"factor": float}),
-    "drift": (obskit.Drift, {"rate": float, "axis": str}),
-    "coordinateShift": (obskit.CoordinateShift, {"shift": float}),
-    "positionJitter": (obskit.PositionJitter, {"sigma": float}),  # needs points
-    "randomInsertion": (obskit.RandomInsertion, {"n": int}),  # needs points
-    "downsample": (obskit.Downsample, {"factor": int}),  # needs a grid
+from expressions import lambda_function
+
+# Defect node types -> (scisynth class, exposed parameters: name -> type). Parameters left out keep
+# scisynth's defaults.
+DEFECTS: dict[str, tuple[type[scisynth.Stage], dict[str, type]]] = {
+    "randomDropout": (scisynth.RandomDropout, {"p": float}),
+    "gaussianNoise": (scisynth.GaussianNoise, {"sigma": float, "mean": float}),
+    "poissonNoise": (scisynth.PoissonNoise, {"scale": float}),
+    "quantize": (scisynth.Quantize, {"levels": int, "vmin": float, "vmax": float}),
+    "clip": (scisynth.Clip, {"lo": float, "hi": float}),
+    "saturate": (scisynth.Saturate, {"ceiling": float}),
+    "valueOffset": (scisynth.ValueOffset, {"value": float}),
+    "gain": (scisynth.Gain, {"factor": float}),
+    "drift": (scisynth.Drift, {"rate": float, "axis": str}),
+    "coordinateShift": (scisynth.CoordinateShift, {"shift": float}),
+    "positionJitter": (scisynth.PositionJitter, {"sigma": float}),  # needs points
+    "randomInsertion": (scisynth.RandomInsertion, {"n": int}),  # needs points
+    "downsample": (scisynth.Downsample, {"factor": int}),  # needs a grid
 }
 
 
@@ -36,19 +39,15 @@ DEFECTS: dict[str, tuple[type[obskit.Stage], dict[str, type]]] = {
 def _preview_json(
     node_type: str, params: tuple[tuple[str, Any], ...], seed: int
 ) -> str:
-    # Deterministic (the demo signal is fixed and the seed is explicit), so equal inputs
-    # give equal figures
+    # deterministic: the demo signal is fixed and the seed explicit
     figure = DEFECTS[node_type][0](**dict(params)).preview(seed=seed, interactive=False)
     return figure.to_json()
 
 
 def preview_response(node_type: str, raw_params: Mapping[str, Any]) -> Response:
-    """A defect's preview plot (before / after on its demo signal) as a Plotly figure.
+    """A defect's preview (before / after on its demo signal) as a Plotly figure.
 
-    The defect's parameters (see ``DEFECTS``) are given by name; any left out keep
-    obskit's defaults. ``seed`` (a non-negative integer, default 0) sets the random draw, so
-    the same seed always gives the same preview.
-    """
+    Parameters (see ``DEFECTS``) are given by name; ``seed`` (default 0) sets the random draw."""
     if node_type not in DEFECTS:
         raise HTTPException(status_code=404, detail=f"No preview for {node_type!r}")
     allowed = DEFECTS[node_type][1]
@@ -76,15 +75,15 @@ def preview_response(node_type: str, raw_params: Mapping[str, Any]) -> Response:
         params[name] = value
     try:
         body = _preview_json(node_type, tuple(sorted(params.items())), seed)
-    except ValueError as exc:  # obskit rejecting a value (p outside [0, 1], seed < 0)
+    except ValueError as exc:  # scisynth rejecting a value
         raise HTTPException(status_code=422, detail=str(exc)) from None
     return Response(content=body, media_type="application/json")
 
 
-# Sampler node types -> obskit classes (each takes one whole number: a shape, a count)
+# Sampler node types -> scisynth classes (each takes one whole number)
 SAMPLERS = {
-    "gridSampler": obskit.GridSampler,
-    "pointSampler": obskit.PointSampler,
+    "gridSampler": scisynth.GridSampler,
+    "pointSampler": scisynth.PointSampler,
 }
 
 
@@ -94,14 +93,28 @@ class AxisSpec(BaseModel):
     unit: str = ""
 
 
-class PlotRequest(BaseModel):
+class FieldSpec(BaseModel):
+    """One field: the sum or product of `terms` (themselves fields) when `operation` is set, else an
+    AnalyticField when `expression` is a lambda such as ``lambda x, y: 0.1 * x``, else a GaussianField
+    (its parameters and random draw)."""
+
+    field_params: dict[str, Any] = {}
+    field_seed: int = 0
+    expression: str | None = None
+    operation: Literal["sum", "product"] | None = None
+    terms: list["FieldSpec"] = []
+
+
+class PlotRequest(FieldSpec):
     sampler: str  # a SAMPLERS key
     sampler_params: dict[str, int] = {}
-    # the latent is a GaussianField on a Domain (the only field the nodes can describe so far)
+    # the latent: the field this request's own FieldSpec fields describe, on these axes
     axes: list[AxisSpec]
-    field_params: dict[str, Any] = {}
-    field_seed: int = 0  # the field's random draw
-    seed: int = 0  # the sampler's (only a random sampler, like PointSampler, uses it)
+    # a Multichannel instead: one field per channel (the fields above are then unused), mixed so each
+    # pair of channels has this correlation
+    channels: list[FieldSpec] = []
+    correlation: float = 0.0
+    seed: int = 0  # the sampler's, used only by a random one
 
 
 class StageSpec(BaseModel):
@@ -115,23 +128,56 @@ class ObserverRequest(PlotRequest):
     stages: list[StageSpec] = []
 
 
-MAX_CELLS = 20_000_000  # about 270 x 270 x 270; more than this would exhaust memory
+class ProjectionSpec(BaseModel):
+    method: str  # a PROJECTIONS key
+    params: dict[str, Any] = {}
+    seed: int = 0  # the estimator's random_state
 
 
-def sampler_and_latent(req: PlotRequest) -> tuple[obskit.Sampler, obskit.Latent]:
-    """The sampler, and the field it samples realized from its own seed (seeds are explicit, so
-    equal requests give equal results). obskit refuses a field or grid over `MAX_CELLS` cells before
-    allocating (a field on 5 axes at 128 each is 34 billion), which comes back as a 422."""
-    domain = obskit.Domain.from_extents(
+class ProjectionRequest(ObserverRequest):
+    """A Projection: the Observer's run, embedded in two dimensions."""
+
+    projection: ProjectionSpec
+
+
+MAX_CELLS = 20_000_000  # about 270 x 270 x 270; more would exhaust memory
+MAX_FIELDS = 16  # each GaussianField (a channel, a term) is a realized field in memory
+
+
+def _leaves(spec: FieldSpec) -> int:
+    """How many fields are realized for `spec`."""
+    return max(1, sum(map(_leaves, spec.terms))) if spec.operation else 1
+
+
+def sampler_and_latent(req: PlotRequest) -> tuple[scisynth.Sampler, scisynth.Latent]:
+    """The sampler and the field it samples, realized from the field's seed. scisynth refuses a field
+    or grid over `MAX_CELLS` cells before allocating, which comes back as a 422."""
+    domain = scisynth.Domain.from_extents(
         [a.extent for a in req.axes],
         names=[a.name for a in req.axes],
         units=[a.unit for a in req.axes],
     )
-    field = obskit.GaussianField(domain, **{**req.field_params, "max_cells": MAX_CELLS})
+    def realized(spec: FieldSpec) -> scisynth.FieldLatent:
+        if spec.operation:
+            terms = [realized(t) for t in spec.terms]
+            return (scisynth.Sum if spec.operation == "sum" else scisynth.Product)(*terms)
+        if spec.expression is not None:
+            return scisynth.AnalyticField(lambda_function(spec.expression, domain.ndim), domain)
+        field = scisynth.GaussianField(domain, **{**spec.field_params, "max_cells": MAX_CELLS})
+        return field.realize(spec.field_seed)
+
+    fields = req.channels or [req]
+    if sum(map(_leaves, fields)) > MAX_FIELDS:
+        raise ValueError(f"at most {MAX_FIELDS} fields in one latent")
     sampler_params = dict(req.sampler_params)
     if req.sampler == "gridSampler":
         sampler_params["max_cells"] = MAX_CELLS
-    return SAMPLERS[req.sampler](**sampler_params), field.realize(req.field_seed)
+    sampler = SAMPLERS[req.sampler](**sampler_params)
+    if not req.channels:
+        return sampler, realized(req)
+    corr = np.full((len(req.channels),) * 2, req.correlation)
+    np.fill_diagonal(corr, 1.0)
+    return sampler, scisynth.Multichannel(*map(realized, req.channels), corr=corr)
 
 
 @lru_cache(maxsize=64)
@@ -142,8 +188,7 @@ def plot_json(request_json: str) -> str:
 
 
 def sampler_response(build, req: PlotRequest, *args: Any) -> Response:
-    """Run `build` (a cached function of the request, and any `args`) for a known sampler; obskit
-    rejecting the values is the caller's 422."""
+    """Run the cached `build` for a known sampler; scisynth rejecting the values is a 422."""
     if req.sampler not in SAMPLERS:
         raise HTTPException(status_code=404, detail=f"Unknown sampler {req.sampler!r}")
     try:
@@ -153,30 +198,29 @@ def sampler_response(build, req: PlotRequest, *args: Any) -> Response:
     return Response(content=body, media_type="application/json")
 
 
-DATA_ROWS = 50  # how many rows are sent; the node shows the first few of them
+DATA_ROWS = 50  # rows sent; the node shows the first few
 
 
-MAX_POINTS = 5_000  # how many are sent when a component needs them all (to plot them)
+MAX_POINTS = 5_000  # rows sent to plot them
 
 
-def rows_json(obs: obskit.Observation, limit: int) -> str:
-    """The first `limit` rows of an observation, one per location: its coordinates, then its values
-    (empty where invalid; a column `value`, or `value_1`, `value_2`... for several channels), and
-    how many rows there are in all."""
+def rows_json(obs: scisynth.Observation, limit: int) -> str:
+    """The first `limit` rows of an observation: coordinates (empty with no position), then values (empty where invalid;
+    `value`, or `value_1`, ... for several channels), and the total row count."""
     names = list(obs.coords)
     count = obs.size
     first = np.arange(min(count, limit))
-    if obs.layout == "grid":  # one 1-D coordinate array per axis: row i is a grid point
+    if obs.layout == "grid":  # one 1-D array per axis
         index = np.unravel_index(first, obs.spatial_shape)
         coords = [
             np.asarray(obs.coords[n])[i] for n, i in zip(names, index, strict=True)
         ]
-    else:  # points: every coordinate array has the spatial shape
+    else:  # points: one array per axis, of the spatial shape
         coords = [np.asarray(obs.coords[n]).ravel()[first] for n in names]
     values = obs.values.reshape(count, obs.n_channels)[first]
     valid = obs.mask.ravel()[first]
     rows = [
-        [float(c[i]) for c in coords]
+        [float(c[i]) if math.isfinite(c[i]) else None for c in coords]
         + [float(v) if valid[i] else None for v in values[i]]
         for i in range(first.size)
     ]
@@ -195,14 +239,14 @@ def data_json(request_json: str, limit: int) -> str:
     return rows_json(sampler.run(latent, req.seed), limit)
 
 
-def observer_and_latent(req: ObserverRequest) -> tuple[obskit.Observer, obskit.Latent]:
+def observer_and_latent(req: ObserverRequest) -> tuple[scisynth.Observer, scisynth.Latent]:
     """The Observer (the sampler, then the stages) and the field it observes."""
     sampler, latent = sampler_and_latent(req)
     unknown = [s.type for s in req.stages if s.type not in DEFECTS]
     if unknown:
         raise ValueError(f"Unknown defect {unknown[0]!r}")
     stages = [DEFECTS[s.type][0](**s.params) for s in req.stages]
-    return obskit.Observer(sampler, stages), latent
+    return scisynth.Observer(sampler, stages), latent
 
 
 @lru_cache(maxsize=64)
@@ -214,7 +258,61 @@ def observer_json(request_json: str, limit: int) -> str:
 
 @lru_cache(maxsize=64)
 def observer_plot_json(request_json: str) -> str:
-    """The plot of every step of an Observer: the latent, then each step's output, as panels."""
+    """The latent, then each step's output, as panels."""
     req = ObserverRequest.model_validate_json(request_json)
     observer, latent = observer_and_latent(req)
     return observer.plot(latent, req.seed, interactive=False).to_json()
+
+
+@lru_cache(maxsize=64)
+def trace_plot_json(request_json: str) -> str:
+    """The 3-D plot of an Observer's trace."""
+    req = ObserverRequest.model_validate_json(request_json)
+    observer, latent = observer_and_latent(req)
+    return observer.plot(latent, req.seed, kind="trace").to_json()
+
+
+# Projection methods -> (module, class, exposed parameters: name -> type). The embedding is always
+# two-dimensional; the modules load only when one runs (umap takes seconds to import).
+PROJECTIONS: dict[str, tuple[str, str, dict[str, type]]] = {
+    "pca": ("sklearn.decomposition", "PCA", {}),
+    "umap": ("umap", "UMAP", {"n_neighbors": int, "min_dist": float}),
+}
+
+
+def build_projection(spec: ProjectionSpec) -> scisynth.Projection:
+    """An unfitted scisynth Projection around the method's estimator, in two dimensions."""
+    if spec.method not in PROJECTIONS:
+        raise ValueError(f"Unknown projection {spec.method!r}")
+    module, name, allowed = PROJECTIONS[spec.method]
+    unknown = [k for k in spec.params if k not in allowed]
+    if unknown:
+        raise ValueError(f"Unknown parameter {unknown[0]!r}")
+    params = {k: allowed[k](v) for k, v in spec.params.items()}
+    estimator = getattr(import_module(module), name)
+    return scisynth.Projection(estimator(n_components=2, random_state=spec.seed, **params))
+
+
+def projection_and_trace(req: ProjectionRequest) -> tuple[scisynth.Projection, scisynth.Trace]:
+    """The Observer's trace, and the projection fitted on its first step (the clean samples)."""
+    observer, latent = observer_and_latent(req)
+    trace = observer.trace(latent, req.seed)
+    return build_projection(req.projection).fit(trace[0]), trace
+
+
+@lru_cache(maxsize=64)
+def projection_json(request_json: str, limit: int) -> str:
+    """The first rows of the last step in the embedding: its coordinates `c0` and `c1`, then values."""
+    req = ProjectionRequest.model_validate_json(request_json)
+    projection, trace = projection_and_trace(req)
+    return rows_json(projection.transform(trace[-1]), limit)
+
+
+@lru_cache(maxsize=64)
+def projection_plot_json(request_json: str) -> str:
+    """The clean samples, the last step and its embedding, side by side."""
+    req = ProjectionRequest.model_validate_json(request_json)
+    projection, trace = projection_and_trace(req)
+    embedded = projection.transform(trace[-1])
+    titles = [trace.names[0], trace.names[-1], req.projection.method]
+    return plot_observations([trace[0], trace[-1], embedded], titles, interactive=False).to_json()

@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api")
 
 @router.get("/studies")
 def list_studies() -> list[dict]:
-    """The studies, each with its tasks (the user study tasks made from its workflow)."""
+    """The studies, each with its tasks."""
     with db() as conn:
         tasks: dict[int, list[dict]] = {}
         for t in conn.execute(
@@ -66,7 +66,7 @@ def get_study(study_id: int) -> dict:
 
 @router.get("/studies/{study_id}/usage")
 def get_usage(study_id: int) -> dict[str, list[int]]:
-    """The tasks that use each node of the study as a source: node id -> task ids, in task order."""
+    """The tasks using each node as a source: node id to task ids."""
     with db() as conn:
         require_study(conn, study_id)
         tasks = conn.execute(
@@ -109,7 +109,7 @@ def delete_study(study_id: int) -> Response:
 
 @router.put("/studies/{study_id}/graph", status_code=204)
 def save_graph(study_id: int, graph: GraphState) -> Response:
-    """Replace the saved state of a study's canvas: its nodes and the connections between them."""
+    """Replace a study's saved canvas: nodes and connections."""
     with db() as conn:
         require_study(conn, study_id)
         conn.execute("DELETE FROM nodes WHERE study_id = ?", (study_id,))

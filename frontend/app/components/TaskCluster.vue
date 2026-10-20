@@ -2,14 +2,14 @@
 const props = defineProps<{ uid: number; editing: boolean }>();
 const data = defineModel<ClusterData>({ required: true });
 
-// every point there is room for, to plot them
+// every point, to plot them
 const { table, status, message } = useCopiedRows(
   props.uid,
   computed(() => data.value.source),
   "points",
 );
 
-// the columns plotted: the first two until chosen, and again when the source has no such column
+// plotted columns: the first two until chosen, or if the source lacks them
 watch(table, (t) => {
   if (!t) return;
   const d = data.value;
@@ -27,7 +27,7 @@ watch(table, (t) => {
       <p v-if="!data.source" class="text-muted">Choose an Observer to cluster.</p>
     </template>
     <template v-if="table && data.x && data.y && status === 'idle'">
-      <!-- the preview is the participant's plot: one color, whatever the ranges are -->
+      <!-- the participant's plot: one color -->
       <ClusterPlot
         :table="table"
         :x="data.x"

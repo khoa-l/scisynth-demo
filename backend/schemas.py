@@ -14,7 +14,7 @@ class Rename(BaseModel):
 
 
 class ComponentState(BaseModel):
-    """A component placed in a task: its kind and what it keeps (a text, a copy of a source...)."""
+    """A component placed in a task: its type and data."""
 
     uid: int
     type: str
@@ -31,7 +31,7 @@ class NodeState(BaseModel):
     label: str
     x: float
     y: float
-    # id of the node this one sits inside (x and y are then relative to it), or null
+    # container this node sits in (x, y are then relative to it)
     parent: str | None = None
     data: dict[str, Any] = {}
 
@@ -40,7 +40,7 @@ class EdgeState(BaseModel):
     id: str
     source: str
     target: str
-    # which output / input of the nodes the connection uses (null = the header's)
+    # null is the header's
     sourceHandle: str | None = None
     targetHandle: str | None = None
 

@@ -4,7 +4,6 @@ const component = computed(() => taskComponentOf(props.type));
 </script>
 
 <template>
-  <!-- where a component being dragged in would be placed -->
   <li
     class="flex items-center gap-2 rounded-md border border-dashed border-primary bg-primary/5 px-3 py-3 text-muted"
   >

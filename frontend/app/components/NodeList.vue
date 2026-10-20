@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { useVueFlow } from "@vue-flow/core";
 
-// Shares the canvas's flow store, so the list always mirrors the nodes on it, and a node is
-// selected here exactly when it is selected on the canvas
+// Shares the canvas's flow store: the list mirrors the nodes, and selection is shared
 const { nodes, removeNodes, addSelectedNodes, findNode, setCenter, getViewport, dimensions } =
   useVueFlow(FLOW_ID);
 
-// slow in, slow out: starts and stops gently instead of at full speed
+// slow in, slow out
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
-// Picking a row selects the node and glides the canvas to it (at the zoom it already has). A longer
-// trip takes longer, so the speed on screen stays about the same, between 400 and 900 ms.
+// Selecting a row selects the node and glides the canvas to it at the current zoom; longer trips
+// take longer (400 to 900 ms), so the on-screen speed stays similar.
 function select(id: string) {
   const node = findNode(id);
   if (!node) return;
@@ -22,7 +21,7 @@ function select(id: string) {
     Math.hypot(
       target.x - (dimensions.value.width / 2 - view.x) / view.zoom,
       target.y - (dimensions.value.height / 2 - view.y) / view.zoom,
-    ) * view.zoom; // in screen pixels
+    ) * view.zoom; // screen pixels
   setCenter(target.x, target.y, {
     zoom: view.zoom,
     duration: Math.min(900, 400 + distance * 0.5),
@@ -30,7 +29,7 @@ function select(id: string) {
   });
 }
 
-// Selecting a node on the canvas brings its row into view
+// Selecting a node on the canvas scrolls its row into view
 const list = ref<HTMLElement>();
 const selectedId = computed(() => nodes.value.find((n) => n.selected)?.id);
 watch(

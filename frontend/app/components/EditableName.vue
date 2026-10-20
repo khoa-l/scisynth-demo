@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// A name shown with a pencil to rename it in place; the default slot sits after the pencil.
+// A name with a pencil to rename it in place; the default slot follows the pencil
 const props = defineProps<{ item: { name: string }; save: () => Promise<unknown> }>();
 
 const { editing, start, finish } = useRename(props.item, props.save);

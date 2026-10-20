@@ -1,4 +1,4 @@
-// The components that can be dragged into a task's list, and the data each one keeps
+// Components that can be dragged into a task, and the data each keeps
 export interface TaskComponent {
   type: string;
   label: string;
@@ -12,9 +12,7 @@ export const TASK_COMPONENTS: TaskComponent[] = [
   { type: "cluster", label: "Cluster", icon: "i-lucide-shapes" },
 ];
 
-// A copy of a source (a Data, Plot or Preview node of the workflow) a component shows. The request
-// is kept with the component, so it keeps showing the same data when the workflow changes, until it
-// is refreshed.
+// A copy of a workflow node's request, so the component keeps showing the same data until refreshed
 export interface SourceSnapshot {
   nodeId: string;
   name: string;
@@ -29,28 +27,28 @@ export interface TableData {
 }
 export interface PlotData {
   source?: SourceSnapshot; // a Plot or Preview node
-  interactive: boolean; // zoom, pan and hover; off, a still picture
-  colors: boolean; // as the source colors its points; off, one color
+  interactive: boolean; // zoom, pan and hover; off is a still picture
+  colors: boolean; // the source's point colors; off is one color
 }
 export interface ClusterData {
   source?: SourceSnapshot; // an Observer
-  x?: string; // the columns plotted
+  x?: string; // plotted columns
   y?: string;
-  color?: string; // the column the points are colored by, in groups of number ranges...
-  breaks?: number[]; // ...where one range ends and the next begins, in order
-  names?: string[]; // what each range is called (by its place; empty: the range, "2 ≤ value < 5")
-  showNoValue?: boolean; // plot the points with no value to color by (off: left out)
+  color?: string; // column the points are colored by, in ranges
+  breaks?: number[]; // where each range ends
+  names?: string[]; // range names by position; empty shows the range
+  showNoValue?: boolean; // plot points with no value to color by
 }
 export type ComponentData = TextData | TableData | PlotData | ClusterData;
 
-// A component placed in a task's list (the same type can be placed more than once)
+// A component placed in a task
 export interface PlacedComponent {
   uid: number;
   type: string;
   data: ComponentData;
 }
 
-// What a newly placed component starts with
+// A new component's data
 export function initialData(type: string): ComponentData {
   if (type === "text") return { text: "" };
   if (type === "plot") return { interactive: true, colors: true };
@@ -60,7 +58,7 @@ export function initialData(type: string): ComponentData {
 export const taskComponentOf = (type: string) =>
   TASK_COMPONENTS.find((c) => c.type === type) ?? TASK_COMPONENTS[0]!;
 
-// The type of the component a drag started on in the sidebar (its draggable id), if it is one
+// The component type a sidebar drag started on, if any
 export const componentTypeOf = (id: unknown) =>
   String(id).startsWith(COMPONENT_ID) ? String(id).slice(COMPONENT_ID.length) : undefined;
 

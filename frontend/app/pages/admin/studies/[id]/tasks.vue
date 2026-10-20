@@ -8,8 +8,7 @@ const { studies, load, addTask, moveTask } = useStudies();
 await load();
 const study = computed(() => studies.value.find((s) => s.id === Number(route.params.id)));
 
-// the task shown: the one in the address (`?task=`, from a task's edit button or the sidebar), or the
-// first
+// the task shown: `?task=` (from a task's edit button or the sidebar), else the first
 const task = computed(
   () => study.value?.tasks.find((t) => t.id === Number(route.query.task)) ?? study.value?.tasks[0],
 );
@@ -20,7 +19,7 @@ async function newTask() {
   await router.replace({ query: { task: study.value.tasks.at(-1)?.id } });
 }
 
-// What is in each task's list (saved), and what a component can show: the study's workflow
+// each task's saved list, and what a component can show: the study's workflow
 const { items, setItems, flush } = useTaskComponents(computed(() => task.value?.id));
 const sources = await useTaskSources(computed(() => study.value?.id));
 provide(TASK_CONTEXT, { taskId: computed(() => task.value?.id), sources, flush });
@@ -30,7 +29,7 @@ const MODES = [
   { label: "Edit", value: "edit", icon: "i-lucide-pencil" },
   { label: "Preview", value: "preview", icon: "i-lucide-eye" },
 ];
-const mode = ref("edit"); // its list to edit, or the task as it is shown
+const mode = ref("edit"); // the list to edit, or the task as shown
 const preview = computed(() => mode.value === "preview");
 
 function addItem(type: string, index: number) {
@@ -55,7 +54,7 @@ function addItem(type: string, index: number) {
             class="mb-2"
             @click="newTask"
           />
-          <!-- its own drag and drop area, so tasks are only sorted among themselves -->
+          <!-- own drag area: tasks sort only among themselves -->
           <DragDropProvider @drag-end="onSorted((from, to) => moveTask(study!, from, to))">
             <ul class="flex flex-col gap-2">
               <TaskLink
@@ -87,9 +86,8 @@ function addItem(type: string, index: number) {
               aria-label="Edit or preview the task"
             />
           </div>
-          <!-- the preview is the task itself: its components one after another, without the list. The
-               list to edit is wider by its padding (list 34px, item 18px, body 8px), so a component has
-               the same width, and a plot the same proportions, as in the preview. -->
+          <!-- the task itself, without the list; the list is wider by its padding (34px list, 18px item,
+               8px body), so components match in width and proportions -->
           <div class="mx-auto" :class="preview ? 'max-w-2xl' : 'max-w-[calc(42rem+3.75rem)]'">
             <div v-if="preview" class="flex flex-col gap-6">
               <TaskBody v-for="item in items" :key="item.uid" :item="item" :editing="false" />

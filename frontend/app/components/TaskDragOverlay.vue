@@ -3,7 +3,6 @@ import { DragOverlay } from "@dnd-kit/vue";
 </script>
 
 <template>
-  <!-- no drop animation: the card is gone where it is dropped, it does not fly back -->
   <DragOverlay v-slot="{ source }" :drop-animation="null">
     <div
       v-if="componentTypeOf(source?.id)"

@@ -7,7 +7,7 @@
 }
 
 :root {
-  /* smaller default border radius (Nuxt UI default: 0.25rem) */
+  /* smaller border radius (Nuxt UI default: 0.25rem) */
   --ui-radius: 0.125rem;
   /* primary shade; the color itself is set in app.config.ts */
   --ui-primary: var(--ui-color-primary-600);
@@ -17,12 +17,10 @@
   --ui-primary: var(--ui-color-primary-500);
 }
 
-/* Scrollable areas inside nodes (an open group's rows, the Domain's axis list). The scrollbar is
-   slim, always drawn, and fixed at --sbw wide, so it fits in the 10px of padding the area borrows
-   from the node's side (negative margin). The area's right padding is 10px minus the scrollbar,
-   and the gutter is reserved even when nothing overflows, so the fields end exactly where every
-   other field in the node ends, scrolling or not. Firefox gets its own width: ::-webkit-scrollbar
-   is not supported there. */
+/* Scrollable areas in nodes (an open group's rows, the Domain's axes). Slim, always-drawn scrollbar
+   of fixed width --sbw, in the 10px of side padding the area borrows (negative margin), with the
+   gutter always reserved so fields end where they do elsewhere in the node. Firefox needs its own
+   width. */
 .node-scroll {
   --sbw: 6px;
   scrollbar-gutter: stable;
@@ -50,7 +48,7 @@
   }
 }
 
-/* Node categories: core, sampling, fields and defects each get a colour (background + icon) */
+/* Node categories: each gets a colour (background + icon) */
 .cat-core {
   --cat-bg: var(--ui-color-primary-100);
   --cat-fg: var(--ui-color-primary-700);
@@ -71,7 +69,7 @@
   --cat-fg: var(--ui-color-warning-700);
 }
 
-/* The body of a node (under its colored header) and the shaded band inside it */
+/* A node's body (under its coloured header) and the shaded band inside it */
 :root {
   --node-surface: #fff;
   --node-sunk: rgb(0 0 0 / 0.04);
@@ -81,8 +79,7 @@
   --node-sunk: rgb(255 255 255 / 0.05);
 }
 
-/* Node outline and handles use the same colour as the node's icon */
-/* The fills are light in light mode, so the text is dark (dark mode: see below) */
+/* Node outline and handles use the icon's colour; fills are light in light mode, so text is dark */
 .cat-core,
 .cat-sampling,
 .cat-fields,
@@ -90,9 +87,8 @@
   color: var(--vf-node-text);
 }
 
-/* Dark mode, for nodes and sidebar items alike: an opaque dim tint of the category color (opaque, so
-   the canvas and connections do not show through a node), a lighter icon and outline, and the
-   normal text color. */
+/* Dark mode, for nodes and sidebar items: an opaque dim tint of the category color, a lighter icon
+   and outline, and the normal text color. */
 .dark .cat-core {
   --cat-bg: color-mix(in oklab, var(--ui-color-primary-500) 22%, var(--ui-bg));
   --cat-fg: var(--ui-color-primary-300);
@@ -123,8 +119,7 @@
   --vf-node-color: var(--cat-fg);
 }
 
-/* The selected node (and its row in the sidebar list): a ring in the page's strongest text color,
-   with a gap, so it stands out against every category color in both color modes */
+/* The selected node (and its sidebar row): a ring in the strongest text color, with a gap */
 .vue-flow__node.selected .vue-flow__node-default,
 .node-row.selected {
   box-shadow:
@@ -132,23 +127,20 @@
     0 0 0 4px var(--ui-text-highlighted);
 }
 
-/* every handle, including ones next to a field in the body: category colour, and bigger than
-   VueFlow's 6px so connections are easier to start and drop */
+/* Every handle: category colour, bigger than VueFlow's 6px to be easier to hit */
 [class*="cat-"] .vue-flow__handle {
   --vf-handle: var(--cat-fg);
   width: 10px;
   height: 10px;
 }
 
-/* the header's side handles are centred on the header row (half the 40px header), which is also the
-   middle of a plain node; handles next to a field keep VueFlow's default (middle of their row) */
+/* header side handles are centred on the 40px header; handles beside a field keep VueFlow's default */
 [class*="cat-"] > .vue-flow__handle-left,
 [class*="cat-"] > .vue-flow__handle-right {
   top: 20px;
 }
 
-/* The canvas's controls and minimap take the page's colors, so they follow the color mode (the
-   .vue-flow prefix outranks the libraries' own styles, which load after this file) */
+/* The controls and minimap follow the color mode (.vue-flow outranks the libraries' styles) */
 .vue-flow .vue-flow__controls {
   box-shadow: 0 0 0 1px var(--ui-border);
 }

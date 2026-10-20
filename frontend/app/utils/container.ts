@@ -1,23 +1,22 @@
 import type { GraphNode } from "@vue-flow/core";
 
-// How a container (the Observer) lays out what it holds. The nodes inside are real canvas nodes,
-// but their places are not free: they are stacked inside the container's zones. The container's
-// own height comes from the same numbers, so the areas drawn and the nodes in them always agree.
+// How a container (the Observer) stacks its children in its zones; its own height comes from the
+// same numbers, so the drawn areas and the nodes agree.
 
 export const CONTAINER = {
   inset: 8, // between the container's edge and a zone, and between zones
   pad: 8, // inside a zone, around its nodes
-  itemGap: 16, // between the nodes in a zone: room for the vertical connection between neighbors
+  itemGap: 16, // between nodes in a zone, room for the link between them
 };
 
 export interface LayoutItem {
   id: string;
   type: string;
-  height: number; // measured height (an estimate until the node has been measured)
+  height: number; // measured, or an estimate until then
 }
 
 export interface ZoneBox {
-  zone: Zone; // the zone this box is (its label and hint are drawn from it)
+  zone: Zone;
   left: number;
   top: number;
   width: number;
@@ -25,8 +24,8 @@ export interface ZoneBox {
   members: string[]; // node ids, top to bottom
 }
 
-// Connected nodes in order: each chain starts at a node nothing in the set feeds, then follows its
-// successors. Chains and unconnected nodes keep the order the nodes were added in.
+// Connected nodes in order: each chain starts at a node nothing feeds, then follows its successors.
+// Others keep the order they were added in.
 export function chainOrder(ids: string[], edges: { source: string; target: string }[]) {
   const inSet = new Set(ids);
   const next = new Map<string, string>();
@@ -45,18 +44,18 @@ export function chainOrder(ids: string[], edges: { source: string; target: strin
       out.push(cur);
     }
   }
-  return [...out, ...ids.filter((id) => !seen.has(id))]; // anything left is in a loop
+  return [...out, ...ids.filter((id) => !seen.has(id))]; // the rest are in a loop
 }
 
-// The zones of `kind` (as boxes measured from the node's top-left) and the place of every node
-// in them. `items` are the container's children in the order they were added.
+// The zones of `kind` (as boxes from the node's top-left) and where each child goes; `items` are
+// in the order they were added.
 export function containerLayout(
   kind: NodeKind,
   items: LayoutItem[],
   edges: { source: string; target: string }[],
 ) {
   const width = nodeWidth(kind);
-  const left = 1 + CONTAINER.inset; // 1px: the card's border
+  const left = 1 + CONTAINER.inset; // the card's border
   const zoneWidth = width - 2 - CONTAINER.inset * 2;
   const bodyTop = HEADER_HEIGHT + containerTopHeight(kind);
   const positions = new Map<string, { x: number; y: number }>();
@@ -95,15 +94,14 @@ export function containerLayout(
     });
     y += height + CONTAINER.inset;
   }
-  // the body (everything under the white section) ends one inset below the last zone
   return { zones, positions, unplaced, bodyHeight: y - bodyTop };
 }
 
-// A node's height as measured, or an estimate until it has been
+// A node's height, measured or estimated
 export const heightOf = (node: Pick<GraphNode, "dimensions">) =>
   node.dimensions.height || NODE_SIZE.height;
 
-// The layout of a container on the canvas: its children are the nodes whose parent it is
+// The layout of a container from the nodes whose parent it is
 export function layoutFor(
   container: Pick<GraphNode, "id" | "data">,
   nodes: GraphNode[],

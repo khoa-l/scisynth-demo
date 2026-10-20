@@ -13,7 +13,7 @@ const choices = computed(() =>
     })),
 );
 
-// copy the source as the workflow has it now
+// copy the source as it is now
 function copy(nodeId: string) {
   const source = sources.value.find((s) => s.nodeId === nodeId);
   if (source?.request && !source.request.waiting) {
@@ -21,13 +21,13 @@ function copy(nodeId: string) {
   }
 }
 
-// the node in the workflow, on the canvas
+// the node on the canvas
 const route = useRoute();
 const nodeLink = computed(
   () => `/admin/studies/${route.params.id}?node=${encodeURIComponent(snapshot.value!.nodeId)}`,
 );
 
-// how the copy compares with its node in the workflow now
+// how the copy compares with its node
 const state = computed(() => {
   if (!snapshot.value) return undefined;
   const live = sources.value.find((s) => s.nodeId === snapshot.value!.nodeId);
