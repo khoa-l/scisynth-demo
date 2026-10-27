@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
@@ -21,6 +22,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="SciSynth API", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # plotly.js is 4.6 MB, a figure 150 KB
 
 
 @app.get("/api/health")
