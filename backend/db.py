@@ -105,6 +105,7 @@ def set_order(
 
 def init_db() -> None:
     """Create the tables and add columns older databases lack."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with db() as conn:
         conn.executescript(SCHEMA)
         ensure_column(conn, "studies", "position", "INTEGER NOT NULL DEFAULT 0")

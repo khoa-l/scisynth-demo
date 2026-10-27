@@ -269,7 +269,7 @@ def trace_plot_json(request_json: str) -> str:
     """The 3-D plot of an Observer's trace."""
     req = ObserverRequest.model_validate_json(request_json)
     observer, latent = observer_and_latent(req)
-    return observer.plot(latent, req.seed, kind="trace").to_json()
+    return observer.plot(latent, req.seed, kind="layers").to_json()
 
 
 # Projection methods -> (module, class, exposed parameters: name -> type). The embedding is always
