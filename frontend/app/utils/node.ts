@@ -65,6 +65,8 @@ export interface ParamSpec {
   max?: number;
   integer?: boolean;
   options?: { label: string; value: string }[]; // a choice instead of a number
+  // shown only while another parameter (a choice) has this value
+  when?: { param: string; value: string };
   text?: boolean; // typed text instead of a number
   placeholder?: string; // shown while unset
   // port id: with a Domain connected there, one field per axis (saved as a list)
@@ -186,6 +188,41 @@ export const NODE_KINDS: NodeKind[] = [
     accepts: { types: ["observer"] },
   },
   {
+    type: "projection",
+    label: "Projection",
+    icon: "i-lucide-orbit",
+    category: "core",
+    width: 240,
+    // the Observer's last step, in two dimensions (columns c0 and c1), fitted on its clean samples
+    accepts: { types: ["observer"] },
+    params: [
+      {
+        name: "method",
+        default: "pca",
+        options: [
+          { label: "PCA", value: "pca" },
+          { label: "UMAP", value: "umap" },
+        ],
+      },
+      {
+        name: "n_neighbors",
+        default: 15,
+        min: 2,
+        step: 1,
+        integer: true,
+        when: { param: "method", value: "umap" },
+      },
+      {
+        name: "min_dist",
+        default: 0.1,
+        min: 0,
+        step: 0.05,
+        when: { param: "method", value: "umap" },
+      },
+      SEED,
+    ],
+  },
+  {
     type: "preview",
     label: "Preview",
     icon: "i-lucide-chart-line",
@@ -203,7 +240,7 @@ export const NODE_KINDS: NodeKind[] = [
     expandedWidth: PREVIEW_PLOT.width + NODE_CHROME_WIDTH,
     params: [SEED],
     output: false,
-    accepts: { types: ["gridSampler", "pointSampler", "observer", "trace"] },
+    accepts: { types: ["gridSampler", "pointSampler", "observer", "trace", "projection"] },
   },
   {
     type: "data",

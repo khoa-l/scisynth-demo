@@ -16,7 +16,8 @@ and the conversation, so they carry no dates.
 - **Canvas and drag and drop:** VueFlow for the node canvas, `@dnd-kit/vue` (plus
   `@dnd-kit/dom`, needed for the clone feedback and drag overlay) for dragging items from the
   sidebar.
-- **Backend:** FastAPI, with SQLite through the standard library `sqlite3` (no ORM).
+- **Backend:** FastAPI, with SQLite through the standard library `sqlite3` (no ORM). scikit-learn and
+  umap-learn are dependencies, for the Projection node.
 - **obskit** is a path dependency on `../../obskit`, editable (`uv add --editable`), so the
   backend sees obskit changes without a reinstall.
 - **plotly.js (`plotly.js-dist-min`)** draws the preview plots in the browser. It is large, so it
@@ -174,6 +175,23 @@ and the conversation, so they carry no dates.
   gives correlated channels; groups of channels (two clusters) need a matrix and are not built yet.
   At most 16 fields in all (`MAX_FIELDS`); a correlation scisynth refuses (1, or below
   -1 / (channels - 1)) comes back as its 422 message. Plot shows channel 0, as scisynth does.
+- **Projection** (core): takes an Observer and shows its last step in two dimensions, through
+  scisynth's `Projection`, fitted on the Observer's first step (the clean samples) and applied to the
+  last, as in the example notebook. Choices: `method` (PCA or UMAP) and a `seed` (the estimator's
+  `random_state`); UMAP also has `n_neighbors` and `min_dist`, shown only while UMAP is chosen (`when`
+  on a `ParamSpec`) and sent only for UMAP. The embedding has two components, fixed; other
+  scikit-learn methods and their parameters are not exposed (`PROJECTIONS` in `pipeline.py` lists what
+  is). The output is a table like an Observer's, with the columns `c0` and `c1` first, then the
+  channels (`value_1`...). A location the Observer dropped has no position, so its `c0` and `c1` are
+  empty (`rows_json` turns every non-finite coordinate into null; NaN is not valid JSON). It is a task
+  source (`projection` in `SOURCE_KINDS`, named "Projection 1"), which the Cluster component can take
+  (it plots the first two columns, so the embedding by default), and a Plot's input, which draws
+  the embedding only (one scatter of `c0` against `c1`, coloured by channel 0, from scisynth's
+  `plot_observations`; the clean samples and the last step are not drawn, for now). `POST /api/projection` and
+  `/api/projection/plot` serve the canvas; the task routes run a saved copy as for an Observer. One
+  channel cannot be embedded in two dimensions: scikit-learn's message comes back as a 422. The first
+  UMAP run after the backend starts takes about ten seconds (numba compiles); results are cached.
+  Not done: a Table component of a Projection (the route accepts it, the picker does not offer it).
 - **Math** (fields): one node for scisynth's `Sum` and `Product`, with an `operation` choice (Sum,
   default, or Product) and a `fields` port that takes any number of GaussianFields, AnalyticFields
   or other Maths, in connection order. They combine pointwise on one shared domain (the node says so
@@ -334,7 +352,7 @@ and the conversation, so they carry no dates.
   connected and then 420 px wide.
 - It runs the sampler the way a Plot does and shares the request (`requestOf`, `utils/sources.ts`): the field
   on the sampler's input (or the Observer's latent port) and its Domain. The same things are
-  missing in the same words ("Connect a latent to the sampler", "Connect a domain to the field"),
+  missing in the same words ("Connect a latent to the sampler", "Connect a domain to the GaussianField"),
   and only a GaussianField is supported so far. Its seed field is the sampler's and appears only
   for a sampler that draws at random (a PointSampler); the field's own seed is on the field.
 - `POST /api/data` (the same request as `/api/plot`) returns `{columns, rowCount, rows}` with the
@@ -472,7 +490,7 @@ and the conversation, so they carry no dates.
 - A Plot takes one sampler (a GridSampler or PointSampler, in or out of an Observer) and draws
   `sampler.plot(latent, seed)`. It needs a **latent**: the field on the sampler's input, or for a
   sampler in an Observer the field on the Observer's latent port. Until there is one the node says
-  what is missing ("Connect a latent to the sampler", "Connect a domain to the field").
+  what is missing ("Connect a latent to the sampler", "Connect a domain to the GaussianField").
 - **Only a GaussianField and an AnalyticField can be plotted so far**: scisynth needs a realized
   latent, and the nodes can only describe those two (a GaussianField by its parameters, an
   AnalyticField by its lambda), each with its Domain's axes.
@@ -864,3 +882,33 @@ and the conversation, so they carry no dates.
   channels, one term, no terms, 17 fields, a bad operation) and through the frontend's `requestOf`, run on
   graphs of the nodes (sum, nested, channels, an analytic channel, a loop, two domains, no domain), and that
   request sent to the backend; `nuxt typecheck`. Not yet looked at on the canvas.
+- **2026-10-20** Added the Projection node (PCA or UMAP of an Observer; see Nodes). Backend: scikit-learn and
+  umap-learn added; `ProjectionSpec`, `ProjectionRequest`, `build_projection`, `projection_json` and
+  `projection_plot_json` in `pipeline.py`; `POST /api/projection` and `/api/projection/plot`; the task
+  routes run a copied projection; `rows_json` writes null for a coordinate with no position. Frontend:
+  `projection` kind (Plot accepts it), `when` on `ParamSpec` (and `ParamInputs` hides the rows), `projectionRequest`
+  in `sources.ts`, `projection` a source kind, and the Cluster component's picker offers it. Checked: through
+  the API on the cluster data (6 channels in two groups, Observer with noise and dropout; PCA and UMAP rows and
+  plots; an unknown method, parameter and value and a one-channel Observer are 422s; the output is valid
+  JSON), that both methods separate the two groups (their centres are about 1.7 spreads apart),
+  the frontend's `requestOf` on graphs of the nodes sent to the backend, and the same requests saved
+  as a task's Cluster, Plot and Table components and read back through the task routes; `nuxt typecheck`.
+  Not yet looked at on the canvas or in the task view.
+- **2026-10-20** The message for a field with no domain now names it ("Connect a domain to the AnalyticField", not "...to
+  the field"). Found in a study where the Domain was connected to the GaussianField but not to the AnalyticField
+  beside it in a Math: both fields need their own Domain, and the old message did not say which one lacked it. Checked
+  by running that study's saved graph through `requestOf` (the message, and every plot and the Projection ready once
+  the AnalyticField has the domain).
+- **2026-10-20** The Plot of a Projection draws only the embedding: `projection_plot_json` passes scisynth's
+  `plot_observations` the embedded last step alone, where it passed the clean samples, the last step and the
+  embedding. Done here, not in scisynth. Checked through the API for PCA and UMAP: one scatter trace, all 576
+  points, axes `c0` and `c1`, titled with the method, coloured by channel 0 with a colour bar. Not yet looked at
+  on the canvas.
+- **2026-10-27** Hosting on Railway as one container. The `Dockerfile` builds the frontend (`pnpm generate`, new
+  script, static since `ssr` is off) and the backend serves it from `FRONTEND_DIR` through `SinglePage`, a
+  `StaticFiles` that answers a missing path with no file extension with `index.html` (the study and task pages
+  route in the browser); `/api` and missing files stay 404. Without `FRONTEND_DIR` (development) nothing is
+  mounted. scisynth is now a git dependency (`khoa-l/scisynth`, `main`) instead of the editable `../../scisynth`
+  path, which a remote build cannot see; the lock pins commit 55bb3fc. The database lives on a volume at `/data`.
+  Checked: `pnpm generate`, and the built files served through the backend (pages, deep links, 404s). The image
+  itself was not built (Docker was not running) and nothing is deployed yet.

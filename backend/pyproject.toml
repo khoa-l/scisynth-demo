@@ -17,4 +17,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-scisynth = { path = "../../scisynth", editable = true }
+scisynth = { git = "https://github.com/khoa-l/scisynth.git", branch = "main" }

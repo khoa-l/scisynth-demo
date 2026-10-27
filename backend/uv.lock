@@ -56,7 +56,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.142.2" },
     { name = "plotly", specifier = ">=7.1.0" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
-    { name = "scisynth", editable = "../../scisynth" },
+    { name = "scisynth", git = "https://github.com/khoa-l/scisynth.git?branch=main" },
     { name = "umap-learn", specifier = ">=0.5.12" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
@@ -685,31 +685,11 @@ wheels = [
 [[package]]
 name = "scisynth"
 version = "0.1.0a1"
-source = { editable = "../../scisynth" }
+source = { git = "https://github.com/khoa-l/scisynth.git?branch=main#55bb3fc3ddfe6142e7eede08f4d6aafcf239475c" }
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "marimo", marker = "extra == 'dev'", specifier = ">=0.10" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
-    { name = "numpy", specifier = ">=1.24" },
-    { name = "numpydoc", marker = "extra == 'dev'", specifier = ">=1.11" },
-    { name = "pdoc", marker = "extra == 'dev'", specifier = ">=14" },
-    { name = "plotly", marker = "extra == 'dev'", specifier = ">=5.20" },
-    { name = "plotly", marker = "extra == 'viz'", specifier = ">=5.20" },
-    { name = "polars", marker = "extra == 'polars'", specifier = ">=1.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
-    { name = "scikit-learn", marker = "extra == 'sklearn'", specifier = ">=1.3" },
-    { name = "scipy", specifier = ">=1.10" },
-    { name = "xarray", marker = "extra == 'xarray'", specifier = ">=2023.1" },
-]
-provides-extras = ["sklearn", "polars", "viz", "xarray", "dev"]
 
 [[package]]
 name = "starlette"

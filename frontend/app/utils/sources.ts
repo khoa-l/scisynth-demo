@@ -22,8 +22,8 @@ export const graphOf = (saved: { nodes: SavedNode[]; edges: SavedEdge[] }): Grap
 });
 
 // Nodes that can be a task's source
-export type SourceKind = "data" | "plot" | "preview" | "observer";
-export const SOURCE_KINDS: SourceKind[] = ["data", "plot", "preview", "observer"];
+export type SourceKind = "data" | "plot" | "preview" | "observer" | "projection";
+export const SOURCE_KINDS: SourceKind[] = ["data", "plot", "preview", "observer", "projection"];
 
 // What to ask the backend for
 export interface SourceRequest {
@@ -34,8 +34,8 @@ export interface SourceRequest {
   waiting?: string; // what is missing when it cannot run
 }
 
-// A Plot of an Observer shows every step; of its Trace, the 3-D view
-const PLOTTED_OBSERVER = ["observer", "trace"];
+// A Plot of an Observer shows every step; of its Trace, the 3-D view; of a Projection, the embedding
+const PLOTTED_OBSERVER = ["observer", "trace", "projection"];
 
 // As `$fetch` options
 export const endpointOf = (request: SourceRequest) =>
@@ -97,7 +97,7 @@ function fieldOf(graph: GraphLike, field: GraphNodeLike, seen: string[] = []): F
   }
   const domainEdge = edgeInto(graph, field.id, "domain");
   const axes = nodeOf(graph, domainEdge?.source)?.data?.axes;
-  if (!axes?.length) return { waiting: "Connect a domain to the field" };
+  if (!axes?.length) return { waiting: `Connect a domain to the ${kindOf(type).label}` };
   if (type === "analyticField") {
     const expression = String(valuesOf(field).func ?? "").trim();
     if (!expression) return { waiting: "Type a lambda for the field" };
@@ -225,6 +225,28 @@ function observerRequest(graph: GraphLike, observer: GraphNodeLike): SourceReque
   };
 }
 
+// A Projection: the Observer on its input, then the method and its parameters; the seed is the
+// method's own
+function projectionRequest(graph: GraphLike, projection: GraphNodeLike): SourceRequest {
+  const waiting = (reason: string): SourceRequest => ({
+    kind: "projection",
+    type: "projection",
+    waiting: reason,
+  });
+  const observer = nodeOf(graph, edgeInto(graph, projection.id)?.source);
+  if (!observer) return waiting("Connect an Observer to the Projection");
+  const found = observerRequest(graph, observer);
+  if (found.waiting) return waiting(found.waiting);
+  const { method, seed, ...rest } = valuesOf(projection);
+  // only a method's own parameters
+  const params = method === "umap" ? rest : {};
+  return {
+    kind: "projection",
+    type: "projection",
+    body: { ...found.body, projection: { method, seed, params } },
+  };
+}
+
 // What to ask the backend for to run node `id` from what is connected to it; nothing if nothing is.
 // A Preview shows the connected defect (seed is the Preview's); Data and Plot show the connected
 // sampler (a Plot also takes an Observer or its Trace).
@@ -233,10 +255,14 @@ export function requestOf(graph: GraphLike, id: string): SourceRequest | undefin
   const kind = node?.data?.type as SourceKind | undefined;
   if (!node || !kind || !SOURCE_KINDS.includes(kind)) return undefined;
   if (kind === "observer") return observerRequest(graph, node);
+  if (kind === "projection") return projectionRequest(graph, node);
   const source = nodeOf(graph, edgeInto(graph, id)?.source);
   if (!source?.data?.type) return undefined;
   if (kind === "plot" && source.data.type === "observer") {
     return { ...observerRequest(graph, source), kind };
+  }
+  if (kind === "plot" && source.data.type === "projection") {
+    return { ...projectionRequest(graph, source), kind };
   }
   if (kind === "plot" && source.data.type === "trace") {
     const observer = nodeOf(graph, edgeInto(graph, source.id)?.source);

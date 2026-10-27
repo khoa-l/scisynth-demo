@@ -310,9 +310,8 @@ def projection_json(request_json: str, limit: int) -> str:
 
 @lru_cache(maxsize=64)
 def projection_plot_json(request_json: str) -> str:
-    """The clean samples, the last step and its embedding, side by side."""
+    """The last step in the embedding, as a scatter."""
     req = ProjectionRequest.model_validate_json(request_json)
     projection, trace = projection_and_trace(req)
     embedded = projection.transform(trace[-1])
-    titles = [trace.names[0], trace.names[-1], req.projection.method]
-    return plot_observations([trace[0], trace[-1], embedded], titles, interactive=False).to_json()
+    return plot_observations([embedded], [req.projection.method], interactive=False).to_json()

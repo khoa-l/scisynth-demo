@@ -33,6 +33,23 @@ backend first.
 
 Other scripts: `pnpm build`, `pnpm preview`, `pnpm lint`, `pnpm typecheck`.
 
+## Deploy (Railway)
+
+The `Dockerfile` builds the frontend to static files and serves them from the backend, so the whole
+app is one service on one port.
+
+1. Push this repo to GitHub, then in Railway choose New Project, Deploy from GitHub repo.
+2. Add a volume to the service, mounted at `/data`. The database is kept there (`SCISYNTH_DB`
+   defaults to `/data/scisynth.db` in the image); without a volume, studies are lost on each deploy.
+3. Under Networking, generate a public domain.
+
+Railway sets `PORT`; the image uses it. scisynth is installed from
+`github.com/khoa-l/scisynth` (`main`, pinned by `backend/uv.lock`); run `uv lock --upgrade-package
+scisynth` to take newer commits. To work on scisynth next to this repo, run
+`uv pip install -e ../../scisynth` in `backend` after `uv sync`.
+
+There is no real sign-in (see the decisions), so anyone with the link can edit studies.
+
 ## Notes
 
 Design choices are in [docs/decisions.md](docs/decisions.md).

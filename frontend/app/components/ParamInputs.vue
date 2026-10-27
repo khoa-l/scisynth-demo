@@ -57,32 +57,34 @@ function toggle(spec: ParamSpec) {
 }
 
 const rows = computed<Row[]>(() =>
-  (kind.value.params ?? []).flatMap((spec): Row[] => {
-    const axes = spec.perAxisOf ? axesAt(spec.perAxisOf) : null;
-    if (!axes?.length) return [{ spec, key: spec.name, label: spec.name, aria: spec.name }];
-    const perAxis = axes.map((axis, index): Row => {
-      const aria = `${spec.name} ${axis.name}`;
-      return {
+  (kind.value.params ?? [])
+    .filter((spec) => !spec.when || values.value[spec.when.param] === spec.when.value)
+    .flatMap((spec): Row[] => {
+      const axes = spec.perAxisOf ? axesAt(spec.perAxisOf) : null;
+      if (!axes?.length) return [{ spec, key: spec.name, label: spec.name, aria: spec.name }];
+      const perAxis = axes.map((axis, index): Row => {
+        const aria = `${spec.name} ${axis.name}`;
+        return {
+          spec,
+          key: `${spec.name}:${index}`,
+          // one axis keeps the parameter name; more are named by axis
+          label: axes.length > 1 ? axis.name : spec.name,
+          aria: axes.length > 1 ? aria : spec.name,
+          axis: { index, count: axes.length },
+          nested: axes.length > 1,
+        };
+      });
+      if (axes.length === 1) return perAxis;
+      const header: Row = {
         spec,
-        key: `${spec.name}:${index}`,
-        // one axis keeps the parameter name; more are named by axis
-        label: axes.length > 1 ? axis.name : spec.name,
-        aria: axes.length > 1 ? aria : spec.name,
-        axis: { index, count: axes.length },
-        nested: axes.length > 1,
+        key: spec.name,
+        label: spec.name,
+        aria: spec.name,
+        axis: { index: 0, count: axes.length },
+        summary: true,
       };
-    });
-    if (axes.length === 1) return perAxis;
-    const header: Row = {
-      spec,
-      key: spec.name,
-      label: spec.name,
-      aria: spec.name,
-      axis: { index: 0, count: axes.length },
-      summary: true,
-    };
-    return expanded.value.has(spec.name) ? [header, ...perAxis] : [header];
-  }),
+      return expanded.value.has(spec.name) ? [header, ...perAxis] : [header];
+    }),
 );
 
 // Consecutive nested rows share a band

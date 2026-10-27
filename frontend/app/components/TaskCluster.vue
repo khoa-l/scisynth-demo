@@ -22,9 +22,9 @@ watch(table, (t) => {
 <template>
   <div class="flex flex-col gap-3">
     <template v-if="editing">
-      <SourceBar v-model="data.source" :kinds="['observer']" />
-      <RequestNote :status="status" :message="message" what="Observer" />
-      <p v-if="!data.source" class="text-muted">Choose an Observer to cluster.</p>
+      <SourceBar v-model="data.source" :kinds="['observer', 'projection']" />
+      <RequestNote :status="status" :message="message" what="Data" />
+      <p v-if="!data.source" class="text-muted">Choose an Observer or Projection to cluster.</p>
     </template>
     <template v-if="table && data.x && data.y && status === 'idle'">
       <!-- the participant's plot: one color -->

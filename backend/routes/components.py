@@ -11,11 +11,14 @@ from pipeline import (
     MAX_POINTS,
     ObserverRequest,
     PlotRequest,
+    ProjectionRequest,
     data_json,
     observer_json,
     observer_plot_json,
     plot_json,
     preview_response,
+    projection_json,
+    projection_plot_json,
     sampler_response,
     trace_plot_json,
 )
@@ -45,31 +48,35 @@ def _run(request: dict, limit: int) -> Response:
     if request["kind"] == "preview":
         query = {k: str(v) for k, v in request.get("query", {}).items()}
         return preview_response(request["type"], query)
-    observer = request["type"] in (
-        "observer",
-        "trace",
-    )  # an Observer, or a Plot of it or its trace
-    model = ObserverRequest if observer else PlotRequest
+    # an Observer, or a Plot of it or its trace; a Projection of an Observer, or a Plot of that
+    observer = request["type"] in ("observer", "trace")
+    projected = request["type"] == "projection"
+    model = ProjectionRequest if projected else ObserverRequest if observer else PlotRequest
     try:
         req = model.model_validate(request["body"])
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from None
     if request["kind"] == "plot":
-        plots = {"observer": observer_plot_json, "trace": trace_plot_json}
+        plots = {
+            "observer": observer_plot_json,
+            "trace": trace_plot_json,
+            "projection": projection_plot_json,
+        }
         return sampler_response(plots.get(request["type"], plot_json), req)
-    return sampler_response(observer_json if observer else data_json, req, limit)
+    rows = projection_json if projected else observer_json if observer else data_json
+    return sampler_response(rows, req, limit)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/data")
 def component_data(task_id: int, uid: int) -> Response:
-    """The first rows of the copied Data node or Observer."""
-    return _run(_copied_request(task_id, uid, ("data", "observer")), DATA_ROWS)
+    """The first rows of the copied Data node, Observer or Projection."""
+    return _run(_copied_request(task_id, uid, ("data", "observer", "projection")), DATA_ROWS)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/points")
 def component_points(task_id: int, uid: int) -> Response:
     """Up to ``MAX_POINTS`` rows, to plot every point."""
-    return _run(_copied_request(task_id, uid, ("data", "observer")), MAX_POINTS)
+    return _run(_copied_request(task_id, uid, ("data", "observer", "projection")), MAX_POINTS)
 
 
 @router.get("/tasks/{task_id}/components/{uid}/figure")
