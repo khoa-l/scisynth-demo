@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -70,5 +70,31 @@ export const authMe = <ThrowOnError extends boolean = false>(options?: Options<A
             type: 'apiKey'
         }],
     url: '/api/auth/me',
+    ...options
+});
+
+/**
+ * Get Projects
+ */
+export const projectsGetProjects = <ThrowOnError extends boolean = false>(options?: Options<ProjectsGetProjectsData, ThrowOnError>): RequestResult<ProjectsGetProjectsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ProjectsGetProjectsResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects',
+    ...options
+});
+
+/**
+ * Create Project
+ */
+export const projectsCreateProject = <ThrowOnError extends boolean = false>(options?: Options<ProjectsCreateProjectData, ThrowOnError>): RequestResult<ProjectsCreateProjectResponses, unknown, ThrowOnError> => (options?.client ?? client).post<ProjectsCreateProjectResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects',
     ...options
 });

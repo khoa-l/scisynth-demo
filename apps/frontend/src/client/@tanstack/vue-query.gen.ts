@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsGetProjects } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -125,3 +125,38 @@ export const authMeOptions = (options?: Options<AuthMeData>) => queryOptions<Aut
     },
     queryKey: authMeQueryKey(options)
 });
+
+export const projectsGetProjectsQueryKey = (options?: Options<ProjectsGetProjectsData>) => createQueryKey('projectsGetProjects', options);
+
+/**
+ * Get Projects
+ */
+export const projectsGetProjectsOptions = (options?: Options<ProjectsGetProjectsData>) => queryOptions<ProjectsGetProjectsResponse, DefaultError, ProjectsGetProjectsResponse, ReturnType<typeof projectsGetProjectsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await projectsGetProjects({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: projectsGetProjectsQueryKey(options)
+});
+
+/**
+ * Create Project
+ */
+export const projectsCreateProjectMutation = (options?: Partial<Options<ProjectsCreateProjectData>>): UseMutationOptions<ProjectsCreateProjectResponse, DefaultError, Options<ProjectsCreateProjectData>> => {
+    const mutationOptions: UseMutationOptions<ProjectsCreateProjectResponse, DefaultError, Options<ProjectsCreateProjectData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await projectsCreateProject({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

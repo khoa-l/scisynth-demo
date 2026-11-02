@@ -39,6 +39,24 @@ export type LoginRequest = {
 };
 
 /**
+ * ProjectPublic
+ */
+export type ProjectPublic = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * RegisterRequest
  */
 export type RegisterRequest = {
@@ -191,3 +209,37 @@ export type AuthMeResponses = {
 };
 
 export type AuthMeResponse = AuthMeResponses[keyof AuthMeResponses];
+
+export type ProjectsGetProjectsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/projects';
+};
+
+export type ProjectsGetProjectsResponses = {
+    /**
+     * Response Projects-Get Projects
+     *
+     * Successful Response
+     */
+    200: Array<ProjectPublic>;
+};
+
+export type ProjectsGetProjectsResponse = ProjectsGetProjectsResponses[keyof ProjectsGetProjectsResponses];
+
+export type ProjectsCreateProjectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/projects';
+};
+
+export type ProjectsCreateProjectResponses = {
+    /**
+     * Successful Response
+     */
+    201: ProjectPublic;
+};
+
+export type ProjectsCreateProjectResponse = ProjectsCreateProjectResponses[keyof ProjectsCreateProjectResponses];

@@ -14,6 +14,13 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class Project(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=200)
+    owner_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class UserSession(SQLModel, table=True):
     __tablename__ = "user_session"
 
