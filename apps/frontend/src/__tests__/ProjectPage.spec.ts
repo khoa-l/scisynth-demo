@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { flushPromises, mount } from "@vue/test-utils";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import type { Component } from "vue";
 
@@ -125,6 +125,7 @@ async function mountItemView(component: Component, props: Record<string, string 
   queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
   const wrapper = mount(component, {
     props: { projectId: PROJECT_ID, ...props },
+    attachTo: document.body,
     global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
   });
   await flushPromises();
@@ -191,7 +192,7 @@ describe.each([
       "Left canvas",
       "Right canvas",
     ]);
-    expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
+    expect(wrapper.find(".grid-cols-2").findAll("section")).toHaveLength(2);
   });
 
   it("says when the item can't be found", async () => {
@@ -232,13 +233,182 @@ describe("Dataset view", () => {
   });
 });
 
+describe("Dataset node toolbar", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sits above the node graph in the left column only", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const toolbar = wrapper.find('[role="toolbar"][aria-label="Node editor tools"]');
+    expect(toolbar.exists()).toBe(true);
+    const left = wrapper.find('section[aria-label="Left canvas"]');
+    expect(toolbar.element.nextElementSibling).toBe(left.element);
+    expect(left.classes()).toContain("flex-1");
+    expect(wrapper.find('section[aria-label="Right canvas"] [role="toolbar"]').exists()).toBe(
+      false,
+    );
+  });
+
+  function toolbarButton(wrapper: VueWrapper, label: string) {
+    return wrapper
+      .find('[role="toolbar"]')
+      .findAll("button")
+      .find((button) => button.text() === label)!;
+  }
+
+  function openMenu() {
+    return document.querySelector<HTMLElement>('[role="menu"]');
+  }
+
+  function menuText(element: Element, selector: string) {
+    return [...element.querySelectorAll(selector)].map((item) => item.textContent?.trim());
+  }
+
+  async function openToolbarMenu(wrapper: VueWrapper, label: string) {
+    await toolbarButton(wrapper, label).trigger("keydown", { key: "Enter" });
+    await flushPromises();
+    return openMenu()!;
+  }
+
+  async function addFromMenu(wrapper: VueWrapper, category: string, label: string) {
+    const menu = await openToolbarMenu(wrapper, category);
+    [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+      .find((item) => item.textContent?.trim() === label)!
+      .click();
+    await flushPromises();
+  }
+
+  it("has a dropdown button for each SciSynth category with standard text", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const buttons = wrapper.find('[role="toolbar"]').findAll("button");
+    expect(buttons.map((button) => button.text())).toEqual([
+      "Latent",
+      "Sampler",
+      "Stages",
+      "Projection",
+    ]);
+    for (const button of buttons) {
+      expect(button.classes()).toContain("text-sm");
+      expect(button.classes()).not.toContain("text-base");
+      expect(button.attributes("aria-haspopup")).toBe("menu");
+    }
+    wrapper.unmount();
+  });
+
+  it("uses standard text sizes in the category menus", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const menu = await openToolbarMenu(wrapper, "Stages");
+    const items = [...menu.querySelectorAll('[role="menuitem"]')];
+    expect(items.every((item) => item.classList.contains("text-sm"))).toBe(true);
+    expect(items.some((item) => item.classList.contains("text-base"))).toBe(false);
+    const labels = [...menu.querySelectorAll('[data-slot="dropdown-menu-label"]')];
+    expect(labels.every((label) => label.classList.contains("text-xs"))).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("groups latent fields and composites in the Latent menu", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const menu = await openToolbarMenu(wrapper, "Latent");
+    expect(menuText(menu, '[data-slot="dropdown-menu-label"]')).toEqual(["Fields", "Composites"]);
+    expect(menuText(menu, '[role="menuitem"]')).toEqual([
+      "Gaussian field",
+      "Analytic field",
+      "Interpolated field",
+      "Sum",
+      "Product",
+      "Multichannel",
+    ]);
+    wrapper.unmount();
+  });
+
+  it("puts defects and transforms under Stages", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const menu = await openToolbarMenu(wrapper, "Stages");
+    expect(menuText(menu, '[data-slot="dropdown-menu-label"]')).toEqual(["Defects", "Transforms"]);
+    const items = menuText(menu, '[role="menuitem"]');
+    expect(items).toHaveLength(13);
+    expect(items.slice(0, 2)).toEqual(["Gaussian noise", "Poisson noise"]);
+    expect(items[items.length - 1]).toBe("Downsample");
+    wrapper.unmount();
+  });
+
+  it.each([
+    ["Sampler", ["Grid sampler", "Point sampler"]],
+    ["Projection", ["Projection"]],
+  ])("lists the %s options", async (category, expected) => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    const menu = await openToolbarMenu(wrapper, category);
+    expect(menuText(menu, '[role="menuitem"]')).toEqual(expected);
+    wrapper.unmount();
+  });
+
+  it("adds the chosen node to the graph with a matching shape", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    await addFromMenu(wrapper, "Latent", "Gaussian field");
+    await addFromMenu(wrapper, "Sampler", "Grid sampler");
+    await addFromMenu(wrapper, "Stages", "Gaussian noise");
+    await addFromMenu(wrapper, "Projection", "Projection");
+
+    const nodes = wrapper.findAll(".vue-flow__node");
+    expect(nodes.map((node) => node.text())).toEqual([
+      "Gaussian field",
+      "Grid sampler",
+      "Gaussian noise",
+      "Projection",
+    ]);
+    expect(
+      nodes.map((node) => node.classes().find((c) => c.startsWith("vue-flow__node-"))),
+    ).toEqual([
+      "vue-flow__node-input",
+      "vue-flow__node-default",
+      "vue-flow__node-default",
+      "vue-flow__node-output",
+    ]);
+    expect(openMenu()).toBeNull();
+    wrapper.unmount();
+  });
+});
+
 describe("Survey item view", () => {
-  it("leaves both panels empty", async () => {
+  it("has no node toolbar", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
+    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+
+    expect(wrapper.find('[role="toolbar"]').exists()).toBe(false);
+  });
+
+  it("fills both panels with light grey and a small inner shadow", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
     const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
 
     const canvases = wrapper.findAll("section");
     expect(canvases).toHaveLength(2);
-    expect(canvases.every((canvas) => canvas.element.childElementCount === 0)).toBe(true);
+    for (const canvas of canvases) {
+      const fill = canvas.find("div");
+      expect(fill.classes()).toEqual(
+        expect.arrayContaining(["h-full", "bg-muted", "inset-shadow-sm"]),
+      );
+      expect(fill.element.childElementCount).toBe(0);
+    }
   });
 });

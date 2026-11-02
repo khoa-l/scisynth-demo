@@ -24,5 +24,12 @@ const { data: survey, isError } = useQuery(
     :is-error="isError"
     back-to="project-survey"
     back-label="Surveys"
-  />
+  >
+    <template #left>
+      <div class="h-full bg-muted inset-shadow-sm" />
+    </template>
+    <template #right>
+      <div class="h-full bg-muted inset-shadow-sm" />
+    </template>
+  </ProjectItemPage>
 </template>
