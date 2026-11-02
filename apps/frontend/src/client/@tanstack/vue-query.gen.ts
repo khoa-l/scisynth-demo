@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurveys, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -203,6 +203,144 @@ export const projectsUpdateProjectMutation = (options?: Partial<Options<Projects
     const mutationOptions: UseMutationOptions<ProjectsUpdateProjectResponse, ProjectsUpdateProjectError, Options<ProjectsUpdateProjectData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await projectsUpdateProject({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const datasetsGetDatasetsQueryKey = (options: Options<DatasetsGetDatasetsData>) => createQueryKey('datasetsGetDatasets', options);
+
+/**
+ * Get Datasets
+ */
+export const datasetsGetDatasetsOptions = (options: Options<DatasetsGetDatasetsData>) => queryOptions<DatasetsGetDatasetsResponse, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, ReturnType<typeof datasetsGetDatasetsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await datasetsGetDatasets({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: datasetsGetDatasetsQueryKey(options)
+});
+
+/**
+ * Create Dataset
+ */
+export const datasetsCreateDatasetMutation = (options?: Partial<Options<DatasetsCreateDatasetData>>): UseMutationOptions<DatasetsCreateDatasetResponse, DatasetsCreateDatasetError, Options<DatasetsCreateDatasetData>> => {
+    const mutationOptions: UseMutationOptions<DatasetsCreateDatasetResponse, DatasetsCreateDatasetError, Options<DatasetsCreateDatasetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await datasetsCreateDataset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete Dataset
+ */
+export const datasetsDeleteDatasetMutation = (options?: Partial<Options<DatasetsDeleteDatasetData>>): UseMutationOptions<DatasetsDeleteDatasetResponse, DatasetsDeleteDatasetError, Options<DatasetsDeleteDatasetData>> => {
+    const mutationOptions: UseMutationOptions<DatasetsDeleteDatasetResponse, DatasetsDeleteDatasetError, Options<DatasetsDeleteDatasetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await datasetsDeleteDataset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update Dataset
+ */
+export const datasetsUpdateDatasetMutation = (options?: Partial<Options<DatasetsUpdateDatasetData>>): UseMutationOptions<DatasetsUpdateDatasetResponse, DatasetsUpdateDatasetError, Options<DatasetsUpdateDatasetData>> => {
+    const mutationOptions: UseMutationOptions<DatasetsUpdateDatasetResponse, DatasetsUpdateDatasetError, Options<DatasetsUpdateDatasetData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await datasetsUpdateDataset({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const surveysGetSurveysQueryKey = (options: Options<SurveysGetSurveysData>) => createQueryKey('surveysGetSurveys', options);
+
+/**
+ * Get Surveys
+ */
+export const surveysGetSurveysOptions = (options: Options<SurveysGetSurveysData>) => queryOptions<SurveysGetSurveysResponse, SurveysGetSurveysError, SurveysGetSurveysResponse, ReturnType<typeof surveysGetSurveysQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysGetSurveys({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysGetSurveysQueryKey(options)
+});
+
+/**
+ * Create Survey
+ */
+export const surveysCreateSurveyMutation = (options?: Partial<Options<SurveysCreateSurveyData>>): UseMutationOptions<SurveysCreateSurveyResponse, SurveysCreateSurveyError, Options<SurveysCreateSurveyData>> => {
+    const mutationOptions: UseMutationOptions<SurveysCreateSurveyResponse, SurveysCreateSurveyError, Options<SurveysCreateSurveyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await surveysCreateSurvey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete Survey
+ */
+export const surveysDeleteSurveyMutation = (options?: Partial<Options<SurveysDeleteSurveyData>>): UseMutationOptions<SurveysDeleteSurveyResponse, SurveysDeleteSurveyError, Options<SurveysDeleteSurveyData>> => {
+    const mutationOptions: UseMutationOptions<SurveysDeleteSurveyResponse, SurveysDeleteSurveyError, Options<SurveysDeleteSurveyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await surveysDeleteSurvey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update Survey
+ */
+export const surveysUpdateSurveyMutation = (options?: Partial<Options<SurveysUpdateSurveyData>>): UseMutationOptions<SurveysUpdateSurveyResponse, SurveysUpdateSurveyError, Options<SurveysUpdateSurveyData>> => {
+    const mutationOptions: UseMutationOptions<SurveysUpdateSurveyResponse, SurveysUpdateSurveyError, Options<SurveysUpdateSurveyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await surveysUpdateSurvey({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

@@ -12,6 +12,14 @@ describe("projectGradient", () => {
     expect(gradients.size).toBe(8);
   });
 
+  it("gives UUID projects a stable gradient and different UUIDs different gradients", () => {
+    const first = "1e83851a-86cb-4868-8d0c-37b40ea9234f";
+    const second = "3ce2cd99-ff24-43e0-a47d-154ca43d0ffa";
+    expect(projectGradient(first)).toBe(projectGradient(first));
+    expect(projectGradient(first)).not.toBe(projectGradient(second));
+    expect(projectGradient(first)).toMatch(/^linear-gradient\(135deg, oklch/);
+  });
+
   it("builds a two-stop oklch linear gradient", () => {
     expect(projectGradient(1)).toMatch(
       /^linear-gradient\(135deg, oklch\(0\.85 0\.12 [\d.]+\), oklch\(0\.7 0\.15 [\d.]+\)\)$/,

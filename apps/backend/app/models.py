@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
@@ -15,9 +16,27 @@ class User(SQLModel, table=True):
 
 
 class Project(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=200)
     owner_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class Dataset(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=200)
+    project_id: uuid.UUID = Field(
+        foreign_key="project.id", index=True, ondelete="CASCADE"
+    )
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class Survey(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=200)
+    project_id: uuid.UUID = Field(
+        foreign_key="project.id", index=True, ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=utcnow)
 
 

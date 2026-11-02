@@ -6,10 +6,14 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import { client } from "../client/client.gen";
 import { projectsGetProjectsQueryKey } from "../client/@tanstack/vue-query.gen";
-import ProjectActions from "../components/ProjectActions.vue";
+import ProjectList from "../components/ProjectList.vue";
 import DashboardView from "../views/DashboardView.vue";
 
-const project = { id: 1, name: "Untitled project", created_at: "2026-11-02T00:00:00Z" };
+const project = {
+  id: "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b",
+  name: "Untitled project",
+  created_at: "2026-11-02T00:00:00Z",
+};
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -38,6 +42,16 @@ function createQueryClient() {
   return queryClient;
 }
 
+function testRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", component: { template: "<div />" } },
+      { path: "/project/:projectId", name: "project", component: { template: "<div />" } },
+    ],
+  });
+}
+
 function requests() {
   return fetchMock.mock.calls.map((call) => call[0] as Request);
 }
@@ -57,11 +71,11 @@ async function submitName(value: string) {
 describe("renaming a project", () => {
   async function openRename() {
     const queryClient = createQueryClient();
-    const wrapper = mount(ProjectActions, {
-      props: { project },
+    const wrapper = mount(ProjectList, {
       attachTo: document.body,
-      global: { plugins: [[VueQueryPlugin, { queryClient }]] },
+      global: { plugins: [testRouter(), [VueQueryPlugin, { queryClient }]] },
     });
+    await flushPromises();
     await wrapper.find('[aria-label="Rename project"]').trigger("click");
     await flushPromises();
     return { wrapper, queryClient };
@@ -82,7 +96,7 @@ describe("renaming a project", () => {
     await submitName("Protein folding");
 
     const patch = requests().find((request) => request.method === "PATCH")!;
-    expect(new URL(patch.url).pathname).toBe("/api/projects/1");
+    expect(new URL(patch.url).pathname).toBe(`/api/projects/${project.id}`);
     expect(await patch.json()).toEqual({ name: "Protein folding" });
     expect(queryClient.getQueryData(projectsGetProjectsQueryKey())).toEqual([
       { ...project, name: "Protein folding" },
@@ -106,7 +120,7 @@ describe("creating a project", () => {
       history: createMemoryHistory(),
       routes: [
         { path: "/", component: DashboardView },
-        { path: "/projects/:projectId", name: "project", component: { template: "<div />" } },
+        { path: "/project/:projectId", name: "project", component: { template: "<div />" } },
         { path: "/login", name: "login", component: { template: "<div />" } },
       ],
     });
@@ -135,7 +149,10 @@ describe("creating a project", () => {
     fetchMock.mockImplementation(async (input) => {
       const request = input as Request;
       return request.method === "POST"
-        ? jsonResponse({ ...project, id: 2, name: "Protein folding" }, 201)
+        ? jsonResponse(
+            { ...project, id: "a1b2c3d4-2222-4aaa-8bbb-000000000002", name: "Protein folding" },
+            201,
+          )
         : jsonResponse([project]);
     });
     const wrapper = await openCreate();
@@ -152,11 +169,11 @@ describe("creating a project", () => {
 describe("deleting a project", () => {
   async function openDelete() {
     const queryClient = createQueryClient();
-    const wrapper = mount(ProjectActions, {
-      props: { project },
+    const wrapper = mount(ProjectList, {
       attachTo: document.body,
-      global: { plugins: [[VueQueryPlugin, { queryClient }]] },
+      global: { plugins: [testRouter(), [VueQueryPlugin, { queryClient }]] },
     });
+    await flushPromises();
     await wrapper.find('[aria-label="Delete project"]').trigger("click");
     await flushPromises();
     return { wrapper, queryClient };
@@ -191,7 +208,7 @@ describe("deleting a project", () => {
     await flushPromises();
 
     const request = requests().find((r) => r.method === "DELETE")!;
-    expect(new URL(request.url).pathname).toBe("/api/projects/1");
+    expect(new URL(request.url).pathname).toBe(`/api/projects/${project.id}`);
     expect(queryClient.getQueryData(projectsGetProjectsQueryKey())).toEqual([]);
     expect(alertDialog()).toBeNull();
     wrapper.unmount();

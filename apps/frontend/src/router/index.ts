@@ -16,7 +16,7 @@ declare module "vue-router" {
 }
 
 function projectIdProp(route: RouteLocationNormalized) {
-  return { projectId: Number(route.params.projectId) };
+  return { projectId: String(route.params.projectId) };
 }
 
 export const routes: RouteRecordRaw[] = [
@@ -31,25 +31,25 @@ export const routes: RouteRecordRaw[] = [
         component: () => import("@/views/DashboardView.vue"),
       },
       {
-        path: "projects/:projectId(\\d+)",
+        path: "project/:projectId",
         name: "project",
         component: () => import("@/views/ProjectOverviewView.vue"),
         props: projectIdProp,
       },
       {
-        path: "projects/:projectId(\\d+)/data",
+        path: "project/:projectId/data",
         name: "project-data",
         component: () => import("@/views/ProjectDataView.vue"),
         props: projectIdProp,
       },
       {
-        path: "projects/:projectId(\\d+)/survey",
+        path: "project/:projectId/survey",
         name: "project-survey",
         component: () => import("@/views/ProjectSurveyView.vue"),
         props: projectIdProp,
       },
       {
-        path: "projects/:projectId(\\d+)/results",
+        path: "project/:projectId/results",
         name: "project-results",
         component: () => import("@/views/ProjectResultsView.vue"),
         props: projectIdProp,

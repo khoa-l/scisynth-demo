@@ -19,7 +19,7 @@ const projectTabs = [
 
 const projectId = computed(() => {
   const value = route.params.projectId;
-  return typeof value === "string" ? Number(value) : null;
+  return typeof value === "string" ? value : null;
 });
 const router = useRouter();
 const queryClient = useQueryClient();

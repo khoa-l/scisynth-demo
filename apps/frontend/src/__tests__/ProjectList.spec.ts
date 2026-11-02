@@ -8,13 +8,16 @@ import App from "../App.vue";
 import { projectsGetProjectsQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectList from "../components/ProjectList.vue";
 
+const FIRST_ID = "a1b2c3d4-1111-4aaa-8bbb-000000000001";
+const SECOND_ID = "a1b2c3d4-2222-4aaa-8bbb-000000000002";
+
 function createQueryClient() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(projectsGetProjectsQueryKey(), [
-    { id: 2, name: "Second project", created_at: "2026-11-02T00:00:01Z" },
-    { id: 1, name: "First project", created_at: "2026-11-02T00:00:00Z" },
+    { id: SECOND_ID, name: "Second project", created_at: "2026-11-02T00:00:01Z" },
+    { id: FIRST_ID, name: "First project", created_at: "2026-11-02T00:00:00Z" },
   ]);
   return queryClient;
 }
@@ -24,7 +27,7 @@ function createTestRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: "/", component: ProjectList },
-      { path: "/projects/:projectId", name: "project", component: { template: "<div />" } },
+      { path: "/project/:projectId", name: "project", component: { template: "<div />" } },
     ],
   });
 }
@@ -92,10 +95,10 @@ describe("ProjectList", () => {
       await wrapper.find(`[aria-label="${view}"]`).trigger("click");
 
       const link = wrapper.findAll("li")[1]!.find("a");
-      expect(link.attributes("href")).toBe("/projects/1");
+      expect(link.attributes("href")).toBe(`/project/${FIRST_ID}`);
       await link.trigger("click");
       await flushPromises();
-      expect(router.currentRoute.value.fullPath).toBe("/projects/1");
+      expect(router.currentRoute.value.fullPath).toBe(`/project/${FIRST_ID}`);
       wrapper.unmount();
     }
   });

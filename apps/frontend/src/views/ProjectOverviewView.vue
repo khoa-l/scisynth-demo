@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ProjectPage from "@/components/ProjectPage.vue";
 
-defineProps<{ projectId: number }>();
+defineProps<{ projectId: string }>();
 </script>
 
 <template>

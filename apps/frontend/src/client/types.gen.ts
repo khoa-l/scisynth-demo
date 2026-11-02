@@ -5,6 +5,44 @@ export type ClientOptions = {
 };
 
 /**
+ * DatasetCreate
+ */
+export type DatasetCreate = {
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * DatasetPublic
+ */
+export type DatasetPublic = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * DatasetUpdate
+ */
+export type DatasetUpdate = {
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -55,7 +93,7 @@ export type ProjectPublic = {
     /**
      * Id
      */
-    id: number;
+    id: string;
     /**
      * Name
      */
@@ -88,6 +126,44 @@ export type RegisterRequest = {
      * Password
      */
     password: string;
+};
+
+/**
+ * SurveyCreate
+ */
+export type SurveyCreate = {
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
+ * SurveyPublic
+ */
+export type SurveyPublic = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * SurveyUpdate
+ */
+export type SurveyUpdate = {
+    /**
+     * Name
+     */
+    name: string;
 };
 
 /**
@@ -279,7 +355,7 @@ export type ProjectsDeleteProjectData = {
         /**
          * Project Id
          */
-        project_id: number;
+        project_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}';
@@ -309,7 +385,7 @@ export type ProjectsGetProjectData = {
         /**
          * Project Id
          */
-        project_id: number;
+        project_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}';
@@ -339,7 +415,7 @@ export type ProjectsUpdateProjectData = {
         /**
          * Project Id
          */
-        project_id: number;
+        project_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}';
@@ -362,3 +438,263 @@ export type ProjectsUpdateProjectResponses = {
 };
 
 export type ProjectsUpdateProjectResponse = ProjectsUpdateProjectResponses[keyof ProjectsUpdateProjectResponses];
+
+export type DatasetsGetDatasetsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets';
+};
+
+export type DatasetsGetDatasetsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsGetDatasetsError = DatasetsGetDatasetsErrors[keyof DatasetsGetDatasetsErrors];
+
+export type DatasetsGetDatasetsResponses = {
+    /**
+     * Response Datasets-Get Datasets
+     *
+     * Successful Response
+     */
+    200: Array<DatasetPublic>;
+};
+
+export type DatasetsGetDatasetsResponse = DatasetsGetDatasetsResponses[keyof DatasetsGetDatasetsResponses];
+
+export type DatasetsCreateDatasetData = {
+    body: DatasetCreate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets';
+};
+
+export type DatasetsCreateDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsCreateDatasetError = DatasetsCreateDatasetErrors[keyof DatasetsCreateDatasetErrors];
+
+export type DatasetsCreateDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    201: DatasetPublic;
+};
+
+export type DatasetsCreateDatasetResponse = DatasetsCreateDatasetResponses[keyof DatasetsCreateDatasetResponses];
+
+export type DatasetsDeleteDatasetData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Dataset Id
+         */
+        dataset_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets/{dataset_id}';
+};
+
+export type DatasetsDeleteDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsDeleteDatasetError = DatasetsDeleteDatasetErrors[keyof DatasetsDeleteDatasetErrors];
+
+export type DatasetsDeleteDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DatasetsDeleteDatasetResponse = DatasetsDeleteDatasetResponses[keyof DatasetsDeleteDatasetResponses];
+
+export type DatasetsUpdateDatasetData = {
+    body: DatasetUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Dataset Id
+         */
+        dataset_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets/{dataset_id}';
+};
+
+export type DatasetsUpdateDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsUpdateDatasetError = DatasetsUpdateDatasetErrors[keyof DatasetsUpdateDatasetErrors];
+
+export type DatasetsUpdateDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DatasetPublic;
+};
+
+export type DatasetsUpdateDatasetResponse = DatasetsUpdateDatasetResponses[keyof DatasetsUpdateDatasetResponses];
+
+export type SurveysGetSurveysData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys';
+};
+
+export type SurveysGetSurveysErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysGetSurveysError = SurveysGetSurveysErrors[keyof SurveysGetSurveysErrors];
+
+export type SurveysGetSurveysResponses = {
+    /**
+     * Response Surveys-Get Surveys
+     *
+     * Successful Response
+     */
+    200: Array<SurveyPublic>;
+};
+
+export type SurveysGetSurveysResponse = SurveysGetSurveysResponses[keyof SurveysGetSurveysResponses];
+
+export type SurveysCreateSurveyData = {
+    body: SurveyCreate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys';
+};
+
+export type SurveysCreateSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysCreateSurveyError = SurveysCreateSurveyErrors[keyof SurveysCreateSurveyErrors];
+
+export type SurveysCreateSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    201: SurveyPublic;
+};
+
+export type SurveysCreateSurveyResponse = SurveysCreateSurveyResponses[keyof SurveysCreateSurveyResponses];
+
+export type SurveysDeleteSurveyData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}';
+};
+
+export type SurveysDeleteSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysDeleteSurveyError = SurveysDeleteSurveyErrors[keyof SurveysDeleteSurveyErrors];
+
+export type SurveysDeleteSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type SurveysDeleteSurveyResponse = SurveysDeleteSurveyResponses[keyof SurveysDeleteSurveyResponses];
+
+export type SurveysUpdateSurveyData = {
+    body: SurveyUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}';
+};
+
+export type SurveysUpdateSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysUpdateSurveyError = SurveysUpdateSurveyErrors[keyof SurveysUpdateSurveyErrors];
+
+export type SurveysUpdateSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SurveyPublic;
+};
+
+export type SurveysUpdateSurveyResponse = SurveysUpdateSurveyResponses[keyof SurveysUpdateSurveyResponses];

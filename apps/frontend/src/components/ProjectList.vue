@@ -1,84 +1,52 @@
 <script setup lang="ts">
-import { LayoutGrid, List } from "@lucide/vue";
-import { useQuery } from "@tanstack/vue-query";
-import { ref } from "vue";
-import { RouterLink } from "vue-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 
-import { projectsGetProjectsOptions } from "@/client/@tanstack/vue-query.gen";
-import ProjectActions from "@/components/ProjectActions.vue";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { projectGradient, projectTextColor } from "@/lib/gradient";
+import type { ProjectPublic } from "@/client";
+import {
+  projectsDeleteProjectMutation,
+  projectsGetProjectsOptions,
+  projectsGetProjectsQueryKey,
+  projectsUpdateProjectMutation,
+} from "@/client/@tanstack/vue-query.gen";
+import ItemList from "@/components/ItemList.vue";
 
-type View = "list" | "grid";
-
-const view = ref<View>("grid");
+const queryClient = useQueryClient();
+const key = projectsGetProjectsQueryKey();
 
 const { data: projects, isPending, isError } = useQuery(projectsGetProjectsOptions());
 
-function setView(value: unknown) {
-  if (value === "list" || value === "grid") {
-    view.value = value;
-  }
-}
+const { mutateAsync: update } = useMutation({
+  ...projectsUpdateProjectMutation(),
+  onSuccess: (updated) =>
+    queryClient.setQueryData<ProjectPublic[]>(key, (list) =>
+      list?.map((project) => (project.id === updated.id ? updated : project)),
+    ),
+  onSettled: () => {
+    void queryClient.invalidateQueries({ queryKey: key });
+  },
+});
+
+const { mutateAsync: remove } = useMutation({
+  ...projectsDeleteProjectMutation(),
+  onSuccess: (_, { path }) =>
+    queryClient.setQueryData<ProjectPublic[]>(key, (list) =>
+      list?.filter((project) => project.id !== path.project_id),
+    ),
+  onSettled: () => {
+    void queryClient.invalidateQueries({ queryKey: key });
+  },
+});
 </script>
 
 <template>
-  <div>
-    <div class="mb-4 flex justify-end">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        :model-value="view"
-        @update:model-value="setView"
-      >
-        <ToggleGroupItem value="grid" aria-label="Grid view">
-          <LayoutGrid />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="list" aria-label="List view">
-          <List />
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
-    <p v-if="isPending" class="text-sm text-muted-foreground">Loading projects…</p>
-    <p v-else-if="isError" class="text-sm text-destructive">Couldn't load projects.</p>
-    <p v-else-if="!projects?.length" class="text-sm text-muted-foreground">No projects yet.</p>
-    <ul v-else-if="view === 'list'" class="divide-y overflow-hidden rounded-md border">
-      <li
-        v-for="project in projects"
-        :key="project.id"
-        class="group relative flex items-center justify-between gap-4 px-4 py-2 text-sm transition-colors focus-within:bg-muted hover:bg-muted"
-      >
-        <RouterLink
-          :to="{ name: 'project', params: { projectId: project.id } }"
-          class="min-w-0 truncate outline-none after:absolute after:inset-0"
-        >
-          {{ project.name }}
-        </RouterLink>
-        <ProjectActions :project="project" class="relative z-10 shrink-0" />
-      </li>
-    </ul>
-    <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-      <li v-for="project in projects" :key="project.id" class="group relative min-w-0">
-        <RouterLink
-          :to="{ name: 'project', params: { projectId: project.id } }"
-          class="block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <div
-            class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
-            :style="{ background: projectGradient(project.id) }"
-          >
-            <span
-              aria-hidden="true"
-              class="absolute bottom-4 left-3 text-3xl leading-none font-semibold whitespace-nowrap select-none"
-              :style="{ color: projectTextColor(project.id) }"
-            >
-              {{ project.name }}
-            </span>
-          </div>
-          <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
-        </RouterLink>
-        <ProjectActions :project="project" class="absolute top-2 right-2" />
-      </li>
-    </ul>
-  </div>
+  <ItemList
+    :items="projects"
+    :is-pending="isPending"
+    :is-error="isError"
+    noun="project"
+    plural="projects"
+    :to="(project) => ({ name: 'project', params: { projectId: project.id } })"
+    :rename="(project, name) => update({ path: { project_id: project.id }, body: { name } })"
+    :remove="(project) => remove({ path: { project_id: project.id } })"
+  />
 </template>

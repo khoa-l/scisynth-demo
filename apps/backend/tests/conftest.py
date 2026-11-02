@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -10,11 +11,16 @@ from app.main import app
 
 
 @pytest.fixture
-def client() -> Generator[TestClient]:
+def engine() -> Engine:
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
     SQLModel.metadata.create_all(engine)
+    return engine
+
+
+@pytest.fixture
+def client(engine: Engine) -> Generator[TestClient]:
 
     def get_test_session() -> Generator[Session]:
         with Session(engine) as session:

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Annotated
 
@@ -33,19 +34,51 @@ class UserPublic(BaseModel):
 class ProjectPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: uuid.UUID
     name: str
     created_at: datetime
 
 
-ProjectName = Annotated[
+Name = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
 ]
 
 
 class ProjectUpdate(BaseModel):
-    name: ProjectName
+    name: Name
 
 
 class ProjectCreate(BaseModel):
-    name: ProjectName
+    name: Name
+
+
+class DatasetPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    created_at: datetime
+
+
+class DatasetCreate(BaseModel):
+    name: Name
+
+
+class DatasetUpdate(BaseModel):
+    name: Name
+
+
+class SurveyPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    created_at: datetime
+
+
+class SurveyCreate(BaseModel):
+    name: Name
+
+
+class SurveyUpdate(BaseModel):
+    name: Name

@@ -4,7 +4,7 @@ import { computed } from "vue";
 
 import { projectsGetProjectOptions } from "@/client/@tanstack/vue-query.gen";
 
-const props = defineProps<{ projectId: number }>();
+const props = defineProps<{ projectId: string }>();
 
 const {
   data: project,

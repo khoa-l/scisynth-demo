@@ -12,6 +12,8 @@ import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 
+const PROJECT_ID = "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b";
+
 const fetchMock = vi.fn<typeof fetch>();
 
 beforeEach(() => {
@@ -27,8 +29,8 @@ function loadedQueryClient() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
-  queryClient.setQueryData(projectsGetProjectQueryKey({ path: { project_id: 7 } }), {
-    id: 7,
+  queryClient.setQueryData(projectsGetProjectQueryKey({ path: { project_id: PROJECT_ID } }), {
+    id: PROJECT_ID,
     name: "Protein folding",
     created_at: "2026-11-02T00:00:00Z",
   });
@@ -37,7 +39,7 @@ function loadedQueryClient() {
 
 function mountWith(component: Component, queryClient = new QueryClient()) {
   return mount(component, {
-    props: { projectId: 7 },
+    props: { projectId: PROJECT_ID },
     global: { plugins: [[VueQueryPlugin, { queryClient }]] },
   });
 }
@@ -46,7 +48,11 @@ describe("ProjectPage", () => {
   it("loads the project from the API and shows its name as the heading", async () => {
     fetchMock.mockResolvedValue(
       new Response(
-        JSON.stringify({ id: 7, name: "Protein folding", created_at: "2026-11-02T00:00:00Z" }),
+        JSON.stringify({
+          id: PROJECT_ID,
+          name: "Protein folding",
+          created_at: "2026-11-02T00:00:00Z",
+        }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
@@ -54,7 +60,7 @@ describe("ProjectPage", () => {
     await flushPromises();
 
     const request = fetchMock.mock.calls[0]?.[0] as Request;
-    expect(new URL(request.url).pathname).toBe("/api/projects/7");
+    expect(new URL(request.url).pathname).toBe(`/api/projects/${PROJECT_ID}`);
     expect(wrapper.find("h1").text()).toBe("Protein folding");
   });
 
@@ -98,9 +104,8 @@ describe.each([
     await flushPromises();
 
     expect(wrapper.find("h1").text()).toBe("Protein folding");
-    const buttons = wrapper.findAll("button");
-    expect(buttons.map((button) => button.text())).toEqual([label]);
-    expect(buttons[0]!.find("svg[data-icon=inline-start]").exists()).toBe(true);
-    expect(buttons[0]!.classes()).toEqual(expect.arrayContaining(["h-10", "px-4"]));
+    const button = wrapper.findAll("button").find((b) => b.text() === label)!;
+    expect(button.find("svg[data-icon=inline-start]").exists()).toBe(true);
+    expect(button.classes()).toEqual(expect.arrayContaining(["h-10", "px-4"]));
   });
 });

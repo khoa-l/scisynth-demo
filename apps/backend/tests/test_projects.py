@@ -1,5 +1,9 @@
+import uuid
+
 from fastapi.testclient import TestClient
 from httpx2 import Response
+
+MISSING = uuid.uuid4()
 
 
 def create(client: TestClient, name: str = "Untitled project") -> Response:
@@ -81,7 +85,10 @@ def test_rename_project_of_another_user(client: TestClient) -> None:
 
 
 def test_rename_project_requires_session(client: TestClient) -> None:
-    assert client.patch("/api/projects/1", json={"name": "Mine"}).status_code == 401
+    assert (
+        client.patch(f"/api/projects/{MISSING}", json={"name": "Mine"}).status_code
+        == 401
+    )
 
 
 def test_delete_project(client: TestClient) -> None:
@@ -98,7 +105,7 @@ def test_delete_project(client: TestClient) -> None:
 
 def test_delete_missing_project(client: TestClient) -> None:
     sign_up(client, "ada@example.com")
-    assert client.delete("/api/projects/999").status_code == 404
+    assert client.delete(f"/api/projects/{MISSING}").status_code == 404
 
 
 def test_delete_project_of_another_user(client: TestClient) -> None:
@@ -118,7 +125,7 @@ def test_delete_project_of_another_user(client: TestClient) -> None:
 
 
 def test_delete_project_requires_session(client: TestClient) -> None:
-    assert client.delete("/api/projects/1").status_code == 401
+    assert client.delete(f"/api/projects/{MISSING}").status_code == 401
 
 
 def test_get_project(client: TestClient) -> None:
@@ -140,4 +147,16 @@ def test_get_project_of_another_user(client: TestClient) -> None:
 
 
 def test_get_project_requires_session(client: TestClient) -> None:
-    assert client.get("/api/projects/1").status_code == 401
+    assert client.get(f"/api/projects/{MISSING}").status_code == 401
+
+
+def test_project_ids_are_uuids(client: TestClient) -> None:
+    sign_up(client, "ada@example.com")
+    project_id = create(client).json()["id"]
+    assert str(uuid.UUID(project_id)) == project_id
+    assert client.get(f"/api/projects/{project_id}").status_code == 200
+
+
+def test_get_project_with_invalid_id(client: TestClient) -> None:
+    sign_up(client, "ada@example.com")
+    assert client.get("/api/projects/1").status_code == 422
