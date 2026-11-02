@@ -25,12 +25,9 @@ defineProps<{
     </Button>
     <p v-if="isError" class="mt-6 text-sm text-destructive">This {{ noun }} couldn't be found.</p>
     <div v-else class="mt-6 grid min-h-0 flex-1 grid-cols-2 gap-4">
-      <div class="flex min-h-0 flex-col gap-2">
-        <slot name="left-toolbar" />
-        <section aria-label="Left canvas" class="min-h-0 flex-1 overflow-hidden rounded-lg border">
-          <slot name="left" />
-        </section>
-      </div>
+      <section aria-label="Left canvas" class="overflow-hidden rounded-lg border">
+        <slot name="left" />
+      </section>
       <section aria-label="Right canvas" class="overflow-hidden rounded-lg border">
         <slot name="right" />
       </section>

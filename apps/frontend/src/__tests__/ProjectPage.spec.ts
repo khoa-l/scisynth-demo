@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import type { Component } from "vue";
 
@@ -228,12 +228,18 @@ describe("Dataset view", () => {
     expect(gridLine.exists()).toBe(true);
     expect(gridLine.attributes("stroke")).toBe("#dcdcdc");
     expect(left!.find(".vue-flow__background pattern circle").exists()).toBe(false);
+    const graphArea = left!.find(".vue-flow").element.parentElement!;
+    const details = left!.find('[role="group"][aria-label="Node details"]');
+    expect(graphArea.classList).toContain("flex-3");
+    expect(details.classes()).toContain("flex-1");
+    expect(graphArea.nextElementSibling).toBe(details.element);
+    expect(details.find('[role="tablist"]').exists()).toBe(true);
     expect(right!.element.childElementCount).toBe(0);
     vi.unstubAllGlobals();
   });
 });
 
-describe("Dataset node toolbar", () => {
+describe("Dataset component tabs", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "ResizeObserver",
@@ -250,141 +256,183 @@ describe("Dataset node toolbar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sits above the node graph in the left column only", async () => {
+  function details(wrapper: Awaited<ReturnType<typeof mountItemView>>) {
+    return wrapper.find('[role="group"][aria-label="Node details"]');
+  }
+
+  function visiblePanel(wrapper: Awaited<ReturnType<typeof mountItemView>>) {
+    return details(wrapper)
+      .findAll('[role="tabpanel"]')
+      .find((panel) => panel.attributes("data-state") === "active")!;
+  }
+
+  it("has a folder tab for each component category, with Latent open first", async () => {
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
 
-    const toolbar = wrapper.find('[role="toolbar"][aria-label="Node editor tools"]');
-    expect(toolbar.exists()).toBe(true);
-    const left = wrapper.find('section[aria-label="Left canvas"]');
-    expect(toolbar.element.nextElementSibling).toBe(left.element);
-    expect(left.classes()).toContain("flex-1");
-    expect(wrapper.find('section[aria-label="Right canvas"] [role="toolbar"]').exists()).toBe(
+    const tablist = details(wrapper).find('[role="tablist"]');
+    expect(tablist.attributes("aria-label")).toBe("Component categories");
+    expect(tablist.classes()).toEqual(
+      expect.arrayContaining(["absolute", "bottom-full", "left-0", "pointer-events-none"]),
+    );
+    expect(tablist.classes().some((c) => /^(gap|px|pl)-/.test(c))).toBe(false);
+    expect(tablist.classes().some((c) => c.startsWith("bg-") || c.startsWith("border"))).toBe(
       false,
     );
-  });
-
-  function toolbarButton(wrapper: VueWrapper, label: string) {
-    return wrapper
-      .find('[role="toolbar"]')
-      .findAll("button")
-      .find((button) => button.text() === label)!;
-  }
-
-  function openMenu() {
-    return document.querySelector<HTMLElement>('[role="menu"]');
-  }
-
-  function menuText(element: Element, selector: string) {
-    return [...element.querySelectorAll(selector)].map((item) => item.textContent?.trim());
-  }
-
-  async function openToolbarMenu(wrapper: VueWrapper, label: string) {
-    await toolbarButton(wrapper, label).trigger("keydown", { key: "Enter" });
-    await flushPromises();
-    return openMenu()!;
-  }
-
-  async function addFromMenu(wrapper: VueWrapper, category: string, label: string) {
-    const menu = await openToolbarMenu(wrapper, category);
-    [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')]
-      .find((item) => item.textContent?.trim() === label)!
-      .click();
-    await flushPromises();
-  }
-
-  it("has a dropdown button for each SciSynth category with standard text", async () => {
-    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
-
-    const buttons = wrapper.find('[role="toolbar"]').findAll("button");
-    expect(buttons.map((button) => button.text())).toEqual([
-      "Latent",
-      "Sampler",
-      "Stages",
-      "Projection",
+    const tabs = tablist.findAll('[role="tab"]');
+    expect(tabs.map((tab) => tab.text())).toEqual(["Latent", "Sampler", "Stages", "Projection"]);
+    expect(tabs.map((tab) => tab.attributes("aria-selected"))).toEqual([
+      "true",
+      "false",
+      "false",
+      "false",
     ]);
-    for (const button of buttons) {
-      expect(button.classes()).toContain("text-sm");
-      expect(button.classes()).not.toContain("text-base");
-      expect(button.attributes("aria-haspopup")).toBe("menu");
+    for (const tab of tabs) {
+      expect(tab.classes()).toEqual(
+        expect.arrayContaining([
+          "pointer-events-auto",
+          "-ml-px",
+          "first:ml-0",
+          "first:border-l-0",
+          "data-[state=active]:z-10",
+          "data-[state=active]:shadow-sm",
+          "data-[state=active]:[clip-path:inset(-8px_-8px_0_-8px)]",
+          "rounded-t-lg",
+          "border",
+          "-mb-px",
+          "bg-muted",
+          "data-[state=active]:bg-background",
+          "data-[state=active]:border-b-background",
+        ]),
+      );
     }
+    expect(visiblePanel(wrapper).text()).toContain("Gaussian field");
+    expect(visiblePanel(wrapper).classes()).toEqual(
+      expect.arrayContaining(["border-t", "bg-background"]),
+    );
     wrapper.unmount();
   });
 
-  it("uses standard text sizes in the category menus", async () => {
+  it("switches category when another tab is chosen", async () => {
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
 
-    const menu = await openToolbarMenu(wrapper, "Stages");
-    const items = [...menu.querySelectorAll('[role="menuitem"]')];
-    expect(items.every((item) => item.classList.contains("text-sm"))).toBe(true);
-    expect(items.some((item) => item.classList.contains("text-base"))).toBe(false);
-    const labels = [...menu.querySelectorAll('[data-slot="dropdown-menu-label"]')];
-    expect(labels.every((label) => label.classList.contains("text-xs"))).toBe(true);
-    wrapper.unmount();
-  });
+    const stages = details(wrapper)
+      .findAll('[role="tab"]')
+      .find((tab) => tab.text() === "Stages")!;
+    await stages.trigger("mousedown", { button: 0 });
+    await flushPromises();
 
-  it("groups latent fields and composites in the Latent menu", async () => {
-    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
-
-    const menu = await openToolbarMenu(wrapper, "Latent");
-    expect(menuText(menu, '[data-slot="dropdown-menu-label"]')).toEqual(["Fields", "Composites"]);
-    expect(menuText(menu, '[role="menuitem"]')).toEqual([
-      "Gaussian field",
-      "Analytic field",
-      "Interpolated field",
-      "Sum",
-      "Product",
-      "Multichannel",
-    ]);
-    wrapper.unmount();
-  });
-
-  it("puts defects and transforms under Stages", async () => {
-    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
-
-    const menu = await openToolbarMenu(wrapper, "Stages");
-    expect(menuText(menu, '[data-slot="dropdown-menu-label"]')).toEqual(["Defects", "Transforms"]);
-    const items = menuText(menu, '[role="menuitem"]');
+    expect(stages.attributes("aria-selected")).toBe("true");
+    const panel = visiblePanel(wrapper);
+    expect(panel.find("h3").exists()).toBe(false);
+    expect(panel.text()).not.toContain("Defects");
+    expect(panel.text()).not.toContain("Transforms");
+    const items = panel.findAll("li");
     expect(items).toHaveLength(13);
-    expect(items.slice(0, 2)).toEqual(["Gaussian noise", "Poisson noise"]);
-    expect(items[items.length - 1]).toBe("Downsample");
+    expect(items[0]!.text()).toBe("Gaussian noise");
+    expect(items[12]!.text()).toBe("Downsample");
+    expect(panel.text()).not.toContain("Gaussian field");
     wrapper.unmount();
   });
 
-  it.each([
-    ["Sampler", ["Grid sampler", "Point sampler"]],
-    ["Projection", ["Projection"]],
-  ])("lists the %s options", async (category, expected) => {
+  function fakeDataTransfer() {
+    const data = new Map<string, string>();
+    return {
+      dropEffect: "none",
+      effectAllowed: "all",
+      get types() {
+        return [...data.keys()];
+      },
+      setData(type: string, value: string) {
+        data.set(type, value);
+      },
+      getData(type: string) {
+        return data.get(type) ?? "";
+      },
+    };
+  }
+
+  it("makes every component draggable and puts its kind on the drag", async () => {
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
 
-    const menu = await openToolbarMenu(wrapper, category);
-    expect(menuText(menu, '[role="menuitem"]')).toEqual(expected);
+    const items = visiblePanel(wrapper).findAll("li");
+    expect(items.every((item) => item.attributes("draggable") === "true")).toBe(true);
+    const dataTransfer = fakeDataTransfer();
+    await items[0]!.trigger("dragstart", { dataTransfer });
+    expect(dataTransfer.getData("application/x-scisynth-node")).toBe("GaussianField");
+    expect(dataTransfer.effectAllowed).toBe("copy");
     wrapper.unmount();
   });
 
-  it("adds the chosen node to the graph with a matching shape", async () => {
+  it("adds the dragged component to the canvas when it is dropped", async () => {
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+    const canvas = wrapper.find(".vue-flow");
 
-    await addFromMenu(wrapper, "Latent", "Gaussian field");
-    await addFromMenu(wrapper, "Sampler", "Grid sampler");
-    await addFromMenu(wrapper, "Stages", "Gaussian noise");
-    await addFromMenu(wrapper, "Projection", "Projection");
+    for (const label of ["Gaussian field", "Multichannel"]) {
+      const dataTransfer = fakeDataTransfer();
+      const item = visiblePanel(wrapper)
+        .findAll("li")
+        .find((li) => li.text() === label)!;
+      await item.trigger("dragstart", { dataTransfer });
+      await canvas.trigger("dragover", { dataTransfer });
+      expect(dataTransfer.dropEffect).toBe("copy");
+      await canvas.trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
+      await flushPromises();
+    }
 
     const nodes = wrapper.findAll(".vue-flow__node");
-    expect(nodes.map((node) => node.text())).toEqual([
-      "Gaussian field",
-      "Grid sampler",
-      "Gaussian noise",
-      "Projection",
-    ]);
-    expect(
-      nodes.map((node) => node.classes().find((c) => c.startsWith("vue-flow__node-"))),
-    ).toEqual([
-      "vue-flow__node-input",
-      "vue-flow__node-default",
-      "vue-flow__node-default",
-      "vue-flow__node-output",
-    ]);
-    expect(openMenu()).toBeNull();
+    expect(nodes.map((node) => node.text())).toEqual(["Gaussian field", "Multichannel"]);
+    expect(nodes[0]!.classes()).toContain("vue-flow__node-input");
+    expect(nodes[1]!.classes()).toContain("vue-flow__node-default");
+    wrapper.unmount();
+  });
+
+  it("centres a dropped node on the mouse once its size is known", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private callback: ResizeObserverCallback) {}
+        observe(target: Element) {
+          this.callback([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "DOMMatrixReadOnly",
+      class {
+        m22 = 1;
+      },
+    );
+    const width = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(150);
+    const height = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(40);
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+    const canvas = wrapper.find(".vue-flow");
+    const dataTransfer = fakeDataTransfer();
+
+    await visiblePanel(wrapper).findAll("li")[0]!.trigger("dragstart", { dataTransfer });
+    await canvas.trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
+    await flushPromises();
+
+    const node = wrapper.find(".vue-flow__node");
+    expect(node.attributes("style")).toContain("translate(45px,60px)");
+    wrapper.unmount();
+    width.mockRestore();
+    height.mockRestore();
+  });
+
+  it("ignores drops that are not components", async () => {
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+    const canvas = wrapper.find(".vue-flow");
+    const dataTransfer = fakeDataTransfer();
+    dataTransfer.setData("text/plain", "hello");
+
+    await canvas.trigger("dragover", { dataTransfer });
+    await canvas.trigger("drop", { dataTransfer });
+    await flushPromises();
+
+    expect(dataTransfer.dropEffect).toBe("none");
+    expect(wrapper.findAll(".vue-flow__node")).toHaveLength(0);
     wrapper.unmount();
   });
 });
@@ -404,11 +452,21 @@ describe("Survey item view", () => {
     const canvases = wrapper.findAll("section");
     expect(canvases).toHaveLength(2);
     for (const canvas of canvases) {
-      const fill = canvas.find("div");
-      expect(fill.classes()).toEqual(
+      expect(canvas.find("div").classes()).toEqual(
         expect.arrayContaining(["h-full", "bg-muted", "inset-shadow-sm"]),
       );
-      expect(fill.element.childElementCount).toBe(0);
     }
+  });
+
+  it("uses the left panel as the builder and the right panel as the preview", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
+    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+
+    const [left, right] = wrapper.findAll("section");
+    expect(left!.find('[aria-label="Survey builder"]').exists()).toBe(true);
+    expect(right!.find('[aria-label="Survey preview"]').exists()).toBe(true);
+    expect(left!.find('[aria-label="Survey builder"]').element.childElementCount).toBe(0);
+    expect(right!.find('[aria-label="Survey preview"]').element.childElementCount).toBe(0);
+    expect(wrapper.find('[role="toolbar"]').exists()).toBe(false);
   });
 });

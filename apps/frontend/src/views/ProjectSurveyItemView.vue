@@ -26,10 +26,10 @@ const { data: survey, isError } = useQuery(
     back-label="Surveys"
   >
     <template #left>
-      <div class="h-full bg-muted inset-shadow-sm" />
+      <div role="group" aria-label="Survey builder" class="h-full bg-muted inset-shadow-sm" />
     </template>
     <template #right>
-      <div class="h-full bg-muted inset-shadow-sm" />
+      <div role="group" aria-label="Survey preview" class="h-full bg-muted inset-shadow-sm" />
     </template>
   </ProjectItemPage>
 </template>
