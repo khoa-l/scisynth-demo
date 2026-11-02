@@ -43,3 +43,12 @@ def update_project(
     db.commit()
     db.refresh(project)
     return ProjectPublic.model_validate(project)
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, user: CurrentUser, db: SessionDep) -> None:
+    project = db.get(Project, project_id)
+    if project is None or project.owner_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found")
+    db.delete(project)
+    db.commit()

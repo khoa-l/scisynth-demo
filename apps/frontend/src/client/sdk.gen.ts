@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -101,6 +101,19 @@ export const projectsCreateProject = <ThrowOnError extends boolean = false>(opti
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Delete Project
+ */
+export const projectsDeleteProject = <ThrowOnError extends boolean = false>(options: Options<ProjectsDeleteProjectData, ThrowOnError>): RequestResult<ProjectsDeleteProjectResponses, ProjectsDeleteProjectErrors, ThrowOnError> => (options.client ?? client).delete<ProjectsDeleteProjectResponses, ProjectsDeleteProjectErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}',
+    ...options
 });
 
 /**

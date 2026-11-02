@@ -37,7 +37,9 @@ const {
   ...projectsCreateProjectMutation(),
   onSuccess: async () => {
     createOpen.value = false;
-    await queryClient.invalidateQueries({ queryKey: projectsGetProjectsQueryKey() });
+    await queryClient.invalidateQueries({
+      queryKey: projectsGetProjectsQueryKey(),
+    });
   },
 });
 
@@ -68,7 +70,7 @@ watch(createOpen, (isOpen) => {
         title="New project"
         description="Give your project a name."
         submit-label="Create"
-        initial-name="Untitled project"
+        initial-name="untitled-project"
         :pending="isCreatingProject"
         :error="createErrorMessage"
         @submit="(name) => createProject({ body: { name } })"

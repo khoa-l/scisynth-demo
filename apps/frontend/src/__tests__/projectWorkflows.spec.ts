@@ -147,3 +147,67 @@ describe("creating a project", () => {
     wrapper.unmount();
   });
 });
+
+describe("deleting a project", () => {
+  async function openDelete() {
+    const queryClient = createQueryClient();
+    const wrapper = mount(ProjectActions, {
+      props: { project },
+      attachTo: document.body,
+      global: { plugins: [[VueQueryPlugin, { queryClient }]] },
+    });
+    await wrapper.find('[aria-label="Delete project"]').trigger("click");
+    await flushPromises();
+    return { wrapper, queryClient };
+  }
+
+  function alertDialog() {
+    return document.querySelector('[role="alertdialog"]');
+  }
+
+  function confirmButton() {
+    return [...(alertDialog()?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent?.trim() === "Delete",
+    )!;
+  }
+
+  it("asks for confirmation naming the project", async () => {
+    const { wrapper } = await openDelete();
+    expect(alertDialog()?.textContent).toContain("Delete project?");
+    expect(alertDialog()?.textContent).toContain("“Untitled project” will be permanently deleted");
+    expect(fetchMock).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("deletes the project, removes it from the list and closes", async () => {
+    fetchMock.mockImplementation(async (input) =>
+      (input as Request).method === "DELETE"
+        ? new Response(null, { status: 204 })
+        : jsonResponse([]),
+    );
+    const { wrapper, queryClient } = await openDelete();
+    confirmButton().click();
+    await flushPromises();
+
+    const request = requests().find((r) => r.method === "DELETE")!;
+    expect(new URL(request.url).pathname).toBe("/api/projects/1");
+    expect(queryClient.getQueryData(projectsGetProjectsQueryKey())).toEqual([]);
+    expect(alertDialog()).toBeNull();
+    wrapper.unmount();
+  });
+
+  it("keeps the dialog open and shows the error when deleting fails", async () => {
+    fetchMock.mockImplementation(async (input) =>
+      (input as Request).method === "DELETE"
+        ? jsonResponse({ detail: "Project not found" }, 404)
+        : jsonResponse([project]),
+    );
+    const { wrapper, queryClient } = await openDelete();
+    confirmButton().click();
+    await flushPromises();
+
+    expect(alertDialog()?.querySelector('[role="alert"]')?.textContent).toBe("Project not found");
+    expect(queryClient.getQueryData(projectsGetProjectsQueryKey())).toEqual([project]);
+    wrapper.unmount();
+  });
+});

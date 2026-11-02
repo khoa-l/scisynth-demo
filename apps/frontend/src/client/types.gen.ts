@@ -273,6 +273,36 @@ export type ProjectsCreateProjectResponses = {
 
 export type ProjectsCreateProjectResponse = ProjectsCreateProjectResponses[keyof ProjectsCreateProjectResponses];
 
+export type ProjectsDeleteProjectData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}';
+};
+
+export type ProjectsDeleteProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsDeleteProjectError = ProjectsDeleteProjectErrors[keyof ProjectsDeleteProjectErrors];
+
+export type ProjectsDeleteProjectResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type ProjectsDeleteProjectResponse = ProjectsDeleteProjectResponses[keyof ProjectsDeleteProjectResponses];
+
 export type ProjectsUpdateProjectData = {
     body: ProjectUpdate;
     path: {
