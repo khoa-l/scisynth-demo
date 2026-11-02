@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ChartColumn, ClipboardList, Database } from "@lucide/vue";
+import { ArrowLeft, ChartColumn, ClipboardList, Database, LayoutDashboard } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { computed } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
@@ -11,6 +11,7 @@ import { meQueryOptions } from "@/lib/auth";
 const route = useRoute();
 
 const projectTabs = [
+  { name: "project", label: "Overview", icon: LayoutDashboard },
   { name: "project-data", label: "Data", icon: Database },
   { name: "project-survey", label: "Survey", icon: ClipboardList },
   { name: "project-results", label: "Results", icon: ChartColumn },

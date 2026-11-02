@@ -33,7 +33,8 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "projects/:projectId(\\d+)",
         name: "project",
-        redirect: (to) => ({ name: "project-data", params: to.params }),
+        component: () => import("@/views/ProjectOverviewView.vue"),
+        props: projectIdProp,
       },
       {
         path: "projects/:projectId(\\d+)/data",

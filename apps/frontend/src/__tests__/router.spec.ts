@@ -9,15 +9,16 @@ function testRouter() {
 }
 
 describe("project routes", () => {
-  it("opens a project on its Data page", async () => {
+  it("opens a project on its Overview page", async () => {
     const router = testRouter();
     await router.push({ name: "project", params: { projectId: 7 } });
-    expect(router.currentRoute.value.name).toBe("project-data");
-    expect(router.currentRoute.value.fullPath).toBe("/projects/7/data");
+    expect(router.currentRoute.value.name).toBe("project");
+    expect(router.currentRoute.value.fullPath).toBe("/projects/7");
   });
 
-  it("serves Survey and Results at their own URLs", () => {
+  it("serves Data, Survey and Results at their own URLs", () => {
     const router = testRouter();
+    expect(router.resolve("/projects/7/data").name).toBe("project-data");
     expect(router.resolve("/projects/7/survey").name).toBe("project-survey");
     expect(router.resolve("/projects/7/results").name).toBe("project-results");
   });

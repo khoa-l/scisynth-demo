@@ -8,6 +8,7 @@ import { client } from "../client/client.gen";
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
 import ProjectDataView from "../views/ProjectDataView.vue";
+import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 
@@ -76,8 +77,7 @@ describe("ProjectPage", () => {
 });
 
 describe.each([
-  ["Survey", ProjectSurveyView],
-  ["Data", ProjectDataView],
+  ["Overview", ProjectOverviewView],
   ["Results", ProjectResultsView],
 ])("%s view", (_name, view) => {
   it("shows the project name with no action buttons", async () => {
@@ -86,24 +86,21 @@ describe.each([
 
     expect(wrapper.find("h1").text()).toBe("Protein folding");
     expect(wrapper.findAll("button")).toHaveLength(0);
-    expect(wrapper.text()).not.toContain("New Data");
-    expect(wrapper.text()).not.toContain("New Study");
   });
 });
 
 describe.each([
-  ["Data", ProjectDataView],
-  ["Survey", ProjectSurveyView],
-])("%s view canvases", (_name, view) => {
-  it("splits the panel into two canvases below the heading", async () => {
+  ["Data", ProjectDataView, "New Data"],
+  ["Survey", ProjectSurveyView, "New Survey"],
+])("%s view", (_name, view, label) => {
+  it(`shows the project name and a ${label} button like the Dashboard`, async () => {
     const wrapper = mountWith(view, loadedQueryClient());
     await flushPromises();
 
-    const canvases = wrapper.findAll("section");
-    expect(canvases.map((canvas) => canvas.attributes("aria-label"))).toEqual([
-      "Left canvas",
-      "Right canvas",
-    ]);
-    expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
+    expect(wrapper.find("h1").text()).toBe("Protein folding");
+    const buttons = wrapper.findAll("button");
+    expect(buttons.map((button) => button.text())).toEqual([label]);
+    expect(buttons[0]!.find("svg[data-icon=inline-start]").exists()).toBe(true);
+    expect(buttons[0]!.classes()).toEqual(expect.arrayContaining(["h-10", "px-4"]));
   });
 });

@@ -18,8 +18,8 @@ const {
   <p v-else-if="isError || !project" class="text-sm text-destructive">
     This project couldn't be found.
   </p>
-  <div v-else class="flex h-full flex-col">
+  <template v-else>
     <h1 class="text-2xl font-medium tracking-tight">{{ project.name }}</h1>
-    <slot :project="project" />
-  </div>
+    <slot />
+  </template>
 </template>

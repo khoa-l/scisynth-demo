@@ -23,6 +23,11 @@ async function mountAt(path: string) {
             component: { template: "<p>Survey page</p>" },
           },
           {
+            path: "projects/:projectId",
+            name: "project",
+            component: { template: "<p>Overview page</p>" },
+          },
+          {
             path: "projects/:projectId/data",
             name: "project-data",
             component: { template: "<p>Data page</p>" },
@@ -60,15 +65,17 @@ function activeTab(wrapper: VueWrapper) {
 }
 
 describe("AppLayout", () => {
-  it("shows a back link and Data, Survey and Results tabs on a project page", async () => {
+  it("shows a back link and Overview, Data, Survey and Results tabs on a project page", async () => {
     const { wrapper } = await mountAt("/projects/7/data");
     expect(wrapper.findAll("aside a").map((link) => link.text())).toEqual([
       "Dashboard",
+      "Overview",
       "Data",
       "Survey",
       "Results",
     ]);
     expect(sidebarLink(wrapper, "Dashboard")?.attributes("href")).toBe("/");
+    expect(sidebarLink(wrapper, "Overview")?.attributes("href")).toBe("/projects/7");
     expect(sidebarLink(wrapper, "Survey")?.attributes("href")).toBe("/projects/7/survey");
     expect(sidebarLink(wrapper, "Data")?.attributes("href")).toBe("/projects/7/data");
     expect(sidebarLink(wrapper, "Results")?.attributes("href")).toBe("/projects/7/results");
@@ -76,14 +83,20 @@ describe("AppLayout", () => {
 
   it("shows an icon before each tab label", async () => {
     const { wrapper } = await mountAt("/projects/7/data");
-    for (const label of ["Data", "Survey", "Results"]) {
+    for (const label of ["Overview", "Data", "Survey", "Results"]) {
       const link = sidebarLink(wrapper, label)!;
       expect(link.find("svg[data-icon=inline-start]").exists()).toBe(true);
     }
   });
 
-  it("switches between the Data, Survey and Results tabs", async () => {
-    const { wrapper, router } = await mountAt("/projects/7/data");
+  it("opens on Overview and switches between the tabs", async () => {
+    const { wrapper, router } = await mountAt("/projects/7");
+    expect(activeTab(wrapper).text()).toBe("Overview");
+    expect(wrapper.text()).toContain("Overview page");
+
+    await sidebarLink(wrapper, "Data")!.trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe("project-data");
     expect(activeTab(wrapper).text()).toBe("Data");
     expect(wrapper.text()).toContain("Data page");
 
