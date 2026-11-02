@@ -1,37 +1,39 @@
 <script setup lang="ts">
-import { useMutation, useQueryClient } from "@tanstack/vue-query";
+import { useQuery } from "@tanstack/vue-query";
+import { computed } from "vue";
 
-import {
-  surveysCreateSurveyMutation,
-  surveysGetSurveysQueryKey,
-} from "@/client/@tanstack/vue-query.gen";
-import SurveyList from "@/components/SurveyList.vue";
-import NewItemButton from "@/components/NewItemButton.vue";
-import ProjectPage from "@/components/ProjectPage.vue";
+import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
+import ProjectItemPage from "@/components/ProjectItemPage.vue";
+import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 
-const props = defineProps<{ projectId: string }>();
+const props = defineProps<{ projectId: string; surveyId: string }>();
 
-const queryClient = useQueryClient();
-
-const { mutateAsync: createSurvey } = useMutation({
-  ...surveysCreateSurveyMutation(),
-  onSuccess: () => {
-    void queryClient.invalidateQueries({
-      queryKey: surveysGetSurveysQueryKey({ path: { project_id: props.projectId } }),
-    });
-  },
-});
+const { data: survey, isError } = useQuery(
+  computed(() =>
+    surveysGetSurveyOptions({
+      path: { project_id: props.projectId, survey_id: props.surveyId },
+    }),
+  ),
+);
 </script>
 
 <template>
-  <ProjectPage :project-id="projectId">
-    <NewItemButton
-      label="New Survey"
-      title="New survey"
-      description="Give your survey a name."
-      initial-name="untitled-survey"
-      :create="(name) => createSurvey({ path: { project_id: projectId }, body: { name } })"
-    />
-    <SurveyList class="mt-6" :project-id="projectId" />
-  </ProjectPage>
+  <ProjectItemPage
+    :project-id="projectId"
+    noun="survey"
+    :item-name="survey?.name"
+    :is-error="isError"
+    back-to="project-survey"
+    back-label="Surveys"
+  >
+    <template #actions>
+      <SurveyPublishButton v-if="survey" :project-id="projectId" :survey="survey" />
+    </template>
+    <template #left>
+      <div role="group" aria-label="Survey builder" class="h-full bg-muted inset-shadow-sm" />
+    </template>
+    <template #right>
+      <div role="group" aria-label="Survey preview" class="h-full bg-muted inset-shadow-sm" />
+    </template>
+  </ProjectItemPage>
 </template>
