@@ -1,13 +1,9 @@
-import { afterEach, describe, it, expect } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import { flushPromises, mount } from "@vue/test-utils";
 import { h } from "vue";
 
 import NameDialog from "../components/NameDialog.vue";
-
-afterEach(() => {
-  document.body.innerHTML = "";
-});
 
 async function openDialog(props: Record<string, unknown> = {}) {
   const wrapper = mount(NameDialog, {
@@ -41,7 +37,7 @@ async function submit() {
 
 describe("NameDialog", () => {
   it("renders the given title, description, labels and initial name", async () => {
-    const wrapper = await openDialog({
+    await openDialog({
       description: "Pick something",
       label: "Title",
       submitLabel: "Create",
@@ -51,7 +47,6 @@ describe("NameDialog", () => {
     expect(dialog()?.querySelector("label")?.textContent).toBe("Title");
     expect(dialog()?.querySelector('button[type="submit"]')?.textContent?.trim()).toBe("Create");
     expect(nameInput().value).toBe("Original");
-    wrapper.unmount();
   });
 
   it("emits the trimmed name on submit", async () => {
@@ -59,7 +54,6 @@ describe("NameDialog", () => {
     await typeName("  New name  ");
     await submit();
     expect(wrapper.emitted("submit")).toEqual([["New name"]]);
-    wrapper.unmount();
   });
 
   it("shows a validation error and does not emit for a blank name", async () => {
@@ -68,16 +62,14 @@ describe("NameDialog", () => {
     await submit();
     expect(wrapper.emitted("submit")).toBeUndefined();
     expect(dialog()?.textContent).toContain("Enter a name");
-    wrapper.unmount();
   });
 
   it("shows an error message and disables submit while pending", async () => {
-    const wrapper = await openDialog({ error: "Server said no", pending: true });
+    await openDialog({ error: "Server said no", pending: true });
     expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe("Server said no");
     expect(dialog()?.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(
       true,
     );
-    wrapper.unmount();
   });
 
   it("resets to the initial name each time it opens", async () => {
@@ -92,6 +84,5 @@ describe("NameDialog", () => {
     await wrapper.find("button").trigger("click");
     await flushPromises();
     expect(nameInput().value).toBe("Original");
-    wrapper.unmount();
   });
 });

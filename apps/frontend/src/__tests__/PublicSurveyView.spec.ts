@@ -1,21 +1,17 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { flushPromises, mount } from "@vue/test-utils";
+import { QueryClient } from "@tanstack/vue-query";
 
 import PublicSurveyView from "../views/PublicSurveyView.vue";
-import { fetchMock, jsonResponse, mockApi, requests } from "./helpers";
+import { fetchMock, jsonResponse, mountPage, requests } from "./helpers";
 
 const PUBLIC_ID = "Jx2k8LmN0pQr4StUv6WxY";
 
-mockApi();
-
 async function mountView() {
-  const wrapper = mount(PublicSurveyView, {
+  const { wrapper } = await mountPage(PublicSurveyView, {
     props: { publicId: PUBLIC_ID },
-    global: { plugins: [[VueQueryPlugin, { queryClient: new QueryClient() }]] },
+    queryClient: new QueryClient(),
   });
-  await flushPromises();
   return wrapper;
 }
 

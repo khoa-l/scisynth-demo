@@ -1,29 +1,18 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { flushPromises, mount } from "@vue/test-utils";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { flushPromises } from "@vue/test-utils";
 
 import AuthForm from "../components/AuthForm.vue";
+import { mountPage } from "./helpers";
 
-function mountAuthForm(mode: "login" | "register") {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: "/", name: "home", component: { template: "<div />" } },
-      { path: "/login", name: "login", component: { template: "<div />" } },
-      { path: "/register", name: "register", component: { template: "<div />" } },
-    ],
-  });
-  return mount(AuthForm, {
-    props: { mode },
-    global: { plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]] },
-  });
+async function mountAuthForm(mode: "login" | "register") {
+  const { wrapper } = await mountPage(AuthForm, { props: { mode } });
+  return wrapper;
 }
 
 describe("AuthForm", () => {
   it("shows validation errors when submitted empty", async () => {
-    const wrapper = mountAuthForm("login");
+    const wrapper = await mountAuthForm("login");
     await wrapper.find("form").trigger("submit");
     await flushPromises();
     expect(wrapper.text()).toContain("Enter a valid email address");
@@ -31,7 +20,7 @@ describe("AuthForm", () => {
   });
 
   it("requires a longer password when registering", async () => {
-    const wrapper = mountAuthForm("register");
+    const wrapper = await mountAuthForm("register");
     await wrapper.find("input[type=email]").setValue("ada@example.com");
     await wrapper.find("input[type=password]").setValue("short");
     await wrapper.find("form").trigger("submit");

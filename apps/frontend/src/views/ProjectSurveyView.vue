@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
+import FolderTabs from "@/components/FolderTabs.vue";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ const { data: survey, isError } = useQuery(
     }),
   ),
 );
+
+const builderTabs = [{ label: "General" }, { label: "Data" }];
 
 const router = useRouter();
 const copied = ref(false);
@@ -62,7 +65,16 @@ async function copyLink(link: string) {
       </Button>
     </template>
     <template #left>
-      <div role="group" aria-label="Survey builder" class="h-full bg-muted inset-shadow-sm" />
+      <div class="flex h-full flex-col">
+        <div
+          role="group"
+          aria-label="Survey builder"
+          class="min-h-0 flex-3 bg-muted inset-shadow-sm"
+        />
+        <div role="group" aria-label="Survey details" class="min-h-0 flex-1">
+          <FolderTabs :tabs="builderTabs" label="Survey sections" />
+        </div>
+      </div>
     </template>
     <template #right>
       <div role="group" aria-label="Survey preview" class="h-full bg-muted inset-shadow-sm" />

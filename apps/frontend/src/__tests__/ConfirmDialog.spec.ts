@@ -1,13 +1,9 @@
-import { afterEach, describe, it, expect } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import { flushPromises, mount } from "@vue/test-utils";
 import { h } from "vue";
 
 import ConfirmDialog from "../components/ConfirmDialog.vue";
-
-afterEach(() => {
-  document.body.innerHTML = "";
-});
 
 async function openDialog(props: Record<string, unknown> = {}) {
   const wrapper = mount(ConfirmDialog, {
@@ -32,11 +28,10 @@ function dialogButton(label: string) {
 
 describe("ConfirmDialog", () => {
   it("renders the given title, description and confirm label", async () => {
-    const wrapper = await openDialog({ description: "Gone for good", confirmLabel: "Delete" });
+    await openDialog({ description: "Gone for good", confirmLabel: "Delete" });
     expect(dialog()?.textContent).toContain("Delete thing?");
     expect(dialog()?.textContent).toContain("Gone for good");
     expect(dialogButton("Delete")).toBeTruthy();
-    wrapper.unmount();
   });
 
   it("emits confirm and stays open for the caller to close", async () => {
@@ -45,7 +40,6 @@ describe("ConfirmDialog", () => {
     await flushPromises();
     expect(wrapper.emitted("confirm")).toHaveLength(1);
     expect(dialog()).not.toBeNull();
-    wrapper.unmount();
   });
 
   it("closes on cancel without emitting", async () => {
@@ -54,20 +48,17 @@ describe("ConfirmDialog", () => {
     await flushPromises();
     expect(wrapper.emitted("confirm")).toBeUndefined();
     expect(dialog()).toBeNull();
-    wrapper.unmount();
   });
 
   it("shows an error and disables both buttons while pending", async () => {
-    const wrapper = await openDialog({ error: "Server said no", pending: true });
+    await openDialog({ error: "Server said no", pending: true });
     expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe("Server said no");
     expect(dialogButton("Confirm").disabled).toBe(true);
     expect(dialogButton("Cancel").disabled).toBe(true);
-    wrapper.unmount();
   });
 
   it("uses the destructive button style when destructive", async () => {
-    const wrapper = await openDialog({ destructive: true });
+    await openDialog({ destructive: true });
     expect(dialogButton("Confirm").className).toContain("text-destructive");
-    wrapper.unmount();
   });
 });

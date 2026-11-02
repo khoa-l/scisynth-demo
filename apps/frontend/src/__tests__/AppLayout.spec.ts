@@ -1,65 +1,18 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
-import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
-import { createMemoryHistory, createRouter } from "vue-router";
+import { flushPromises, type VueWrapper } from "@vue/test-utils";
+import { RouterView } from "vue-router";
 
 import type { UserPublic } from "../client";
 import AppLayout from "../layouts/AppLayout.vue";
 import { meQueryOptions } from "../lib/auth";
-
-const PROJECT_ID = "V11k9b8XeABv2ISddF304";
+import { PROJECT_ID, mountPage, testQueryClient, testRouter } from "./helpers";
 
 async function mountAt(path: string) {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      {
-        path: "/",
-        component: AppLayout,
-        children: [
-          { path: "", name: "home", component: { template: "<p>Dashboard page</p>" } },
-          {
-            path: "project/:projectId/survey",
-            name: "project-surveys",
-            component: { template: "<p>Surveys page</p>" },
-            meta: { projectSection: "surveys" },
-          },
-          {
-            path: "project/:projectId",
-            name: "project",
-            component: { template: "<p>Overview page</p>" },
-            meta: { projectSection: "overview" },
-          },
-          {
-            path: "project/:projectId/dataset",
-            name: "project-datasets",
-            component: { template: "<p>Datasets page</p>" },
-            meta: { projectSection: "datasets" },
-          },
-          {
-            path: "project/:projectId/dataset/:datasetId",
-            name: "project-dataset",
-            component: { template: "<p>Dataset item page</p>" },
-            meta: { projectSection: "datasets" },
-          },
-        ],
-      },
-      { path: "/login", name: "login", component: { template: "<div />" } },
-    ],
-  });
-  await router.push(path);
-  const queryClient = new QueryClient();
+  const queryClient = testQueryClient();
   const user: UserPublic = { id: "Uakgb_J5m9g-0JDMbcJqL", email: "user@email.com" };
   queryClient.setQueryData(meQueryOptions.queryKey, user);
-  const wrapper = mount(
-    { template: "<RouterView />" },
-    {
-      global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
-    },
-  );
-  await flushPromises();
-  return { wrapper, router };
+  return mountPage(RouterView, { path, router: testRouter({ "/": AppLayout }), queryClient });
 }
 
 function sidebarLink(wrapper: VueWrapper, label: string) {
@@ -100,19 +53,19 @@ describe("AppLayout", () => {
   it("opens on Overview and switches between the tabs", async () => {
     const { wrapper, router } = await mountAt(`/project/${PROJECT_ID}`);
     expect(activeTab(wrapper).text()).toBe("Overview");
-    expect(wrapper.text()).toContain("Overview page");
+    expect(wrapper.text()).toContain("project page");
 
     await sidebarLink(wrapper, "Datasets")!.trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.name).toBe("project-datasets");
     expect(activeTab(wrapper).text()).toBe("Datasets");
-    expect(wrapper.text()).toContain("Datasets page");
+    expect(wrapper.text()).toContain("project-datasets page");
 
     await sidebarLink(wrapper, "Surveys")!.trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.name).toBe("project-surveys");
     expect(activeTab(wrapper).text()).toBe("Surveys");
-    expect(wrapper.text()).toContain("Surveys page");
+    expect(wrapper.text()).toContain("project-surveys page");
   });
 
   it("highlights only the active tab", async () => {
@@ -127,7 +80,7 @@ describe("AppLayout", () => {
 
   it("keeps the Datasets tab highlighted while a dataset is open", async () => {
     const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset/Eq-OvCTLPC6Urz_TXE8eJ`);
-    expect(wrapper.text()).toContain("Dataset item page");
+    expect(wrapper.text()).toContain("project-dataset page");
     const highlighted = wrapper
       .findAll('[aria-label="Project sections"] a')
       .filter((link) => link.classes().includes("bg-background"))
@@ -147,7 +100,7 @@ describe("AppLayout", () => {
     await sidebarLink(wrapper, "Dashboard")!.trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.name).toBe("home");
-    expect(wrapper.text()).toContain("Dashboard page");
+    expect(wrapper.text()).toContain("home page");
     expect(wrapper.find("aside nav").exists()).toBe(false);
     expect(wrapper.find("aside").text()).toBe("user@email.com Log out");
   });
