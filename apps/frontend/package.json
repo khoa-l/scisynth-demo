@@ -17,6 +17,8 @@
     "@lucide/vue": "catalog:",
     "@tanstack/vue-form": "catalog:",
     "@tanstack/vue-query": "catalog:",
+    "@vue-flow/background": "catalog:",
+    "@vue-flow/core": "catalog:",
     "@vueuse/core": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",

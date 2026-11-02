@@ -12,7 +12,7 @@ declare module "vue-router" {
   interface RouteMeta {
     requiresAuth?: boolean;
     guestOnly?: boolean;
-    projectSection?: "overview" | "datasets" | "survey" | "results";
+    projectSection?: "overview" | "datasets" | "survey";
   }
 }
 
@@ -48,12 +48,8 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "project/:projectId/datasets/:datasetId",
         name: "project-dataset",
-        component: () => import("@/views/ProjectItemView.vue"),
-        props: (route) => ({
-          ...projectIdProp(route),
-          backTo: "project-datasets",
-          backLabel: "Datasets",
-        }),
+        component: () => import("@/views/ProjectDatasetView.vue"),
+        props: projectIdProp,
         meta: { projectSection: "datasets" },
       },
       {
@@ -73,13 +69,6 @@ export const routes: RouteRecordRaw[] = [
           backLabel: "Surveys",
         }),
         meta: { projectSection: "survey" },
-      },
-      {
-        path: "project/:projectId/results",
-        name: "project-results",
-        component: () => import("@/views/ProjectResultsView.vue"),
-        props: projectIdProp,
-        meta: { projectSection: "results" },
       },
     ],
   },

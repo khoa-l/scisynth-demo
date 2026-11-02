@@ -43,12 +43,6 @@ async function mountAt(path: string) {
             component: { template: "<p>Dataset item page</p>" },
             meta: { projectSection: "datasets" },
           },
-          {
-            path: "project/:projectId/results",
-            name: "project-results",
-            component: { template: "<p>Results page</p>" },
-            meta: { projectSection: "results" },
-          },
         ],
       },
       { path: "/login", name: "login", component: { template: "<div />" } },
@@ -77,14 +71,13 @@ function activeTab(wrapper: VueWrapper) {
 }
 
 describe("AppLayout", () => {
-  it("shows a back link and Overview, Datasets, Survey and Results tabs on a project page", async () => {
+  it("shows a back link and Overview, Datasets and Survey tabs on a project page", async () => {
     const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets`);
     expect(wrapper.findAll("aside a").map((link) => link.text())).toEqual([
       "Dashboard",
       "Overview",
       "Datasets",
       "Survey",
-      "Results",
     ]);
     expect(sidebarLink(wrapper, "Dashboard")?.attributes("href")).toBe("/");
     expect(sidebarLink(wrapper, "Overview")?.attributes("href")).toBe(`/project/${PROJECT_ID}`);
@@ -94,14 +87,11 @@ describe("AppLayout", () => {
     expect(sidebarLink(wrapper, "Datasets")?.attributes("href")).toBe(
       `/project/${PROJECT_ID}/datasets`,
     );
-    expect(sidebarLink(wrapper, "Results")?.attributes("href")).toBe(
-      `/project/${PROJECT_ID}/results`,
-    );
   });
 
   it("shows an icon before each tab label", async () => {
     const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets`);
-    for (const label of ["Overview", "Datasets", "Survey", "Results"]) {
+    for (const label of ["Overview", "Datasets", "Survey"]) {
       const link = sidebarLink(wrapper, label)!;
       expect(link.find("svg[data-icon=inline-start]").exists()).toBe(true);
     }
@@ -123,12 +113,6 @@ describe("AppLayout", () => {
     expect(router.currentRoute.value.name).toBe("project-survey");
     expect(activeTab(wrapper).text()).toBe("Survey");
     expect(wrapper.text()).toContain("Survey page");
-
-    await sidebarLink(wrapper, "Results")!.trigger("click");
-    await flushPromises();
-    expect(router.currentRoute.value.name).toBe("project-results");
-    expect(activeTab(wrapper).text()).toBe("Results");
-    expect(wrapper.text()).toContain("Results page");
   });
 
   it("highlights only the active tab", async () => {

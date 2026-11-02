@@ -18,11 +18,10 @@ describe("project routes", () => {
     expect(router.currentRoute.value.fullPath).toBe(`/project/${PROJECT_ID}`);
   });
 
-  it("serves Datasets, Survey and Results at their own URLs", () => {
+  it("serves Datasets and Survey at their own URLs", () => {
     const router = testRouter();
     expect(router.resolve(`/project/${PROJECT_ID}/datasets`).name).toBe("project-datasets");
     expect(router.resolve(`/project/${PROJECT_ID}/survey`).name).toBe("project-survey");
-    expect(router.resolve(`/project/${PROJECT_ID}/results`).name).toBe("project-results");
   });
 
   it("opens datasets and survey items at their own URLs", () => {

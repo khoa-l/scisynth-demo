@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vite-plus/test";
+import { describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -7,10 +7,10 @@ import type { Component } from "vue";
 
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
+import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectItemView from "../views/ProjectItemView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
-import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 import { fetchMock, jsonResponse, mockApi } from "./helpers";
 
@@ -67,12 +67,9 @@ describe("ProjectPage", () => {
   });
 });
 
-describe.each([
-  ["Overview", ProjectOverviewView],
-  ["Results", ProjectResultsView],
-])("%s view", (_name, view) => {
+describe("Overview view", () => {
   it("shows the project name with no action buttons", async () => {
-    const wrapper = mountWith(view, loadedQueryClient());
+    const wrapper = mountWith(ProjectOverviewView, loadedQueryClient());
     await flushPromises();
 
     expect(wrapper.find("h1").text()).toBe("Protein folding");
@@ -137,5 +134,51 @@ describe.each([
     ]);
     expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
     expect(canvases.every((canvas) => canvas.element.childElementCount === 0)).toBe(true);
+  });
+});
+
+describe("Dataset view", () => {
+  it("shows a Vue Flow node graph in the left panel and leaves the right panel empty", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        {
+          path: "/project/:projectId/datasets",
+          name: "project-datasets",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/");
+    const wrapper = mount(ProjectDatasetView, {
+      props: { projectId: PROJECT_ID },
+      global: { plugins: [router, [VueQueryPlugin, { queryClient: loadedQueryClient() }]] },
+    });
+    await flushPromises();
+
+    expect(wrapper.find("a").text()).toBe("Back to Datasets");
+    expect(wrapper.find("a").attributes("href")).toBe(`/project/${PROJECT_ID}/datasets`);
+    const [left, right] = wrapper.findAll("section");
+    expect(left!.attributes("aria-label")).toBe("Left canvas");
+    expect(left!.find('.vue-flow[aria-label="Node graph"]').exists()).toBe(true);
+    expect(left!.find(".vue-flow").classes()).toEqual(
+      expect.arrayContaining(["bg-muted", "inset-shadow-sm"]),
+    );
+    const gridLine = left!.find(".vue-flow__background pattern path");
+    expect(gridLine.exists()).toBe(true);
+    expect(gridLine.attributes("stroke")).toBe("#dcdcdc");
+    expect(left!.find(".vue-flow__background pattern circle").exists()).toBe(false);
+    expect(right!.attributes("aria-label")).toBe("Right canvas");
+    expect(right!.element.childElementCount).toBe(0);
+    vi.unstubAllGlobals();
   });
 });

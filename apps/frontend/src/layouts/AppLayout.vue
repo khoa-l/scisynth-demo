@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ChartColumn, ClipboardList, Database, LayoutDashboard } from "@lucide/vue";
+import { ArrowLeft, ClipboardList, Database, LayoutDashboard } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { computed } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
@@ -14,7 +14,6 @@ const projectTabs = [
   { name: "project", section: "overview", label: "Overview", icon: LayoutDashboard },
   { name: "project-datasets", section: "datasets", label: "Datasets", icon: Database },
   { name: "project-survey", section: "survey", label: "Survey", icon: ClipboardList },
-  { name: "project-results", section: "results", label: "Results", icon: ChartColumn },
 ] as const;
 
 const projectId = computed(() => {
