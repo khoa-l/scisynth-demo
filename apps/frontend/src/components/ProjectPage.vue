@@ -4,7 +4,7 @@ import { computed } from "vue";
 
 import { projectsGetProjectOptions } from "@/client/@tanstack/vue-query.gen";
 
-const props = defineProps<{ projectId: string }>();
+const props = defineProps<{ projectId: string; itemName?: string }>();
 
 const {
   data: project,
@@ -19,7 +19,10 @@ const {
     This project couldn't be found.
   </p>
   <div v-else class="flex h-full flex-col">
-    <h1 class="text-2xl font-medium tracking-tight">{{ project.name }}</h1>
+    <h1 class="text-2xl font-medium tracking-tight">
+      {{ project.name }}
+      <span v-if="itemName" class="text-muted-foreground">/ {{ itemName }}</span>
+    </h1>
     <slot />
   </div>
 </template>

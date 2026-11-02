@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
@@ -9,8 +9,8 @@ import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
-import ProjectItemView from "../views/ProjectItemView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
+import ProjectSurveyItemView from "../views/ProjectSurveyItemView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 import { fetchMock, jsonResponse, mockApi } from "./helpers";
 
@@ -92,48 +92,116 @@ describe.each([
   });
 });
 
-describe.each([
-  ["project-datasets", "Datasets", "datasets"],
-  ["project-survey", "Surveys", "survey"],
-])("item view going back to %s", (backTo, backLabel, section) => {
-  it("shows a back button to the list and two blank canvases side by side", async () => {
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: "/", component: { template: "<div />" } },
-        {
-          path: "/project/:projectId/datasets",
-          name: "project-datasets",
-          component: { template: "<div />" },
-        },
-        {
-          path: "/project/:projectId/survey",
-          name: "project-survey",
-          component: { template: "<div />" },
-        },
-      ],
-    });
-    await router.push("/");
-    const wrapper = mount(ProjectItemView, {
-      props: { projectId: PROJECT_ID, backTo, backLabel },
-      global: { plugins: [router, [VueQueryPlugin, { queryClient: loadedQueryClient() }]] },
-    });
-    await flushPromises();
+const DATASET = {
+  id: "Eq-OvCTLPC6Urz_TXE8eJ",
+  name: "Raw reads",
+  created_at: "2026-11-02T00:00:00Z",
+};
+const SURVEY = {
+  id: "pZtIo1NJJ5C48xzJcDG3F",
+  name: "Intake form",
+  created_at: "2026-11-02T00:00:00Z",
+};
 
-    expect(wrapper.find("h1").text()).toBe("Protein folding");
+async function mountItemView(component: Component, props: Record<string, string | undefined>) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", component: { template: "<div />" } },
+      {
+        path: "/project/:projectId/datasets",
+        name: "project-datasets",
+        component: { template: "<div />" },
+      },
+      {
+        path: "/project/:projectId/survey",
+        name: "project-survey",
+        component: { template: "<div />" },
+      },
+    ],
+  });
+  await router.push("/");
+  const queryClient = loadedQueryClient();
+  queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
+  const wrapper = mount(component, {
+    props: { projectId: PROJECT_ID, ...props },
+    global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
+  });
+  await flushPromises();
+  return wrapper;
+}
+
+describe.each([
+  {
+    name: "Dataset",
+    view: ProjectDatasetView,
+    props: { datasetId: DATASET.id },
+    item: DATASET,
+    url: `/api/projects/${PROJECT_ID}/datasets/${DATASET.id}`,
+    noun: "dataset",
+    backLabel: "Datasets",
+    backPath: `/project/${PROJECT_ID}/datasets`,
+  },
+  {
+    name: "Survey",
+    view: ProjectSurveyItemView,
+    props: { surveyId: SURVEY.id },
+    item: SURVEY,
+    url: `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`,
+    noun: "survey",
+    backLabel: "Surveys",
+    backPath: `/project/${PROJECT_ID}/survey`,
+  },
+])("$name item view", ({ view, props, item, url, noun, backLabel, backPath }) => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("loads the item and shows its name after the project name", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(item));
+    const wrapper = await mountItemView(view, props);
+
+    const request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(new URL(request.url).pathname).toBe(url);
+    expect(wrapper.find("h1").text()).toBe(`Protein folding / ${item.name}`);
+    expect(wrapper.find("h1 span").classes()).toContain("text-muted-foreground");
+  });
+
+  it("shows a back button to the list and two canvases side by side", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(item));
+    const wrapper = await mountItemView(view, props);
+
     const back = wrapper.find("a");
     expect(back.text()).toBe(`Back to ${backLabel}`);
-    expect(back.attributes("href")).toBe(`/project/${PROJECT_ID}/${section}`);
+    expect(back.attributes("href")).toBe(backPath);
     expect(back.find("svg[data-icon=inline-start]").exists()).toBe(true);
-    expect(wrapper.findAll("button")).toHaveLength(0);
-
     const canvases = wrapper.findAll("section");
     expect(canvases.map((canvas) => canvas.attributes("aria-label"))).toEqual([
       "Left canvas",
       "Right canvas",
     ]);
     expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
-    expect(canvases.every((canvas) => canvas.element.childElementCount === 0)).toBe(true);
+  });
+
+  it("says when the item can't be found", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ detail: "Not found" }, 404));
+    const wrapper = await mountItemView(view, props);
+
+    expect(wrapper.find("h1").text()).toBe("Protein folding");
+    expect(wrapper.text()).toContain(`This ${noun} couldn't be found.`);
+    expect(wrapper.find("section").exists()).toBe(false);
+    expect(wrapper.find("a").text()).toBe(`Back to ${backLabel}`);
   });
 });
 
@@ -147,28 +215,10 @@ describe("Dataset view", () => {
         disconnect() {}
       },
     );
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: "/", component: { template: "<div />" } },
-        {
-          path: "/project/:projectId/datasets",
-          name: "project-datasets",
-          component: { template: "<div />" },
-        },
-      ],
-    });
-    await router.push("/");
-    const wrapper = mount(ProjectDatasetView, {
-      props: { projectId: PROJECT_ID },
-      global: { plugins: [router, [VueQueryPlugin, { queryClient: loadedQueryClient() }]] },
-    });
-    await flushPromises();
+    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
 
-    expect(wrapper.find("a").text()).toBe("Back to Datasets");
-    expect(wrapper.find("a").attributes("href")).toBe(`/project/${PROJECT_ID}/datasets`);
     const [left, right] = wrapper.findAll("section");
-    expect(left!.attributes("aria-label")).toBe("Left canvas");
     expect(left!.find('.vue-flow[aria-label="Node graph"]').exists()).toBe(true);
     expect(left!.find(".vue-flow").classes()).toEqual(
       expect.arrayContaining(["bg-muted", "inset-shadow-sm"]),
@@ -177,8 +227,18 @@ describe("Dataset view", () => {
     expect(gridLine.exists()).toBe(true);
     expect(gridLine.attributes("stroke")).toBe("#dcdcdc");
     expect(left!.find(".vue-flow__background pattern circle").exists()).toBe(false);
-    expect(right!.attributes("aria-label")).toBe("Right canvas");
     expect(right!.element.childElementCount).toBe(0);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("Survey item view", () => {
+  it("leaves both panels empty", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
+    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+
+    const canvases = wrapper.findAll("section");
+    expect(canvases).toHaveLength(2);
+    expect(canvases.every((canvas) => canvas.element.childElementCount === 0)).toBe(true);
   });
 });

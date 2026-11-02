@@ -49,7 +49,10 @@ export const routes: RouteRecordRaw[] = [
         path: "project/:projectId/datasets/:datasetId",
         name: "project-dataset",
         component: () => import("@/views/ProjectDatasetView.vue"),
-        props: projectIdProp,
+        props: (route) => ({
+          ...projectIdProp(route),
+          datasetId: String(route.params.datasetId),
+        }),
         meta: { projectSection: "datasets" },
       },
       {
@@ -62,11 +65,10 @@ export const routes: RouteRecordRaw[] = [
       {
         path: "project/:projectId/survey/:surveyId",
         name: "project-survey-item",
-        component: () => import("@/views/ProjectItemView.vue"),
+        component: () => import("@/views/ProjectSurveyItemView.vue"),
         props: (route) => ({
           ...projectIdProp(route),
-          backTo: "project-survey",
-          backLabel: "Surveys",
+          surveyId: String(route.params.surveyId),
         }),
         meta: { projectSection: "survey" },
       },

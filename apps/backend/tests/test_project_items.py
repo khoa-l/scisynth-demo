@@ -137,3 +137,40 @@ def test_item_ids_are_nanoids(client: TestClient, project_id: str, items: str) -
     assert is_nanoid(item_id)
     assert client.patch(f"{url}/{item_id}", json={"name": "New"}).status_code == 200
     assert client.patch(f"{url}/1", json={"name": "New"}).status_code == 404
+
+
+@pytest.mark.parametrize("items", ITEMS)
+def test_get_item(client: TestClient, project_id: str, items: str) -> None:
+    url = f"/api/projects/{project_id}/{items}"
+    item = client.post(url, json={"name": "Mine"}).json()
+
+    response = client.get(f"{url}/{item['id']}")
+    assert response.status_code == 200
+    assert response.json() == item
+    assert client.get(f"{url}/{MISSING}").status_code == 404
+
+
+@pytest.mark.parametrize("items", ITEMS)
+def test_get_item_checks_project_and_owner(
+    client: TestClient, project_id: str, items: str
+) -> None:
+    item = client.post(
+        f"/api/projects/{project_id}/{items}", json={"name": "Mine"}
+    ).json()
+    other_project_id = client.post("/api/projects", json={"name": "Other"}).json()["id"]
+    assert (
+        client.get(f"/api/projects/{other_project_id}/{items}/{item['id']}").status_code
+        == 404
+    )
+    client.cookies.clear()
+
+    sign_up(client, "grace@example.com")
+    assert (
+        client.get(f"/api/projects/{project_id}/{items}/{item['id']}").status_code
+        == 404
+    )
+
+
+@pytest.mark.parametrize("items", ITEMS)
+def test_get_item_requires_session(client: TestClient, items: str) -> None:
+    assert client.get(f"/api/projects/{MISSING}/{items}/{MISSING}").status_code == 401

@@ -45,6 +45,15 @@ def create_survey(
     return SurveyPublic.model_validate(survey)
 
 
+@router.get("/{survey_id}")
+def get_survey(
+    project_id: str, survey_id: str, user: CurrentUser, db: SessionDep
+) -> SurveyPublic:
+    return SurveyPublic.model_validate(
+        get_owned_survey(project_id, survey_id, user, db)
+    )
+
+
 @router.patch("/{survey_id}")
 def update_survey(
     project_id: str,

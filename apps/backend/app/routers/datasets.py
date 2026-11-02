@@ -45,6 +45,15 @@ def create_dataset(
     return DatasetPublic.model_validate(dataset)
 
 
+@router.get("/{dataset_id}")
+def get_dataset(
+    project_id: str, dataset_id: str, user: CurrentUser, db: SessionDep
+) -> DatasetPublic:
+    return DatasetPublic.model_validate(
+        get_owned_dataset(project_id, dataset_id, user, db)
+    )
+
+
 @router.patch("/{dataset_id}")
 def update_dataset(
     project_id: str,

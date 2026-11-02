@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -190,6 +190,19 @@ export const datasetsDeleteDataset = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * Get Dataset
+ */
+export const datasetsGetDataset = <ThrowOnError extends boolean = false>(options: Options<DatasetsGetDatasetData, ThrowOnError>): RequestResult<DatasetsGetDatasetResponses, DatasetsGetDatasetErrors, ThrowOnError> => (options.client ?? client).get<DatasetsGetDatasetResponses, DatasetsGetDatasetErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/datasets/{dataset_id}',
+    ...options
+});
+
+/**
  * Update Dataset
  */
 export const datasetsUpdateDataset = <ThrowOnError extends boolean = false>(options: Options<DatasetsUpdateDatasetData, ThrowOnError>): RequestResult<DatasetsUpdateDatasetResponses, DatasetsUpdateDatasetErrors, ThrowOnError> => (options.client ?? client).patch<DatasetsUpdateDatasetResponses, DatasetsUpdateDatasetErrors, ThrowOnError>({
@@ -240,6 +253,19 @@ export const surveysCreateSurvey = <ThrowOnError extends boolean = false>(option
  * Delete Survey
  */
 export const surveysDeleteSurvey = <ThrowOnError extends boolean = false>(options: Options<SurveysDeleteSurveyData, ThrowOnError>): RequestResult<SurveysDeleteSurveyResponses, SurveysDeleteSurveyErrors, ThrowOnError> => (options.client ?? client).delete<SurveysDeleteSurveyResponses, SurveysDeleteSurveyErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}',
+    ...options
+});
+
+/**
+ * Get Survey
+ */
+export const surveysGetSurvey = <ThrowOnError extends boolean = false>(options: Options<SurveysGetSurveyData, ThrowOnError>): RequestResult<SurveysGetSurveyResponses, SurveysGetSurveyErrors, ThrowOnError> => (options.client ?? client).get<SurveysGetSurveyResponses, SurveysGetSurveyErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'session',

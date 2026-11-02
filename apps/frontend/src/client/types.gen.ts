@@ -535,6 +535,40 @@ export type DatasetsDeleteDatasetResponses = {
 
 export type DatasetsDeleteDatasetResponse = DatasetsDeleteDatasetResponses[keyof DatasetsDeleteDatasetResponses];
 
+export type DatasetsGetDatasetData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Dataset Id
+         */
+        dataset_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets/{dataset_id}';
+};
+
+export type DatasetsGetDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsGetDatasetError = DatasetsGetDatasetErrors[keyof DatasetsGetDatasetErrors];
+
+export type DatasetsGetDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DatasetPublic;
+};
+
+export type DatasetsGetDatasetResponse = DatasetsGetDatasetResponses[keyof DatasetsGetDatasetResponses];
+
 export type DatasetsUpdateDatasetData = {
     body: DatasetUpdate;
     path: {
@@ -664,6 +698,40 @@ export type SurveysDeleteSurveyResponses = {
 };
 
 export type SurveysDeleteSurveyResponse = SurveysDeleteSurveyResponses[keyof SurveysDeleteSurveyResponses];
+
+export type SurveysGetSurveyData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}';
+};
+
+export type SurveysGetSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysGetSurveyError = SurveysGetSurveyErrors[keyof SurveysGetSurveyErrors];
+
+export type SurveysGetSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SurveyPublic;
+};
+
+export type SurveysGetSurveyResponse = SurveysGetSurveyResponses[keyof SurveysGetSurveyResponses];
 
 export type SurveysUpdateSurveyData = {
     body: SurveyUpdate;

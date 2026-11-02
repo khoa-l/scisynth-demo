@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurveys, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveys, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -265,6 +265,24 @@ export const datasetsDeleteDatasetMutation = (options?: Partial<Options<Datasets
     return mutationOptions;
 };
 
+export const datasetsGetDatasetQueryKey = (options: Options<DatasetsGetDatasetData>) => createQueryKey('datasetsGetDataset', options);
+
+/**
+ * Get Dataset
+ */
+export const datasetsGetDatasetOptions = (options: Options<DatasetsGetDatasetData>) => queryOptions<DatasetsGetDatasetResponse, DatasetsGetDatasetError, DatasetsGetDatasetResponse, ReturnType<typeof datasetsGetDatasetQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await datasetsGetDataset({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: datasetsGetDatasetQueryKey(options)
+});
+
 /**
  * Update Dataset
  */
@@ -333,6 +351,24 @@ export const surveysDeleteSurveyMutation = (options?: Partial<Options<SurveysDel
     };
     return mutationOptions;
 };
+
+export const surveysGetSurveyQueryKey = (options: Options<SurveysGetSurveyData>) => createQueryKey('surveysGetSurvey', options);
+
+/**
+ * Get Survey
+ */
+export const surveysGetSurveyOptions = (options: Options<SurveysGetSurveyData>) => queryOptions<SurveysGetSurveyResponse, SurveysGetSurveyError, SurveysGetSurveyResponse, ReturnType<typeof surveysGetSurveyQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysGetSurvey({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysGetSurveyQueryKey(options)
+});
 
 /**
  * Update Survey

@@ -1,14 +1,33 @@
 <script setup lang="ts">
-import NodeGraph from "@/components/NodeGraph.vue";
-import ProjectItemView from "@/views/ProjectItemView.vue";
+import { useQuery } from "@tanstack/vue-query";
+import { computed } from "vue";
 
-defineProps<{ projectId: string }>();
+import { datasetsGetDatasetOptions } from "@/client/@tanstack/vue-query.gen";
+import NodeGraph from "@/components/NodeGraph.vue";
+import ProjectItemPage from "@/components/ProjectItemPage.vue";
+
+const props = defineProps<{ projectId: string; datasetId: string }>();
+
+const { data: dataset, isError } = useQuery(
+  computed(() =>
+    datasetsGetDatasetOptions({
+      path: { project_id: props.projectId, dataset_id: props.datasetId },
+    }),
+  ),
+);
 </script>
 
 <template>
-  <ProjectItemView :project-id="projectId" back-to="project-datasets" back-label="Datasets">
+  <ProjectItemPage
+    :project-id="projectId"
+    noun="dataset"
+    :item-name="dataset?.name"
+    :is-error="isError"
+    back-to="project-datasets"
+    back-label="Datasets"
+  >
     <template #left>
       <NodeGraph />
     </template>
-  </ProjectItemView>
+  </ProjectItemPage>
 </template>
