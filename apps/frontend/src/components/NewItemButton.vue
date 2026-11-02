@@ -27,7 +27,7 @@ const { open, pending, error, run } = useDialogAction();
     :error="error"
     @submit="(name) => run(() => props.create(name))"
   >
-    <Button variant="outline" size="lg" class="mt-4 h-10 px-4">
+    <Button variant="outline" size="lg" class="mt-4 h-10 self-start px-4">
       <Plus data-icon="inline-start" />
       {{ label }}
     </Button>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test"
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
+import { createMemoryHistory, createRouter } from "vue-router";
 
 import { client } from "../client/client.gen";
 import {
@@ -57,6 +58,7 @@ describe.each([
     queryKey: () => datasetsGetDatasetsQueryKey({ path: { project_id: PROJECT_ID } }),
     url: `/api/projects/${PROJECT_ID}/datasets`,
     noun: "data",
+    itemPath: `/project/${PROJECT_ID}/data`,
     newLabel: "New Data",
     initialName: "untitled-data",
   },
@@ -66,10 +68,11 @@ describe.each([
     queryKey: () => surveysGetSurveysQueryKey({ path: { project_id: PROJECT_ID } }),
     url: `/api/projects/${PROJECT_ID}/surveys`,
     noun: "survey",
+    itemPath: `/project/${PROJECT_ID}/survey`,
     newLabel: "New Survey",
     initialName: "untitled-survey",
   },
-])("$name list", ({ view, queryKey, url, noun, newLabel, initialName }) => {
+])("$name list", ({ view, queryKey, url, noun, itemPath, newLabel, initialName }) => {
   async function mountView() {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },
@@ -80,22 +83,53 @@ describe.each([
       created_at: "2026-11-02T00:00:00Z",
     });
     queryClient.setQueryData(queryKey(), items);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        {
+          path: "/project/:projectId/data/:datasetId",
+          name: "project-dataset",
+          component: { template: "<div />" },
+        },
+        {
+          path: "/project/:projectId/survey/:surveyId",
+          name: "project-survey-item",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/");
     const wrapper = mount(view, {
       props: { projectId: PROJECT_ID },
       attachTo: document.body,
-      global: { plugins: [[VueQueryPlugin, { queryClient }]] },
+      global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
     });
     await flushPromises();
-    return { wrapper, queryClient };
+    return { wrapper, queryClient, router };
   }
 
-  it("shows the items as a grid of squares that don't open anything", async () => {
+  it("shows the items as a grid of squares that link to each item", async () => {
     const { wrapper } = await mountView();
     const rows = wrapper.findAll("li");
     expect(rows.map((row) => row.find("p").text())).toEqual(["Second", "First"]);
     expect(rows.every((row) => row.find(".aspect-square").exists())).toBe(true);
-    expect(wrapper.find("li a").exists()).toBe(false);
+    expect(rows.map((row) => row.find("a").attributes("href"))).toEqual([
+      `${itemPath}/4`,
+      `${itemPath}/3`,
+    ]);
     wrapper.unmount();
+  });
+
+  it("opens an item when it is clicked in either view", async () => {
+    for (const viewLabel of ["Grid view", "List view"]) {
+      const { wrapper, router } = await mountView();
+      await wrapper.find(`[aria-label="${viewLabel}"]`).trigger("click");
+      await wrapper.findAll("li")[1]!.find("a").trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe(`${itemPath}/3`);
+      wrapper.unmount();
+    }
   });
 
   it("switches to a list", async () => {
@@ -103,7 +137,6 @@ describe.each([
     await wrapper.find('[aria-label="List view"]').trigger("click");
     expect(wrapper.findAll("li")).toHaveLength(2);
     expect(wrapper.find(".aspect-square").exists()).toBe(false);
-    expect(wrapper.find("li a").exists()).toBe(false);
     wrapper.unmount();
   });
 

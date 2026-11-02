@@ -24,4 +24,10 @@ describe("project routes", () => {
     expect(router.resolve(`/project/${PROJECT_ID}/survey`).name).toBe("project-survey");
     expect(router.resolve(`/project/${PROJECT_ID}/results`).name).toBe("project-results");
   });
+
+  it("opens data and survey items at their own URLs", () => {
+    const router = testRouter();
+    expect(router.resolve(`/project/${PROJECT_ID}/data/3`).name).toBe("project-dataset");
+    expect(router.resolve(`/project/${PROJECT_ID}/survey/4`).name).toBe("project-survey-item");
+  });
 });

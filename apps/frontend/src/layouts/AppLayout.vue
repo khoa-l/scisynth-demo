@@ -11,10 +11,10 @@ import { meQueryOptions } from "@/lib/auth";
 const route = useRoute();
 
 const projectTabs = [
-  { name: "project", label: "Overview", icon: LayoutDashboard },
-  { name: "project-data", label: "Data", icon: Database },
-  { name: "project-survey", label: "Survey", icon: ClipboardList },
-  { name: "project-results", label: "Results", icon: ChartColumn },
+  { name: "project", section: "overview", label: "Overview", icon: LayoutDashboard },
+  { name: "project-data", section: "data", label: "Data", icon: Database },
+  { name: "project-survey", section: "survey", label: "Survey", icon: ClipboardList },
+  { name: "project-results", section: "results", label: "Results", icon: ChartColumn },
 ] as const;
 
 const projectId = computed(() => {
@@ -52,7 +52,8 @@ const { mutate: logout, isPending: isLoggingOut } = useMutation({
             variant="ghost"
             size="lg"
             as-child
-            class="h-10 w-full justify-start px-4 aria-[current=page]:bg-background"
+            class="h-10 w-full justify-start px-4"
+            :class="{ 'bg-background': route.meta.projectSection === tab.section }"
           >
             <RouterLink :to="{ name: tab.name, params: { projectId } }">
               <component :is="tab.icon" data-icon="inline-start" />

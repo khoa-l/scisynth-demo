@@ -12,6 +12,7 @@ declare module "vue-router" {
   interface RouteMeta {
     requiresAuth?: boolean;
     guestOnly?: boolean;
+    projectSection?: "overview" | "data" | "survey" | "results";
   }
 }
 
@@ -35,24 +36,50 @@ export const routes: RouteRecordRaw[] = [
         name: "project",
         component: () => import("@/views/ProjectOverviewView.vue"),
         props: projectIdProp,
+        meta: { projectSection: "overview" },
       },
       {
         path: "project/:projectId/data",
         name: "project-data",
         component: () => import("@/views/ProjectDataView.vue"),
         props: projectIdProp,
+        meta: { projectSection: "data" },
+      },
+      {
+        path: "project/:projectId/data/:datasetId",
+        name: "project-dataset",
+        component: () => import("@/views/ProjectItemView.vue"),
+        props: (route) => ({
+          ...projectIdProp(route),
+          backTo: "project-data",
+          backLabel: "Data",
+        }),
+        meta: { projectSection: "data" },
       },
       {
         path: "project/:projectId/survey",
         name: "project-survey",
         component: () => import("@/views/ProjectSurveyView.vue"),
         props: projectIdProp,
+        meta: { projectSection: "survey" },
+      },
+      {
+        path: "project/:projectId/survey/:surveyId",
+        name: "project-survey-item",
+        component: () => import("@/views/ProjectItemView.vue"),
+        props: (route) => ({
+          ...projectIdProp(route),
+          backTo: "project-survey",
+          backLabel: "Surveys",
+        }),
+        meta: { projectSection: "survey" },
       },
       {
         path: "project/:projectId/results",
         name: "project-results",
         component: () => import("@/views/ProjectResultsView.vue"),
         props: projectIdProp,
+        meta: { projectSection: "results" },
       },
     ],
   },

@@ -52,6 +52,7 @@ const { mutateAsync: remove } = useMutation({
     :is-error="isError"
     noun="data"
     plural="data"
+    :to="(dataset) => ({ name: 'project-dataset', params: { projectId, datasetId: dataset.id } })"
     :rename="
       (dataset, name) =>
         update({ path: { project_id: projectId, dataset_id: dataset.id }, body: { name } })

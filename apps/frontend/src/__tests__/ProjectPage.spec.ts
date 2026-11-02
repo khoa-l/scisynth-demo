@@ -2,12 +2,14 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test"
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
+import { createMemoryHistory, createRouter } from "vue-router";
 import type { Component } from "vue";
 
 import { client } from "../client/client.gen";
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
 import ProjectDataView from "../views/ProjectDataView.vue";
+import ProjectItemView from "../views/ProjectItemView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
@@ -107,5 +109,46 @@ describe.each([
     const button = wrapper.findAll("button").find((b) => b.text() === label)!;
     expect(button.find("svg[data-icon=inline-start]").exists()).toBe(true);
     expect(button.classes()).toEqual(expect.arrayContaining(["h-10", "px-4"]));
+  });
+});
+
+describe.each([
+  ["project-data", "Data", "data"],
+  ["project-survey", "Surveys", "survey"],
+])("item view going back to %s", (backTo, backLabel, section) => {
+  it("shows a back button to the list and a blank canvas", async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/", component: { template: "<div />" } },
+        {
+          path: "/project/:projectId/data",
+          name: "project-data",
+          component: { template: "<div />" },
+        },
+        {
+          path: "/project/:projectId/survey",
+          name: "project-survey",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/");
+    const wrapper = mount(ProjectItemView, {
+      props: { projectId: PROJECT_ID, backTo, backLabel },
+      global: { plugins: [router, [VueQueryPlugin, { queryClient: loadedQueryClient() }]] },
+    });
+    await flushPromises();
+
+    expect(wrapper.find("h1").text()).toBe("Protein folding");
+    const back = wrapper.find("a");
+    expect(back.text()).toBe(`Back to ${backLabel}`);
+    expect(back.attributes("href")).toBe(`/project/${PROJECT_ID}/${section}`);
+    expect(back.find("svg[data-icon=inline-start]").exists()).toBe(true);
+    expect(wrapper.findAll("button")).toHaveLength(0);
+
+    const canvas = wrapper.find('section[aria-label="Canvas"]');
+    expect(canvas.exists()).toBe(true);
+    expect(canvas.element.childElementCount).toBe(0);
   });
 });

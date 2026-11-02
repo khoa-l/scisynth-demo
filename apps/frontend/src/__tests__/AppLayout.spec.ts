@@ -23,21 +23,31 @@ async function mountAt(path: string) {
             path: "project/:projectId/survey",
             name: "project-survey",
             component: { template: "<p>Survey page</p>" },
+            meta: { projectSection: "survey" },
           },
           {
             path: "project/:projectId",
             name: "project",
             component: { template: "<p>Overview page</p>" },
+            meta: { projectSection: "overview" },
           },
           {
             path: "project/:projectId/data",
             name: "project-data",
             component: { template: "<p>Data page</p>" },
+            meta: { projectSection: "data" },
+          },
+          {
+            path: "project/:projectId/data/:datasetId",
+            name: "project-dataset",
+            component: { template: "<p>Dataset page</p>" },
+            meta: { projectSection: "data" },
           },
           {
             path: "project/:projectId/results",
             name: "project-results",
             component: { template: "<p>Results page</p>" },
+            meta: { projectSection: "results" },
           },
         ],
       },
@@ -125,7 +135,18 @@ describe("AppLayout", () => {
     const data = sidebarLink(wrapper, "Data")!;
     expect(data.attributes("aria-current")).toBe("page");
     expect(survey.attributes("aria-current")).toBeUndefined();
-    expect(data.classes()).toContain("aria-[current=page]:bg-background");
+    expect(data.classes()).toContain("bg-background");
+    expect(survey.classes()).not.toContain("bg-background");
+  });
+
+  it("keeps the Data tab highlighted while a data item is open", async () => {
+    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/data/3`);
+    expect(wrapper.text()).toContain("Dataset page");
+    const highlighted = wrapper
+      .findAll('[aria-label="Project sections"] a')
+      .filter((link) => link.classes().includes("bg-background"))
+      .map((link) => link.text());
+    expect(highlighted).toEqual(["Data"]);
   });
 
   it("shows the signed-in user's email above Log out", async () => {
