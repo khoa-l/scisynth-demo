@@ -5,10 +5,11 @@ import { ref } from "vue";
 
 import { projectsGetProjectsOptions } from "@/client/@tanstack/vue-query.gen";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { projectGradient } from "@/lib/gradient";
 
 type View = "list" | "grid";
 
-const view = ref<View>("list");
+const view = ref<View>("grid");
 
 const { data: projects, isPending, isError } = useQuery(projectsGetProjectsOptions());
 
@@ -28,29 +29,33 @@ function setView(value: unknown) {
         :model-value="view"
         @update:model-value="setView"
       >
-        <ToggleGroupItem value="list" aria-label="List view">
-          <List />
-        </ToggleGroupItem>
         <ToggleGroupItem value="grid" aria-label="Grid view">
           <LayoutGrid />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="list" aria-label="List view">
+          <List />
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
     <p v-if="isPending" class="text-sm text-muted-foreground">Loading projects…</p>
     <p v-else-if="isError" class="text-sm text-destructive">Couldn't load projects.</p>
     <p v-else-if="!projects?.length" class="text-sm text-muted-foreground">No projects yet.</p>
-    <ul v-else-if="view === 'list'" class="divide-y rounded-md border">
-      <li v-for="project in projects" :key="project.id" class="px-4 py-3 text-sm">
-        {{ project.name }}
-      </li>
-    </ul>
-    <ul v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <ul v-else-if="view === 'list'" class="divide-y overflow-hidden rounded-md border">
       <li
         v-for="project in projects"
         :key="project.id"
-        class="aspect-square rounded-md border p-4 text-sm"
+        class="px-4 py-3 text-sm transition-colors hover:bg-muted"
       >
         {{ project.name }}
+      </li>
+    </ul>
+    <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+      <li v-for="project in projects" :key="project.id" class="group min-w-0">
+        <div
+          class="aspect-square rounded-md border transition group-hover:brightness-95"
+          :style="{ background: projectGradient(project.id) }"
+        ></div>
+        <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
       </li>
     </ul>
   </div>
