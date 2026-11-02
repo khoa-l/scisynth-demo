@@ -99,7 +99,7 @@ describe.each([
   ["project-datasets", "Datasets", "datasets"],
   ["project-survey", "Surveys", "survey"],
 ])("item view going back to %s", (backTo, backLabel, section) => {
-  it("shows a back button to the list and a blank canvas", async () => {
+  it("shows a back button to the list and two blank canvases side by side", async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -130,8 +130,12 @@ describe.each([
     expect(back.find("svg[data-icon=inline-start]").exists()).toBe(true);
     expect(wrapper.findAll("button")).toHaveLength(0);
 
-    const canvas = wrapper.find('section[aria-label="Canvas"]');
-    expect(canvas.exists()).toBe(true);
-    expect(canvas.element.childElementCount).toBe(0);
+    const canvases = wrapper.findAll("section");
+    expect(canvases.map((canvas) => canvas.attributes("aria-label"))).toEqual([
+      "Left canvas",
+      "Right canvas",
+    ]);
+    expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
+    expect(canvases.every((canvas) => canvas.element.childElementCount === 0)).toBe(true);
   });
 });
