@@ -10,10 +10,10 @@ import {
   projectsGetProjectQueryKey,
   surveysGetSurveysQueryKey,
 } from "../client/@tanstack/vue-query.gen";
-import ProjectDataView from "../views/ProjectDataView.vue";
+import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 
-const PROJECT_ID = "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b";
+const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -34,9 +34,12 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+const SECOND_ID = "pZtIo1NJJ5C48xzJcDG3F";
+const FIRST_ID = "Eq-OvCTLPC6Urz_TXE8eJ";
+
 const items = [
-  { id: 4, name: "Second", created_at: "2026-11-02T00:00:01Z" },
-  { id: 3, name: "First", created_at: "2026-11-02T00:00:00Z" },
+  { id: SECOND_ID, name: "Second", created_at: "2026-11-02T00:00:01Z" },
+  { id: FIRST_ID, name: "First", created_at: "2026-11-02T00:00:00Z" },
 ];
 
 function requests() {
@@ -53,14 +56,14 @@ async function submitName(value: string) {
 
 describe.each([
   {
-    name: "Data",
-    view: ProjectDataView,
+    name: "Datasets",
+    view: ProjectDatasetsView,
     queryKey: () => datasetsGetDatasetsQueryKey({ path: { project_id: PROJECT_ID } }),
     url: `/api/projects/${PROJECT_ID}/datasets`,
-    noun: "data",
-    itemPath: `/project/${PROJECT_ID}/data`,
-    newLabel: "New Data",
-    initialName: "untitled-data",
+    noun: "dataset",
+    itemPath: `/project/${PROJECT_ID}/datasets`,
+    newLabel: "New Dataset",
+    initialName: "untitled-dataset",
   },
   {
     name: "Survey",
@@ -88,7 +91,7 @@ describe.each([
       routes: [
         { path: "/", component: { template: "<div />" } },
         {
-          path: "/project/:projectId/data/:datasetId",
+          path: "/project/:projectId/datasets/:datasetId",
           name: "project-dataset",
           component: { template: "<div />" },
         },
@@ -115,8 +118,8 @@ describe.each([
     expect(rows.map((row) => row.find("p").text())).toEqual(["Second", "First"]);
     expect(rows.every((row) => row.find(".aspect-square").exists())).toBe(true);
     expect(rows.map((row) => row.find("a").attributes("href"))).toEqual([
-      `${itemPath}/4`,
-      `${itemPath}/3`,
+      `${itemPath}/${SECOND_ID}`,
+      `${itemPath}/${FIRST_ID}`,
     ]);
     wrapper.unmount();
   });
@@ -127,7 +130,7 @@ describe.each([
       await wrapper.find(`[aria-label="${viewLabel}"]`).trigger("click");
       await wrapper.findAll("li")[1]!.find("a").trigger("click");
       await flushPromises();
-      expect(router.currentRoute.value.fullPath).toBe(`${itemPath}/3`);
+      expect(router.currentRoute.value.fullPath).toBe(`${itemPath}/${FIRST_ID}`);
       wrapper.unmount();
     }
   });
@@ -143,7 +146,7 @@ describe.each([
   it(`creates an item from the ${newLabel} button`, async () => {
     fetchMock.mockImplementation(async (input) =>
       (input as Request).method === "POST"
-        ? jsonResponse({ ...items[0], id: 5, name: "Fresh" }, 201)
+        ? jsonResponse({ ...items[0], id: "fjz26ezxp_dKE9W_vb5hf", name: "Fresh" }, 201)
         : jsonResponse(items),
     );
     const { wrapper } = await mountView();
@@ -176,7 +179,7 @@ describe.each([
     await submitName("Renamed");
 
     const patch = requests().find((request) => request.method === "PATCH")!;
-    expect(new URL(patch.url).pathname).toBe(`${url}/3`);
+    expect(new URL(patch.url).pathname).toBe(`${url}/${FIRST_ID}`);
     expect(await patch.json()).toEqual({ name: "Renamed" });
     expect(queryClient.getQueryData(queryKey())).toEqual([items[0], renamed]);
     expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -200,7 +203,7 @@ describe.each([
     await flushPromises();
 
     const request = requests().find((r) => r.method === "DELETE")!;
-    expect(new URL(request.url).pathname).toBe(`${url}/4`);
+    expect(new URL(request.url).pathname).toBe(`${url}/${SECOND_ID}`);
     expect(queryClient.getQueryData(queryKey())).toEqual([items[1]]);
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     wrapper.unmount();

@@ -1,4 +1,4 @@
-import uuid
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +8,7 @@ from sqlmodel import Session, SQLModel, select
 from app.models import Dataset, Survey
 
 ITEMS = ["datasets", "surveys"]
-MISSING = uuid.uuid4()
+MISSING = "missing-item-id-0000000"
 MODELS: dict[str, type[SQLModel]] = {"datasets": Dataset, "surveys": Survey}
 
 
@@ -46,11 +46,13 @@ def test_items_require_session(client: TestClient, items: str) -> None:
     )
     assert (
         client.patch(
-            f"/api/projects/{MISSING}/{items}/1", json={"name": "x"}
+            f"/api/projects/{MISSING}/{items}/{MISSING}", json={"name": "x"}
         ).status_code
         == 401
     )
-    assert client.delete(f"/api/projects/{MISSING}/{items}/1").status_code == 401
+    assert (
+        client.delete(f"/api/projects/{MISSING}/{items}/{MISSING}").status_code == 401
+    )
 
 
 @pytest.mark.parametrize("items", ITEMS)
@@ -142,3 +144,12 @@ def test_deleting_project_deletes_its_items(
 
     with Session(engine) as session:
         assert session.exec(select(MODELS[items])).all() == []
+
+
+@pytest.mark.parametrize("items", ITEMS)
+def test_item_ids_are_nanoids(client: TestClient, project_id: str, items: str) -> None:
+    url = f"/api/projects/{project_id}/{items}"
+    item_id = client.post(url, json={"name": "Mine"}).json()["id"]
+    assert re.fullmatch(r"[A-Za-z0-9_-]{21}", item_id)
+    assert client.patch(f"{url}/{item_id}", json={"name": "New"}).status_code == 200
+    assert client.patch(f"{url}/1", json={"name": "New"}).status_code == 404

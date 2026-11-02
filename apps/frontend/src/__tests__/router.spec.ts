@@ -4,7 +4,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 
 import { routes } from "../router";
 
-const PROJECT_ID = "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b";
+const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
 function testRouter() {
   return createRouter({ history: createMemoryHistory(), routes });
@@ -18,16 +18,20 @@ describe("project routes", () => {
     expect(router.currentRoute.value.fullPath).toBe(`/project/${PROJECT_ID}`);
   });
 
-  it("serves Data, Survey and Results at their own URLs", () => {
+  it("serves Datasets, Survey and Results at their own URLs", () => {
     const router = testRouter();
-    expect(router.resolve(`/project/${PROJECT_ID}/data`).name).toBe("project-data");
+    expect(router.resolve(`/project/${PROJECT_ID}/datasets`).name).toBe("project-datasets");
     expect(router.resolve(`/project/${PROJECT_ID}/survey`).name).toBe("project-survey");
     expect(router.resolve(`/project/${PROJECT_ID}/results`).name).toBe("project-results");
   });
 
-  it("opens data and survey items at their own URLs", () => {
+  it("opens datasets and survey items at their own URLs", () => {
     const router = testRouter();
-    expect(router.resolve(`/project/${PROJECT_ID}/data/3`).name).toBe("project-dataset");
-    expect(router.resolve(`/project/${PROJECT_ID}/survey/4`).name).toBe("project-survey-item");
+    expect(router.resolve(`/project/${PROJECT_ID}/datasets/Eq-OvCTLPC6Urz_TXE8eJ`).name).toBe(
+      "project-dataset",
+    );
+    expect(router.resolve(`/project/${PROJECT_ID}/survey/pZtIo1NJJ5C48xzJcDG3F`).name).toBe(
+      "project-survey-item",
+    );
   });
 });

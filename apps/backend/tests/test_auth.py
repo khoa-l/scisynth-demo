@@ -1,3 +1,5 @@
+import re
+
 from fastapi.testclient import TestClient
 
 CREDENTIALS = {"email": "Ada@Example.com", "password": "correct-horse"}
@@ -16,6 +18,7 @@ def test_register_starts_session(client: TestClient) -> None:
     me = client.get("/api/auth/me")
     assert me.status_code == 200
     assert me.json()["email"] == "ada@example.com"
+    assert re.fullmatch(r"[A-Za-z0-9_-]{21}", me.json()["id"])
 
 
 def test_register_rejects_duplicate_email(client: TestClient) -> None:

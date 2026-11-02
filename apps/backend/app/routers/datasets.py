@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, col, select
 
@@ -13,18 +11,18 @@ router = APIRouter(prefix="/projects/{project_id}/datasets", tags=["datasets"])
 
 
 def get_owned_dataset(
-    project_id: uuid.UUID, dataset_id: int, user: User, db: Session
+    project_id: str, dataset_id: str, user: User, db: Session
 ) -> Dataset:
     get_owned_project(project_id, user, db)
     dataset = db.get(Dataset, dataset_id)
     if dataset is None or dataset.project_id != project_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Data not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dataset not found")
     return dataset
 
 
 @router.get("")
 def get_datasets(
-    project_id: uuid.UUID, user: CurrentUser, db: SessionDep
+    project_id: str, user: CurrentUser, db: SessionDep
 ) -> list[DatasetPublic]:
     get_owned_project(project_id, user, db)
     datasets = db.exec(
@@ -37,7 +35,7 @@ def get_datasets(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_dataset(
-    project_id: uuid.UUID, body: DatasetCreate, user: CurrentUser, db: SessionDep
+    project_id: str, body: DatasetCreate, user: CurrentUser, db: SessionDep
 ) -> DatasetPublic:
     get_owned_project(project_id, user, db)
     dataset = Dataset(name=body.name, project_id=project_id)
@@ -49,8 +47,8 @@ def create_dataset(
 
 @router.patch("/{dataset_id}")
 def update_dataset(
-    project_id: uuid.UUID,
-    dataset_id: int,
+    project_id: str,
+    dataset_id: str,
     body: DatasetUpdate,
     user: CurrentUser,
     db: SessionDep,
@@ -65,7 +63,7 @@ def update_dataset(
 
 @router.delete("/{dataset_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_dataset(
-    project_id: uuid.UUID, dataset_id: int, user: CurrentUser, db: SessionDep
+    project_id: str, dataset_id: str, user: CurrentUser, db: SessionDep
 ) -> None:
     dataset = get_owned_dataset(project_id, dataset_id, user, db)
     db.delete(dataset)

@@ -8,13 +8,13 @@ import type { Component } from "vue";
 import { client } from "../client/client.gen";
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
-import ProjectDataView from "../views/ProjectDataView.vue";
+import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectItemView from "../views/ProjectItemView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 
-const PROJECT_ID = "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b";
+const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -98,7 +98,7 @@ describe.each([
 });
 
 describe.each([
-  ["Data", ProjectDataView, "New Data"],
+  ["Datasets", ProjectDatasetsView, "New Dataset"],
   ["Survey", ProjectSurveyView, "New Survey"],
 ])("%s view", (_name, view, label) => {
   it(`shows the project name and a ${label} button like the Dashboard`, async () => {
@@ -113,7 +113,7 @@ describe.each([
 });
 
 describe.each([
-  ["project-data", "Data", "data"],
+  ["project-datasets", "Datasets", "datasets"],
   ["project-survey", "Surveys", "survey"],
 ])("item view going back to %s", (backTo, backLabel, section) => {
   it("shows a back button to the list and a blank canvas", async () => {
@@ -122,8 +122,8 @@ describe.each([
       routes: [
         { path: "/", component: { template: "<div />" } },
         {
-          path: "/project/:projectId/data",
-          name: "project-data",
+          path: "/project/:projectId/datasets",
+          name: "project-datasets",
           component: { template: "<div />" },
         },
         {

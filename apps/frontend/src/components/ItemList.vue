@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="Item extends { id: string | number; name: string }">
+<script setup lang="ts" generic="Item extends { id: string; name: string }">
 import { LayoutGrid, List } from "@lucide/vue";
 import { ref } from "vue";
 import { RouterLink, type RouteLocationRaw } from "vue-router";

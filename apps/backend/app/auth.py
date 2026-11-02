@@ -41,8 +41,6 @@ def authenticate(db: Session, email: str, password: str) -> User | None:
 
 
 def start_session(db: Session, response: Response, user: User) -> None:
-    if user.id is None:
-        raise ValueError("User must be saved before starting a session")
     token = secrets.token_urlsafe(32)
     db.add(
         UserSession(

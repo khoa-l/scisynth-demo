@@ -21,7 +21,7 @@ export type DatasetPublic = {
     /**
      * Id
      */
-    id: number;
+    id: string;
     /**
      * Name
      */
@@ -145,7 +145,7 @@ export type SurveyPublic = {
     /**
      * Id
      */
-    id: number;
+    id: string;
     /**
      * Name
      */
@@ -173,7 +173,7 @@ export type UserPublic = {
     /**
      * Id
      */
-    id: number;
+    id: string;
     /**
      * Email
      */
@@ -511,7 +511,7 @@ export type DatasetsDeleteDatasetData = {
         /**
          * Dataset Id
          */
-        dataset_id: number;
+        dataset_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}/datasets/{dataset_id}';
@@ -545,7 +545,7 @@ export type DatasetsUpdateDatasetData = {
         /**
          * Dataset Id
          */
-        dataset_id: number;
+        dataset_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}/datasets/{dataset_id}';
@@ -641,7 +641,7 @@ export type SurveysDeleteSurveyData = {
         /**
          * Survey Id
          */
-        survey_id: number;
+        survey_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}/surveys/{survey_id}';
@@ -675,7 +675,7 @@ export type SurveysUpdateSurveyData = {
         /**
          * Survey Id
          */
-        survey_id: number;
+        survey_id: string;
     };
     query?: never;
     url: '/api/projects/{project_id}/surveys/{survey_id}';

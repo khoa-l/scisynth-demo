@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, col, select
 
@@ -13,7 +11,7 @@ router = APIRouter(prefix="/projects/{project_id}/surveys", tags=["surveys"])
 
 
 def get_owned_survey(
-    project_id: uuid.UUID, survey_id: int, user: User, db: Session
+    project_id: str, survey_id: str, user: User, db: Session
 ) -> Survey:
     get_owned_project(project_id, user, db)
     survey = db.get(Survey, survey_id)
@@ -24,7 +22,7 @@ def get_owned_survey(
 
 @router.get("")
 def get_surveys(
-    project_id: uuid.UUID, user: CurrentUser, db: SessionDep
+    project_id: str, user: CurrentUser, db: SessionDep
 ) -> list[SurveyPublic]:
     get_owned_project(project_id, user, db)
     surveys = db.exec(
@@ -37,7 +35,7 @@ def get_surveys(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_survey(
-    project_id: uuid.UUID, body: SurveyCreate, user: CurrentUser, db: SessionDep
+    project_id: str, body: SurveyCreate, user: CurrentUser, db: SessionDep
 ) -> SurveyPublic:
     get_owned_project(project_id, user, db)
     survey = Survey(name=body.name, project_id=project_id)
@@ -49,8 +47,8 @@ def create_survey(
 
 @router.patch("/{survey_id}")
 def update_survey(
-    project_id: uuid.UUID,
-    survey_id: int,
+    project_id: str,
+    survey_id: str,
     body: SurveyUpdate,
     user: CurrentUser,
     db: SessionDep,
@@ -65,7 +63,7 @@ def update_survey(
 
 @router.delete("/{survey_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_survey(
-    project_id: uuid.UUID, survey_id: int, user: CurrentUser, db: SessionDep
+    project_id: str, survey_id: str, user: CurrentUser, db: SessionDep
 ) -> None:
     survey = get_owned_survey(project_id, survey_id, user, db)
     db.delete(survey)

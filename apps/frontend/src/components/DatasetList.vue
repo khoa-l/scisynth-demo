@@ -50,8 +50,8 @@ const { mutateAsync: remove } = useMutation({
     :items="datasets"
     :is-pending="isPending"
     :is-error="isError"
-    noun="data"
-    plural="data"
+    noun="dataset"
+    plural="datasets"
     :to="(dataset) => ({ name: 'project-dataset', params: { projectId, datasetId: dataset.id } })"
     :rename="
       (dataset, name) =>

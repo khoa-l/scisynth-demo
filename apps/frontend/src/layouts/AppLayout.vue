@@ -12,7 +12,7 @@ const route = useRoute();
 
 const projectTabs = [
   { name: "project", section: "overview", label: "Overview", icon: LayoutDashboard },
-  { name: "project-data", section: "data", label: "Data", icon: Database },
+  { name: "project-datasets", section: "datasets", label: "Datasets", icon: Database },
   { name: "project-survey", section: "survey", label: "Survey", icon: ClipboardList },
   { name: "project-results", section: "results", label: "Results", icon: ChartColumn },
 ] as const;

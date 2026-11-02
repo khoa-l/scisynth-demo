@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 from typing import Annotated
 
@@ -27,14 +26,14 @@ class LoginRequest(BaseModel):
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     email: str
 
 
 class ProjectPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
+    id: str
     name: str
     created_at: datetime
 
@@ -55,7 +54,7 @@ class ProjectCreate(BaseModel):
 class DatasetPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     name: str
     created_at: datetime
 
@@ -71,7 +70,7 @@ class DatasetUpdate(BaseModel):
 class SurveyPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     name: str
     created_at: datetime
 

@@ -10,7 +10,7 @@ import ProjectList from "../components/ProjectList.vue";
 import DashboardView from "../views/DashboardView.vue";
 
 const project = {
-  id: "3f2b8c1e-5d4a-4e6f-9b7c-0a1d2e3f4a5b",
+  id: "V11k9b8XeABv2ISddF304",
   name: "Untitled project",
   created_at: "2026-11-02T00:00:00Z",
 };
@@ -149,10 +149,7 @@ describe("creating a project", () => {
     fetchMock.mockImplementation(async (input) => {
       const request = input as Request;
       return request.method === "POST"
-        ? jsonResponse(
-            { ...project, id: "a1b2c3d4-2222-4aaa-8bbb-000000000002", name: "Protein folding" },
-            201,
-          )
+        ? jsonResponse({ ...project, id: "aqvYhKDpgTZejwUy7z36j", name: "Protein folding" }, 201)
         : jsonResponse([project]);
     });
     const wrapper = await openCreate();

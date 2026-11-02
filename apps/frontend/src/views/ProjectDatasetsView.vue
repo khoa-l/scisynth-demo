@@ -26,10 +26,10 @@ const { mutateAsync: createDataset } = useMutation({
 <template>
   <ProjectPage :project-id="projectId">
     <NewItemButton
-      label="New Data"
-      title="New data"
-      description="Give your data a name."
-      initial-name="untitled-data"
+      label="New Dataset"
+      title="New dataset"
+      description="Give your dataset a name."
+      initial-name="untitled-dataset"
       :create="(name) => createDataset({ path: { project_id: projectId }, body: { name } })"
     />
     <DatasetList class="mt-6" :project-id="projectId" />

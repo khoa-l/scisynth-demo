@@ -1,9 +1,13 @@
-import uuid
+import re
 
 from fastapi.testclient import TestClient
 from httpx2 import Response
 
-MISSING = uuid.uuid4()
+MISSING = "missing-project-id-0000"
+
+
+def is_nanoid(value: str) -> bool:
+    return re.fullmatch(r"[A-Za-z0-9_-]{21}", value) is not None
 
 
 def create(client: TestClient, name: str = "Untitled project") -> Response:
@@ -150,13 +154,16 @@ def test_get_project_requires_session(client: TestClient) -> None:
     assert client.get(f"/api/projects/{MISSING}").status_code == 401
 
 
-def test_project_ids_are_uuids(client: TestClient) -> None:
+def test_project_ids_are_nanoids(client: TestClient) -> None:
     sign_up(client, "ada@example.com")
-    project_id = create(client).json()["id"]
-    assert str(uuid.UUID(project_id)) == project_id
-    assert client.get(f"/api/projects/{project_id}").status_code == 200
+    first = create(client).json()["id"]
+    second = create(client).json()["id"]
+    assert is_nanoid(first)
+    assert is_nanoid(second)
+    assert first != second
+    assert client.get(f"/api/projects/{first}").status_code == 200
 
 
-def test_get_project_with_invalid_id(client: TestClient) -> None:
+def test_get_project_with_unknown_id(client: TestClient) -> None:
     sign_up(client, "ada@example.com")
-    assert client.get("/api/projects/1").status_code == 422
+    assert client.get("/api/projects/1").status_code == 404
