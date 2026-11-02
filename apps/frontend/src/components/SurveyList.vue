@@ -10,6 +10,7 @@ import {
   surveysUpdateSurveyMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import ItemList from "@/components/ItemList.vue";
+import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 
 const props = defineProps<{ projectId: string }>();
 
@@ -58,5 +59,9 @@ const { mutateAsync: remove } = useMutation({
         update({ path: { project_id: projectId, survey_id: survey.id }, body: { name } })
     "
     :remove="(survey) => remove({ path: { project_id: projectId, survey_id: survey.id } })"
-  />
+  >
+    <template #actions="{ item }">
+      <SurveyPublishButton :project-id="projectId" :survey="item" icon-only />
+    </template>
+  </ItemList>
 </template>

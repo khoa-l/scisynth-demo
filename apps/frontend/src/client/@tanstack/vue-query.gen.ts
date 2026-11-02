@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveys, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -377,6 +377,111 @@ export const surveysUpdateSurveyMutation = (options?: Partial<Options<SurveysUpd
     const mutationOptions: UseMutationOptions<SurveysUpdateSurveyResponse, SurveysUpdateSurveyError, Options<SurveysUpdateSurveyData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await surveysUpdateSurvey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Unpublish Survey
+ */
+export const surveysUnpublishSurveyMutation = (options?: Partial<Options<SurveysUnpublishSurveyData>>): UseMutationOptions<SurveysUnpublishSurveyResponse, SurveysUnpublishSurveyError, Options<SurveysUnpublishSurveyData>> => {
+    const mutationOptions: UseMutationOptions<SurveysUnpublishSurveyResponse, SurveysUnpublishSurveyError, Options<SurveysUnpublishSurveyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await surveysUnpublishSurvey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Publish Survey
+ */
+export const surveysPublishSurveyMutation = (options?: Partial<Options<SurveysPublishSurveyData>>): UseMutationOptions<SurveysPublishSurveyResponse, SurveysPublishSurveyError, Options<SurveysPublishSurveyData>> => {
+    const mutationOptions: UseMutationOptions<SurveysPublishSurveyResponse, SurveysPublishSurveyError, Options<SurveysPublishSurveyData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await surveysPublishSurvey({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const surveysGetSurveyVersionsQueryKey = (options: Options<SurveysGetSurveyVersionsData>) => createQueryKey('surveysGetSurveyVersions', options);
+
+/**
+ * Get Survey Versions
+ */
+export const surveysGetSurveyVersionsOptions = (options: Options<SurveysGetSurveyVersionsData>) => queryOptions<SurveysGetSurveyVersionsResponse, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, ReturnType<typeof surveysGetSurveyVersionsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysGetSurveyVersions({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysGetSurveyVersionsQueryKey(options)
+});
+
+export const surveysGetSurveyResponsesQueryKey = (options: Options<SurveysGetSurveyResponsesData>) => createQueryKey('surveysGetSurveyResponses', options);
+
+/**
+ * Get Survey Responses
+ */
+export const surveysGetSurveyResponsesOptions = (options: Options<SurveysGetSurveyResponsesData>) => queryOptions<SurveysGetSurveyResponsesResponse, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, ReturnType<typeof surveysGetSurveyResponsesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysGetSurveyResponses({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysGetSurveyResponsesQueryKey(options)
+});
+
+export const publicGetPublishedQueryKey = (options: Options<PublicGetPublishedData>) => createQueryKey('publicGetPublished', options);
+
+/**
+ * Get Published
+ */
+export const publicGetPublishedOptions = (options: Options<PublicGetPublishedData>) => queryOptions<PublicGetPublishedResponse, PublicGetPublishedError, PublicGetPublishedResponse, ReturnType<typeof publicGetPublishedQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await publicGetPublished({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: publicGetPublishedQueryKey(options)
+});
+
+/**
+ * Submit Response
+ */
+export const publicSubmitResponseMutation = (options?: Partial<Options<PublicSubmitResponseData>>): UseMutationOptions<PublicSubmitResponseResponse, PublicSubmitResponseError, Options<PublicSubmitResponseData>> => {
+    const mutationOptions: UseMutationOptions<PublicSubmitResponseResponse, PublicSubmitResponseError, Options<PublicSubmitResponseData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await publicSubmitResponse({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

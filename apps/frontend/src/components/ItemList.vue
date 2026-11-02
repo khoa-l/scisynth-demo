@@ -18,6 +18,8 @@ const props = defineProps<{
   remove: (item: Item) => Promise<unknown>;
 }>();
 
+defineSlots<{ actions?: (props: { item: Item }) => unknown }>();
+
 type View = "list" | "grid";
 
 const view = ref<View>("grid");
@@ -72,7 +74,9 @@ function itemLink(item: Item) {
           :rename="(name) => rename(item, name)"
           :remove="() => remove(item)"
           class="relative z-10 shrink-0"
-        />
+        >
+          <slot name="actions" :item="item" />
+        </ItemActions>
       </li>
     </ul>
     <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
@@ -102,7 +106,9 @@ function itemLink(item: Item) {
           :rename="(name) => rename(item, name)"
           :remove="() => remove(item)"
           class="absolute top-2 right-2"
-        />
+        >
+          <slot name="actions" :item="item" />
+        </ItemActions>
       </li>
     </ul>
   </div>

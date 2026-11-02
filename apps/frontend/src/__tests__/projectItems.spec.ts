@@ -35,6 +35,7 @@ describe.each([
     itemPath: `/project/${PROJECT_ID}/datasets`,
     newLabel: "New Dataset",
     initialName: "untitled-dataset",
+    publishable: false,
   },
   {
     name: "Survey",
@@ -45,8 +46,9 @@ describe.each([
     itemPath: `/project/${PROJECT_ID}/survey`,
     newLabel: "New Survey",
     initialName: "untitled-survey",
+    publishable: true,
   },
-])("$name list", ({ view, queryKey, url, noun, itemPath, newLabel, initialName }) => {
+])("$name list", ({ view, queryKey, url, noun, itemPath, newLabel, initialName, publishable }) => {
   async function mountView() {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity } },
@@ -177,6 +179,47 @@ describe.each([
     expect(new URL(request.url).pathname).toBe(`${url}/${SECOND_ID}`);
     expect(queryClient.getQueryData(queryKey())).toEqual([items[1]]);
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    wrapper.unmount();
+  });
+
+  it(`${publishable ? "has" : "has no"} a publish button in each item's actions`, async () => {
+    const { wrapper } = await mountView();
+    for (const row of wrapper.findAll("li")) {
+      const buttons = row.find('[role="group"]').findAll("button");
+      expect(buttons.map((button) => button.attributes("aria-label"))).toEqual([
+        ...(publishable ? [`Publish ${noun}`] : []),
+        `Rename ${noun}`,
+        `Delete ${noun}`,
+      ]);
+    }
+    wrapper.unmount();
+  });
+
+  it.runIf(publishable)("publishes and unpublishes an item from its actions", async () => {
+    const published = { ...items[0], public_id: "Jx2k8LmN0pQr4StUv6WxY", published_version: 1 };
+    const unpublished = { ...published, published_version: null };
+    fetchMock.mockImplementation(async (input) => {
+      const method = (input as Request).method;
+      if (method === "POST") return jsonResponse(published);
+      if (method === "DELETE") return jsonResponse(unpublished);
+      return jsonResponse(items);
+    });
+    const { wrapper, queryClient } = await mountView();
+    const row = () => wrapper.findAll("li")[0]!;
+
+    await row().find(`[aria-label="Publish ${noun}"]`).trigger("click");
+    await flushPromises();
+    const post = requests().find((request) => request.method === "POST")!;
+    expect(new URL(post.url).pathname).toBe(`${url}/${SECOND_ID}/publish`);
+    expect(queryClient.getQueryData(queryKey())).toEqual([published, items[1]]);
+    expect(row().find(`[aria-label="Publish ${noun}"]`).exists()).toBe(false);
+
+    await row().find(`[aria-label="Unpublish ${noun}"]`).trigger("click");
+    await flushPromises();
+    const remove = requests().find((request) => request.method === "DELETE")!;
+    expect(new URL(remove.url).pathname).toBe(`${url}/${SECOND_ID}/publish`);
+    expect(queryClient.getQueryData(queryKey())).toEqual([unpublished, items[1]]);
+    expect(row().find(`[aria-label="Publish ${noun}"]`).exists()).toBe(true);
     wrapper.unmount();
   });
 });

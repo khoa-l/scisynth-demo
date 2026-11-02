@@ -115,6 +115,26 @@ export type ProjectUpdate = {
 };
 
 /**
+ * PublishedSurvey
+ */
+export type PublishedSurvey = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Version Id
+     */
+    version_id: string;
+    /**
+     * Content
+     */
+    content: {
+        [key: string]: unknown;
+    };
+};
+
+/**
  * RegisterRequest
  */
 export type RegisterRequest = {
@@ -154,6 +174,74 @@ export type SurveyPublic = {
      * Created At
      */
     created_at: string;
+    /**
+     * Content
+     */
+    content: {
+        [key: string]: unknown;
+    };
+    /**
+     * Public Id
+     */
+    public_id: string | null;
+    /**
+     * Published Version
+     */
+    published_version: number | null;
+};
+
+/**
+ * SurveyResponseCreate
+ */
+export type SurveyResponseCreate = {
+    /**
+     * Version Id
+     */
+    version_id: string;
+    /**
+     * Data
+     */
+    data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * SurveyResponsePublic
+ */
+export type SurveyResponsePublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Version
+     */
+    version: number;
+    /**
+     * Submitted At
+     */
+    submitted_at: string;
+    /**
+     * Data
+     */
+    data: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * SurveyResponseReceipt
+ */
+export type SurveyResponseReceipt = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Submitted At
+     */
+    submitted_at: string;
 };
 
 /**
@@ -163,7 +251,37 @@ export type SurveyUpdate = {
     /**
      * Name
      */
-    name: string;
+    name?: string | null;
+    /**
+     * Content
+     */
+    content?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * SurveyVersionPublic
+ */
+export type SurveyVersionPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Number
+     */
+    number: number;
+    /**
+     * Content
+     */
+    content: {
+        [key: string]: unknown;
+    };
+    /**
+     * Published At
+     */
+    published_at: string;
 };
 
 /**
@@ -766,3 +884,208 @@ export type SurveysUpdateSurveyResponses = {
 };
 
 export type SurveysUpdateSurveyResponse = SurveysUpdateSurveyResponses[keyof SurveysUpdateSurveyResponses];
+
+export type SurveysUnpublishSurveyData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}/publish';
+};
+
+export type SurveysUnpublishSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysUnpublishSurveyError = SurveysUnpublishSurveyErrors[keyof SurveysUnpublishSurveyErrors];
+
+export type SurveysUnpublishSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SurveyPublic;
+};
+
+export type SurveysUnpublishSurveyResponse = SurveysUnpublishSurveyResponses[keyof SurveysUnpublishSurveyResponses];
+
+export type SurveysPublishSurveyData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}/publish';
+};
+
+export type SurveysPublishSurveyErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysPublishSurveyError = SurveysPublishSurveyErrors[keyof SurveysPublishSurveyErrors];
+
+export type SurveysPublishSurveyResponses = {
+    /**
+     * Successful Response
+     */
+    200: SurveyPublic;
+};
+
+export type SurveysPublishSurveyResponse = SurveysPublishSurveyResponses[keyof SurveysPublishSurveyResponses];
+
+export type SurveysGetSurveyVersionsData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/surveys/{survey_id}/versions';
+};
+
+export type SurveysGetSurveyVersionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysGetSurveyVersionsError = SurveysGetSurveyVersionsErrors[keyof SurveysGetSurveyVersionsErrors];
+
+export type SurveysGetSurveyVersionsResponses = {
+    /**
+     * Response Surveys-Get Survey Versions
+     *
+     * Successful Response
+     */
+    200: Array<SurveyVersionPublic>;
+};
+
+export type SurveysGetSurveyVersionsResponse = SurveysGetSurveyVersionsResponses[keyof SurveysGetSurveyVersionsResponses];
+
+export type SurveysGetSurveyResponsesData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Survey Id
+         */
+        survey_id: string;
+    };
+    query?: {
+        /**
+         * Version
+         */
+        version?: number | null;
+    };
+    url: '/api/projects/{project_id}/surveys/{survey_id}/responses';
+};
+
+export type SurveysGetSurveyResponsesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SurveysGetSurveyResponsesError = SurveysGetSurveyResponsesErrors[keyof SurveysGetSurveyResponsesErrors];
+
+export type SurveysGetSurveyResponsesResponses = {
+    /**
+     * Response Surveys-Get Survey Responses
+     *
+     * Successful Response
+     */
+    200: Array<SurveyResponsePublic>;
+};
+
+export type SurveysGetSurveyResponsesResponse = SurveysGetSurveyResponsesResponses[keyof SurveysGetSurveyResponsesResponses];
+
+export type PublicGetPublishedData = {
+    body?: never;
+    path: {
+        /**
+         * Public Id
+         */
+        public_id: string;
+    };
+    query?: never;
+    url: '/api/public/surveys/{public_id}';
+};
+
+export type PublicGetPublishedErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PublicGetPublishedError = PublicGetPublishedErrors[keyof PublicGetPublishedErrors];
+
+export type PublicGetPublishedResponses = {
+    /**
+     * Successful Response
+     */
+    200: PublishedSurvey;
+};
+
+export type PublicGetPublishedResponse = PublicGetPublishedResponses[keyof PublicGetPublishedResponses];
+
+export type PublicSubmitResponseData = {
+    body: SurveyResponseCreate;
+    path: {
+        /**
+         * Public Id
+         */
+        public_id: string;
+    };
+    query?: never;
+    url: '/api/public/surveys/{public_id}/responses';
+};
+
+export type PublicSubmitResponseErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PublicSubmitResponseError = PublicSubmitResponseErrors[keyof PublicSubmitResponseErrors];
+
+export type PublicSubmitResponseResponses = {
+    /**
+     * Successful Response
+     */
+    201: SurveyResponseReceipt;
+};
+
+export type PublicSubmitResponseResponse = PublicSubmitResponseResponses[keyof PublicSubmitResponseResponses];

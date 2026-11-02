@@ -4,6 +4,7 @@ import { computed } from "vue";
 
 import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
+import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 
 const props = defineProps<{ projectId: string; surveyId: string }>();
 
@@ -25,6 +26,9 @@ const { data: survey, isError } = useQuery(
     back-to="project-survey"
     back-label="Surveys"
   >
+    <template #actions>
+      <SurveyPublishButton v-if="survey" :project-id="projectId" :survey="survey" />
+    </template>
     <template #left>
       <div role="group" aria-label="Survey builder" class="h-full bg-muted inset-shadow-sm" />
     </template>

@@ -40,6 +40,7 @@ function onDelete() {
     :aria-label="`${title} actions`"
     class="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 has-aria-expanded:opacity-100"
   >
+    <slot />
     <NameDialog
       v-model:open="renameOpen"
       :title="`Rename ${noun}`"

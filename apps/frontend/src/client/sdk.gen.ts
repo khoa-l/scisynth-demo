@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -285,6 +285,75 @@ export const surveysUpdateSurvey = <ThrowOnError extends boolean = false>(option
             type: 'apiKey'
         }],
     url: '/api/projects/{project_id}/surveys/{survey_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Unpublish Survey
+ */
+export const surveysUnpublishSurvey = <ThrowOnError extends boolean = false>(options: Options<SurveysUnpublishSurveyData, ThrowOnError>): RequestResult<SurveysUnpublishSurveyResponses, SurveysUnpublishSurveyErrors, ThrowOnError> => (options.client ?? client).delete<SurveysUnpublishSurveyResponses, SurveysUnpublishSurveyErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}/publish',
+    ...options
+});
+
+/**
+ * Publish Survey
+ */
+export const surveysPublishSurvey = <ThrowOnError extends boolean = false>(options: Options<SurveysPublishSurveyData, ThrowOnError>): RequestResult<SurveysPublishSurveyResponses, SurveysPublishSurveyErrors, ThrowOnError> => (options.client ?? client).post<SurveysPublishSurveyResponses, SurveysPublishSurveyErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}/publish',
+    ...options
+});
+
+/**
+ * Get Survey Versions
+ */
+export const surveysGetSurveyVersions = <ThrowOnError extends boolean = false>(options: Options<SurveysGetSurveyVersionsData, ThrowOnError>): RequestResult<SurveysGetSurveyVersionsResponses, SurveysGetSurveyVersionsErrors, ThrowOnError> => (options.client ?? client).get<SurveysGetSurveyVersionsResponses, SurveysGetSurveyVersionsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}/versions',
+    ...options
+});
+
+/**
+ * Get Survey Responses
+ */
+export const surveysGetSurveyResponses = <ThrowOnError extends boolean = false>(options: Options<SurveysGetSurveyResponsesData, ThrowOnError>): RequestResult<SurveysGetSurveyResponsesResponses, SurveysGetSurveyResponsesErrors, ThrowOnError> => (options.client ?? client).get<SurveysGetSurveyResponsesResponses, SurveysGetSurveyResponsesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}/responses',
+    ...options
+});
+
+/**
+ * Get Published
+ */
+export const publicGetPublished = <ThrowOnError extends boolean = false>(options: Options<PublicGetPublishedData, ThrowOnError>): RequestResult<PublicGetPublishedResponses, PublicGetPublishedErrors, ThrowOnError> => (options.client ?? client).get<PublicGetPublishedResponses, PublicGetPublishedErrors, ThrowOnError>({ url: '/api/public/surveys/{public_id}', ...options });
+
+/**
+ * Submit Response
+ */
+export const publicSubmitResponse = <ThrowOnError extends boolean = false>(options: Options<PublicSubmitResponseData, ThrowOnError>): RequestResult<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError> => (options.client ?? client).post<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError>({
+    url: '/api/public/surveys/{public_id}/responses',
     ...options,
     headers: {
         'Content-Type': 'application/json',

@@ -12,7 +12,7 @@ import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectSurveyItemView from "../views/ProjectSurveyItemView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
-import { fetchMock, jsonResponse, mockApi } from "./helpers";
+import { fetchMock, jsonResponse, mockApi, requests } from "./helpers";
 
 const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
@@ -207,6 +207,14 @@ describe.each([
 });
 
 describe("Dataset view", () => {
+  it("has no Publish button", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+    const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
+
+    expect(wrapper.find("a").element.parentElement!.children).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it("shows a Vue Flow node graph in the left panel and leaves the right panel empty", async () => {
     fetchMock.mockResolvedValue(jsonResponse(DATASET));
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
@@ -417,6 +425,41 @@ describe("Dataset component tabs", () => {
 });
 
 describe("Survey item view", () => {
+  function actionButtons(wrapper: Awaited<ReturnType<typeof mountItemView>>) {
+    return wrapper.find("a").element.parentElement!.children;
+  }
+
+  it("has a Publish button next to the back button", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
+    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+
+    const [back, publish] = actionButtons(wrapper);
+    expect(back!.textContent?.trim()).toBe("Back to Surveys");
+    expect(publish!.tagName).toBe("BUTTON");
+    expect(publish!.textContent?.trim()).toBe("Publish");
+    expect(publish!.querySelector("svg[data-icon=inline-start]")).not.toBeNull();
+  });
+
+  it("publishes the survey and then offers to unpublish it", async () => {
+    const published = { ...SURVEY, public_id: "Jx2k8LmN0pQr4StUv6WxY", published_version: 1 };
+    fetchMock.mockImplementation(async (input) =>
+      (input as Request).method === "POST" ? jsonResponse(published) : jsonResponse(SURVEY),
+    );
+    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Publish")!
+      .trigger("click");
+    await flushPromises();
+
+    const post = requests().find((request) => request.method === "POST")!;
+    expect(new URL(post.url).pathname).toBe(
+      `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}/publish`,
+    );
+    expect(actionButtons(wrapper)[1]!.textContent?.trim()).toBe("Unpublish");
+  });
+
   it("fills both panels with light grey and a small inner shadow", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
     const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
