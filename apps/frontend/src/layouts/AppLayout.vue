@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ChartColumn, Database, FlaskConical } from "@lucide/vue";
+import { ArrowLeft, ChartColumn, ClipboardList, Database } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { computed } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
@@ -12,7 +12,7 @@ const route = useRoute();
 
 const projectTabs = [
   { name: "project-data", label: "Data", icon: Database },
-  { name: "project-survey", label: "Survey", icon: FlaskConical },
+  { name: "project-survey", label: "Survey", icon: ClipboardList },
   { name: "project-results", label: "Results", icon: ChartColumn },
 ] as const;
 
