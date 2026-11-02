@@ -1,0 +1,91 @@
+<script setup lang="ts">
+import { useMutation, useQueryClient } from "@tanstack/vue-query";
+import { makeSortableList } from "@vue-dnd-kit/core";
+import { computed, useTemplateRef } from "vue";
+
+import type { SurveyPublic } from "@/client";
+import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
+import SortableRow from "@/components/SortableRow.vue";
+import { Textarea } from "@/components/ui/textarea";
+import { storeSurvey } from "@/lib/survey-cache";
+import {
+  SURVEY_BLOCK_GROUP,
+  TASK_BLOCK,
+  blockLabels,
+  surveyBlocks,
+  type SurveyBlock,
+} from "@/lib/survey-blocks";
+
+const props = defineProps<{ projectId: string; survey: SurveyPublic }>();
+
+const queryClient = useQueryClient();
+const blocks = computed(() => surveyBlocks(props.survey.content));
+
+const { mutate } = useMutation({
+  ...surveysUpdateSurveyMutation(),
+  onSuccess: (survey) => storeSurvey(queryClient, props.projectId, survey),
+});
+
+function save(next: SurveyBlock[]) {
+  const content = { ...props.survey.content, blocks: next };
+  storeSurvey(queryClient, props.projectId, { ...props.survey, content });
+  mutate({
+    path: { project_id: props.projectId, survey_id: props.survey.id },
+    body: { content },
+  });
+}
+
+const LIST_ID = "survey-builder";
+const zone = useTemplateRef<HTMLElement>("zone");
+const list = useTemplateRef<HTMLElement>("list");
+const { items } = makeSortableList(list, {
+  id: LIST_ID,
+  items: () => blocks.value,
+  label: "Survey task",
+  group: SURVEY_BLOCK_GROUP,
+  dropzone: zone,
+  onDrop: (event) => {
+    event.preventDefault();
+    const next = event.result.get(LIST_ID);
+    if (next) save(next);
+  },
+});
+
+function updateText(id: string, text: string) {
+  if (blocks.value.find((block) => block.id === id)?.text === text) return;
+  save(blocks.value.map((block) => (block.id === id ? { ...block, text } : block)));
+}
+</script>
+
+<template>
+  <div
+    ref="zone"
+    role="group"
+    aria-label="Survey builder"
+    class="relative h-full overflow-y-auto bg-muted p-4 inset-shadow-sm"
+  >
+    <p
+      v-if="!items.length"
+      class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
+    >
+      Drag a block here to build the task.
+    </p>
+    <ol ref="list" class="flex flex-col gap-2">
+      <SortableRow
+        v-for="block in items"
+        :key="block.id"
+        :item="block"
+        :data="TASK_BLOCK"
+        class="flex cursor-grab flex-col gap-1.5 rounded-lg border bg-background p-3 active:cursor-grabbing"
+      >
+        <span class="text-xs text-muted-foreground">{{ blockLabels[block.type] }}</span>
+        <Textarea
+          :default-value="block.text"
+          aria-label="Text"
+          placeholder="Write some text…"
+          @change="updateText(block.id, ($event.target as HTMLTextAreaElement).value)"
+        />
+      </SortableRow>
+    </ol>
+  </div>
+</template>

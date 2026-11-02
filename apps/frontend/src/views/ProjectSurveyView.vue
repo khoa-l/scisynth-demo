@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Link } from "@lucide/vue";
+import { DnDProvider } from "@vue-dnd-kit/core";
 import { useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
-import FolderTabs from "@/components/FolderTabs.vue";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
+import SurveyBuilder from "@/components/SurveyBuilder.vue";
+import SurveyDetails from "@/components/SurveyDetails.vue";
 import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 import { Button } from "@/components/ui/button";
 
@@ -19,8 +21,6 @@ const { data: survey, isError } = useQuery(
     }),
   ),
 );
-
-const builderTabs = [{ label: "General" }, { label: "Data" }];
 
 const router = useRouter();
 const copied = ref(false);
@@ -65,16 +65,16 @@ async function copyLink(link: string) {
       </Button>
     </template>
     <template #left>
-      <div class="flex h-full flex-col">
-        <div
-          role="group"
-          aria-label="Survey builder"
-          class="min-h-0 flex-3 bg-muted inset-shadow-sm"
-        />
-        <div role="group" aria-label="Survey details" class="min-h-0 flex-1">
-          <FolderTabs :tabs="builderTabs" label="Survey sections" />
+      <DnDProvider>
+        <div class="flex h-full flex-col">
+          <div class="min-h-0 flex-3">
+            <SurveyBuilder v-if="survey" :project-id="projectId" :survey="survey" />
+          </div>
+          <div class="min-h-0 flex-1">
+            <SurveyDetails />
+          </div>
         </div>
-      </div>
+      </DnDProvider>
     </template>
     <template #right>
       <div role="group" aria-label="Survey preview" class="h-full bg-muted inset-shadow-sm" />

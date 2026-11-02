@@ -3,7 +3,14 @@ import { describe, it, expect, vi } from "vite-plus/test";
 import { flushPromises } from "@vue/test-utils";
 
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
-import { DATASET, PROJECT_ID, fetchMock, jsonResponse, mountPage } from "./helpers";
+import {
+  DATASET,
+  PROJECT_ID,
+  fakeDataTransfer,
+  fetchMock,
+  jsonResponse,
+  mountPage,
+} from "./helpers";
 
 async function mountView() {
   fetchMock.mockResolvedValue(jsonResponse(DATASET));
@@ -29,23 +36,6 @@ function component(wrapper: Wrapper, label: string) {
   return visiblePanel(wrapper)
     .findAll("li")
     .find((item) => item.text() === label)!;
-}
-
-function fakeDataTransfer() {
-  const data = new Map<string, string>();
-  return {
-    dropEffect: "none",
-    effectAllowed: "all",
-    get types() {
-      return [...data.keys()];
-    },
-    setData(type: string, value: string) {
-      data.set(type, value);
-    },
-    getData(type: string) {
-      return data.get(type) ?? "";
-    },
-  };
 }
 
 describe("Dataset view", () => {

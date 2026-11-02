@@ -1,6 +1,6 @@
 type NodeShape = "input" | "default" | "output";
 
-export interface NodeKind {
+interface NodeKind {
   name: string;
   label: string;
   type: NodeShape;

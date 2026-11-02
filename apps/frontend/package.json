@@ -17,6 +17,7 @@
     "@lucide/vue": "catalog:",
     "@tanstack/vue-form": "catalog:",
     "@tanstack/vue-query": "catalog:",
+    "@vue-dnd-kit/core": "catalog:",
     "@vue-flow/background": "catalog:",
     "@vue-flow/core": "catalog:",
     "@vueuse/core": "catalog:",

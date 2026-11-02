@@ -5,26 +5,18 @@ import { computed } from "vue";
 
 import type { SurveyPublic } from "@/client";
 import {
-  surveysGetSurveyQueryKey,
-  surveysGetSurveysQueryKey,
   surveysPublishSurveyMutation,
   surveysUnpublishSurveyMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import { Button } from "@/components/ui/button";
+import { storeSurvey } from "@/lib/survey-cache";
 
 const props = defineProps<{ projectId: string; survey: SurveyPublic; iconOnly?: boolean }>();
 
 const queryClient = useQueryClient();
 
 function store(survey: SurveyPublic) {
-  const path = { project_id: props.projectId };
-  queryClient.setQueryData(
-    surveysGetSurveyQueryKey({ path: { ...path, survey_id: survey.id } }),
-    survey,
-  );
-  queryClient.setQueryData<SurveyPublic[]>(surveysGetSurveysQueryKey({ path }), (list) =>
-    list?.map((item) => (item.id === survey.id ? survey : item)),
-  );
+  storeSurvey(queryClient, props.projectId, survey);
 }
 
 const publish = useMutation({ ...surveysPublishSurveyMutation(), onSuccess: store });

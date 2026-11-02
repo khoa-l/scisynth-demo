@@ -108,6 +108,23 @@ export async function mountPage(
   return { wrapper, router, queryClient };
 }
 
+export function fakeDataTransfer() {
+  const data = new Map<string, string>();
+  return {
+    dropEffect: "none",
+    effectAllowed: "all",
+    get types() {
+      return [...data.keys()];
+    },
+    setData(type: string, value: string) {
+      data.set(type, value);
+    },
+    getData(type: string) {
+      return data.get(type) ?? "";
+    },
+  };
+}
+
 export function dialog() {
   return document.querySelector('[role="dialog"]');
 }
