@@ -7,6 +7,7 @@ catalogMode: prefer
 
 catalog:
   "@fontsource-variable/geist": ^5.3.0
+  "@fontsource-variable/inclusive-sans": ^5.3.0
   "@hey-api/openapi-ts": 0.99.0
   "@lucide/vue": ^1.66.0
   "@tailwindcss/vite": ^4.3.3

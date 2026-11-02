@@ -13,7 +13,7 @@
     "openapi-ts": "openapi-ts"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "catalog:",
+    "@fontsource-variable/inclusive-sans": "catalog:",
     "@lucide/vue": "catalog:",
     "@tanstack/vue-form": "catalog:",
     "@tanstack/vue-query": "catalog:",

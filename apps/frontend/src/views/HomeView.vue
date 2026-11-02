@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Plus } from "@lucide/vue";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { useRouter } from "vue-router";
 
@@ -29,7 +30,13 @@ const { mutate: logout, isPending } = useMutation({
       </Button>
     </aside>
     <main
-      class="relative z-10 min-w-0 flex-1 overflow-auto rounded-tl-xl bg-background shadow-lg"
-    ></main>
+      class="relative z-10 min-w-0 flex-1 overflow-auto rounded-tl-xl bg-background p-6 shadow-lg"
+    >
+      <h1 class="text-2xl font-medium tracking-tight">Dashboard</h1>
+      <Button variant="outline" size="lg" class="mt-4 h-10 px-4">
+        <Plus data-icon="inline-start" />
+        Empty Project
+      </Button>
+    </main>
   </div>
 </template>
