@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { client } from "../client/client.gen";
 import { projectsGetProjectsQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectList from "../components/ProjectList.vue";
 import DashboardView from "../views/DashboardView.vue";
+import { dialog, fetchMock, jsonResponse, mockApi, requests, submitName } from "./helpers";
 
 const project = {
   id: "V11k9b8XeABv2ISddF304",
@@ -15,24 +15,7 @@ const project = {
   created_at: "2026-11-02T00:00:00Z",
 };
 
-const fetchMock = vi.fn<typeof fetch>();
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-beforeEach(() => {
-  fetchMock.mockReset();
-  client.setConfig({ baseUrl: "http://test", fetch: fetchMock });
-});
-
-afterEach(() => {
-  client.setConfig({ baseUrl: undefined, fetch: undefined });
-  document.body.innerHTML = "";
-});
+mockApi();
 
 function createQueryClient() {
   const queryClient = new QueryClient({
@@ -50,22 +33,6 @@ function testRouter() {
       { path: "/project/:projectId", name: "project", component: { template: "<div />" } },
     ],
   });
-}
-
-function requests() {
-  return fetchMock.mock.calls.map((call) => call[0] as Request);
-}
-
-function dialog() {
-  return document.querySelector('[role="dialog"]');
-}
-
-async function submitName(value: string) {
-  const input = document.querySelector<HTMLInputElement>('input[name="name"]')!;
-  input.value = value;
-  input.dispatchEvent(new Event("input"));
-  document.querySelector("form")?.dispatchEvent(new Event("submit", { cancelable: true }));
-  await flushPromises();
 }
 
 describe("renaming a project", () => {

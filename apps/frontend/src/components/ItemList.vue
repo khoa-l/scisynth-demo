@@ -5,7 +5,7 @@ import { RouterLink, type RouteLocationRaw } from "vue-router";
 
 import ItemActions from "@/components/ItemActions.vue";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { projectGradient, projectTextColor } from "@/lib/gradient";
+import { itemGradient, itemTextColor } from "@/lib/gradient";
 
 const props = defineProps<{
   items: Item[] | undefined;
@@ -84,12 +84,12 @@ function itemLink(item: Item) {
         >
           <div
             class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
-            :style="{ background: projectGradient(item.id) }"
+            :style="{ background: itemGradient(item.id) }"
           >
             <span
               aria-hidden="true"
               class="absolute bottom-4 left-3 text-3xl leading-none font-semibold whitespace-nowrap select-none"
-              :style="{ color: projectTextColor(item.id) }"
+              :style="{ color: itemTextColor(item.id) }"
             >
               {{ item.name }}
             </span>

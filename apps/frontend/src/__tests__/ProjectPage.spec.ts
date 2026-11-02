@@ -1,11 +1,10 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 import type { Component } from "vue";
 
-import { client } from "../client/client.gen";
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectPage from "../components/ProjectPage.vue";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
@@ -13,19 +12,11 @@ import ProjectItemView from "../views/ProjectItemView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
 import ProjectResultsView from "../views/ProjectResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
+import { fetchMock, jsonResponse, mockApi } from "./helpers";
 
 const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
-const fetchMock = vi.fn<typeof fetch>();
-
-beforeEach(() => {
-  fetchMock.mockReset();
-  client.setConfig({ baseUrl: "http://test", fetch: fetchMock });
-});
-
-afterEach(() => {
-  client.setConfig({ baseUrl: undefined, fetch: undefined });
-});
+mockApi();
 
 function loadedQueryClient() {
   const queryClient = new QueryClient({
@@ -49,14 +40,11 @@ function mountWith(component: Component, queryClient = new QueryClient()) {
 describe("ProjectPage", () => {
   it("loads the project from the API and shows its name as the heading", async () => {
     fetchMock.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          id: PROJECT_ID,
-          name: "Protein folding",
-          created_at: "2026-11-02T00:00:00Z",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+      jsonResponse({
+        id: PROJECT_ID,
+        name: "Protein folding",
+        created_at: "2026-11-02T00:00:00Z",
+      }),
     );
     const wrapper = mountWith(ProjectPage);
     await flushPromises();
@@ -67,12 +55,7 @@ describe("ProjectPage", () => {
   });
 
   it("shows a message when the project can't be found", async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Project not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
+    fetchMock.mockResolvedValue(jsonResponse({ detail: "Project not found" }, 404));
     const wrapper = mountWith(
       ProjectPage,
       new QueryClient({ defaultOptions: { queries: { retry: false } } }),

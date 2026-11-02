@@ -1,30 +1,14 @@
-import re
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, select
 
 from app.models import Dataset, Survey
+from tests.helpers import is_nanoid, sign_in, sign_up
 
 ITEMS = ["datasets", "surveys"]
 MISSING = "missing-item-id-0000000"
 MODELS: dict[str, type[SQLModel]] = {"datasets": Dataset, "surveys": Survey}
-
-
-def sign_up(client: TestClient, email: str) -> None:
-    response = client.post(
-        "/api/auth/register", json={"email": email, "password": "correct-horse"}
-    )
-    assert response.status_code == 201
-
-
-def sign_in(client: TestClient, email: str) -> None:
-    client.cookies.clear()
-    response = client.post(
-        "/api/auth/login", json={"email": email, "password": "correct-horse"}
-    )
-    assert response.status_code == 200
 
 
 def create_project(client: TestClient) -> str:
@@ -150,6 +134,6 @@ def test_deleting_project_deletes_its_items(
 def test_item_ids_are_nanoids(client: TestClient, project_id: str, items: str) -> None:
     url = f"/api/projects/{project_id}/{items}"
     item_id = client.post(url, json={"name": "Mine"}).json()["id"]
-    assert re.fullmatch(r"[A-Za-z0-9_-]{21}", item_id)
+    assert is_nanoid(item_id)
     assert client.patch(f"{url}/{item_id}", json={"name": "New"}).status_code == 200
     assert client.patch(f"{url}/1", json={"name": "New"}).status_code == 404

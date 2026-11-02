@@ -1,24 +1,13 @@
-import re
-
 from fastapi.testclient import TestClient
 from httpx2 import Response
+
+from tests.helpers import is_nanoid, sign_in, sign_up
 
 MISSING = "missing-project-id-0000"
 
 
-def is_nanoid(value: str) -> bool:
-    return re.fullmatch(r"[A-Za-z0-9_-]{21}", value) is not None
-
-
 def create(client: TestClient, name: str = "Untitled project") -> Response:
     return client.post("/api/projects", json={"name": name})
-
-
-def sign_up(client: TestClient, email: str) -> None:
-    response = client.post(
-        "/api/auth/register", json={"email": email, "password": "correct-horse"}
-    )
-    assert response.status_code == 201
 
 
 def test_projects_require_session(client: TestClient) -> None:
@@ -119,12 +108,8 @@ def test_delete_project_of_another_user(client: TestClient) -> None:
 
     sign_up(client, "grace@example.com")
     assert client.delete(f"/api/projects/{project['id']}").status_code == 404
-    client.cookies.clear()
 
-    client.post(
-        "/api/auth/login",
-        json={"email": "ada@example.com", "password": "correct-horse"},
-    )
+    sign_in(client, "ada@example.com")
     assert len(client.get("/api/projects").json()) == 1
 
 

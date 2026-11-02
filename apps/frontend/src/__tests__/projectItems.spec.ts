@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import { QueryClient, VueQueryPlugin } from "@tanstack/vue-query";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createMemoryHistory, createRouter } from "vue-router";
 
-import { client } from "../client/client.gen";
 import {
   datasetsGetDatasetsQueryKey,
   projectsGetProjectQueryKey,
@@ -12,27 +11,11 @@ import {
 } from "../client/@tanstack/vue-query.gen";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
+import { dialog, fetchMock, jsonResponse, mockApi, requests, submitName } from "./helpers";
 
 const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
-const fetchMock = vi.fn<typeof fetch>();
-
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-beforeEach(() => {
-  fetchMock.mockReset();
-  client.setConfig({ baseUrl: "http://test", fetch: fetchMock });
-});
-
-afterEach(() => {
-  client.setConfig({ baseUrl: undefined, fetch: undefined });
-  document.body.innerHTML = "";
-});
+mockApi();
 
 const SECOND_ID = "pZtIo1NJJ5C48xzJcDG3F";
 const FIRST_ID = "Eq-OvCTLPC6Urz_TXE8eJ";
@@ -41,18 +24,6 @@ const items = [
   { id: SECOND_ID, name: "Second", created_at: "2026-11-02T00:00:01Z" },
   { id: FIRST_ID, name: "First", created_at: "2026-11-02T00:00:00Z" },
 ];
-
-function requests() {
-  return fetchMock.mock.calls.map((call) => call[0] as Request);
-}
-
-async function submitName(value: string) {
-  const input = document.querySelector<HTMLInputElement>('input[name="name"]')!;
-  input.value = value;
-  input.dispatchEvent(new Event("input"));
-  document.querySelector("form")?.dispatchEvent(new Event("submit", { cancelable: true }));
-  await flushPromises();
-}
 
 describe.each([
   {
@@ -155,14 +126,14 @@ describe.each([
       .find((button) => button.text() === newLabel)!
       .trigger("click");
     await flushPromises();
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(`New ${noun}`);
+    expect(dialog()?.textContent).toContain(`New ${noun}`);
     expect(document.querySelector<HTMLInputElement>('input[name="name"]')?.value).toBe(initialName);
 
     await submitName("  Fresh  ");
     const post = requests().find((request) => request.method === "POST")!;
     expect(new URL(post.url).pathname).toBe(url);
     expect(await post.json()).toEqual({ name: "Fresh" });
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(dialog()).toBeNull();
     wrapper.unmount();
   });
 
@@ -182,7 +153,7 @@ describe.each([
     expect(new URL(patch.url).pathname).toBe(`${url}/${FIRST_ID}`);
     expect(await patch.json()).toEqual({ name: "Renamed" });
     expect(queryClient.getQueryData(queryKey())).toEqual([items[0], renamed]);
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(dialog()).toBeNull();
     wrapper.unmount();
   });
 
