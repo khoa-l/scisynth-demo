@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { Link } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps<{ projectId: string; surveyId: string }>();
 
@@ -15,6 +18,24 @@ const { data: survey, isError } = useQuery(
     }),
   ),
 );
+
+const router = useRouter();
+const copied = ref(false);
+
+const shareLink = computed(() => {
+  if (survey.value?.published_version == null || !survey.value.public_id) return null;
+  const { href } = router.resolve({
+    name: "public-survey",
+    params: { publicId: survey.value.public_id },
+  });
+  return new URL(href, window.location.origin).href;
+});
+
+async function copyLink(link: string) {
+  await navigator.clipboard.writeText(link);
+  copied.value = true;
+  setTimeout(() => (copied.value = false), 1500);
+}
 </script>
 
 <template>
@@ -28,6 +49,17 @@ const { data: survey, isError } = useQuery(
   >
     <template #actions>
       <SurveyPublishButton v-if="survey" :project-id="projectId" :survey="survey" />
+      <Button
+        v-if="shareLink"
+        variant="outline"
+        size="lg"
+        class="h-10 px-4"
+        :title="shareLink"
+        @click="copyLink(shareLink)"
+      >
+        <Link data-icon="inline-start" />
+        {{ copied ? "Copied" : "Copy link" }}
+      </Button>
     </template>
     <template #left>
       <div role="group" aria-label="Survey builder" class="h-full bg-muted inset-shadow-sm" />

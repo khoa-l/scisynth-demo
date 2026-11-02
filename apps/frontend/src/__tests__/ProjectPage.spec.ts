@@ -133,6 +133,7 @@ async function mountItemView(component: Component, props: Record<string, string 
         name: "project-surveys",
         component: { template: "<div />" },
       },
+      { path: "/s/:publicId", name: "public-survey", component: { template: "<div />" } },
     ],
   });
   await router.push("/");
@@ -458,6 +459,31 @@ describe("Survey view", () => {
       `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}/publish`,
     );
     expect(actionButtons(wrapper)[1]!.textContent?.trim()).toBe("Unpublish");
+  });
+
+  it("only offers a Copy link button once the survey is published", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
+
+    expect(wrapper.findAll("button").some((button) => button.text() === "Copy link")).toBe(false);
+  });
+
+  it("copies the public link of a published survey", async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue();
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    fetchMock.mockResolvedValue(
+      jsonResponse({ ...SURVEY, public_id: "Jx2k8LmN0pQr4StUv6WxY", published_version: 1 }),
+    );
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
+
+    const copy = wrapper.findAll("button").find((button) => button.text() === "Copy link")!;
+    expect(copy.find("svg[data-icon=inline-start]").exists()).toBe(true);
+    await copy.trigger("click");
+    await flushPromises();
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/s/Jx2k8LmN0pQr4StUv6WxY`);
+    expect(copy.text()).toBe("Copied");
+    Reflect.deleteProperty(navigator, "clipboard");
   });
 
   it("fills both panels with light grey and a small inner shadow", async () => {

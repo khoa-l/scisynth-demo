@@ -34,3 +34,12 @@ describe("project routes", () => {
     );
   });
 });
+
+describe("public routes", () => {
+  it("opens a published survey at /s/ without signing in", () => {
+    const route = testRouter().resolve("/s/Jx2k8LmN0pQr4StUv6WxY");
+    expect(route.name).toBe("public-survey");
+    expect(route.params.publicId).toBe("Jx2k8LmN0pQr4StUv6WxY");
+    expect(route.matched.some((record) => record.meta.requiresAuth)).toBe(false);
+  });
+});

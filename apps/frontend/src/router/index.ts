@@ -75,6 +75,12 @@ export const routes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: "/s/:publicId",
+    name: "public-survey",
+    component: () => import("@/views/PublicSurveyView.vue"),
+    props: true,
+  },
+  {
     path: "/login",
     name: "login",
     component: () => import("@/views/LoginView.vue"),
