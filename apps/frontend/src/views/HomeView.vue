@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { useRouter } from "vue-router";
 
 import { authLogoutMutation } from "@/client/@tanstack/vue-query.gen";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { meQueryOptions } from "@/lib/auth";
 
 const router = useRouter();
 const queryClient = useQueryClient();
-const { data: user } = useQuery(meQueryOptions);
 
 const { mutate: logout, isPending } = useMutation({
   ...authLogoutMutation(),
@@ -22,15 +20,15 @@ const { mutate: logout, isPending } = useMutation({
 </script>
 
 <template>
-  <main class="flex min-h-svh items-center justify-center p-4">
-    <Card class="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Welcome</CardTitle>
-        <CardDescription>Signed in as {{ user?.email }}</CardDescription>
-      </CardHeader>
-      <CardFooter>
-        <Button variant="outline" :disabled="isPending" @click="logout({})">Log out</Button>
-      </CardFooter>
-    </Card>
-  </main>
+  <div class="flex h-svh flex-col">
+    <header class="h-14 shrink-0 border-b"></header>
+    <div class="flex min-h-0 flex-1">
+      <aside class="flex w-64 shrink-0 flex-col justify-end border-r p-4">
+        <Button variant="outline" class="w-full" :disabled="isPending" @click="logout({})">
+          Log out
+        </Button>
+      </aside>
+      <main class="min-w-0 flex-1 overflow-auto"></main>
+    </div>
+  </div>
 </template>
