@@ -13,7 +13,7 @@ const route = useRoute();
 const projectTabs = [
   { name: "project", section: "overview", label: "Overview", icon: LayoutDashboard },
   { name: "project-datasets", section: "datasets", label: "Datasets", icon: Database },
-  { name: "project-survey", section: "survey", label: "Survey", icon: ClipboardList },
+  { name: "project-surveys", section: "surveys", label: "Surveys", icon: ClipboardList },
 ] as const;
 
 const projectId = computed(() => {

@@ -23,7 +23,7 @@ const { data: survey, isError } = useQuery(
     noun="survey"
     :item-name="survey?.name"
     :is-error="isError"
-    back-to="project-survey"
+    back-to="project-surveys"
     back-label="Surveys"
   >
     <template #actions>

@@ -21,9 +21,9 @@ async function mountAt(path: string) {
           { path: "", name: "home", component: { template: "<p>Dashboard page</p>" } },
           {
             path: "project/:projectId/survey",
-            name: "project-survey",
-            component: { template: "<p>Survey page</p>" },
-            meta: { projectSection: "survey" },
+            name: "project-surveys",
+            component: { template: "<p>Surveys page</p>" },
+            meta: { projectSection: "surveys" },
           },
           {
             path: "project/:projectId",
@@ -32,13 +32,13 @@ async function mountAt(path: string) {
             meta: { projectSection: "overview" },
           },
           {
-            path: "project/:projectId/datasets",
+            path: "project/:projectId/dataset",
             name: "project-datasets",
             component: { template: "<p>Datasets page</p>" },
             meta: { projectSection: "datasets" },
           },
           {
-            path: "project/:projectId/datasets/:datasetId",
+            path: "project/:projectId/dataset/:datasetId",
             name: "project-dataset",
             component: { template: "<p>Dataset item page</p>" },
             meta: { projectSection: "datasets" },
@@ -71,27 +71,27 @@ function activeTab(wrapper: VueWrapper) {
 }
 
 describe("AppLayout", () => {
-  it("shows a back link and Overview, Datasets and Survey tabs on a project page", async () => {
-    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets`);
+  it("shows a back link and Overview, Datasets and Surveys tabs on a project page", async () => {
+    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset`);
     expect(wrapper.findAll("aside a").map((link) => link.text())).toEqual([
       "Dashboard",
       "Overview",
       "Datasets",
-      "Survey",
+      "Surveys",
     ]);
     expect(sidebarLink(wrapper, "Dashboard")?.attributes("href")).toBe("/");
     expect(sidebarLink(wrapper, "Overview")?.attributes("href")).toBe(`/project/${PROJECT_ID}`);
-    expect(sidebarLink(wrapper, "Survey")?.attributes("href")).toBe(
+    expect(sidebarLink(wrapper, "Surveys")?.attributes("href")).toBe(
       `/project/${PROJECT_ID}/survey`,
     );
     expect(sidebarLink(wrapper, "Datasets")?.attributes("href")).toBe(
-      `/project/${PROJECT_ID}/datasets`,
+      `/project/${PROJECT_ID}/dataset`,
     );
   });
 
   it("shows an icon before each tab label", async () => {
-    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets`);
-    for (const label of ["Overview", "Datasets", "Survey"]) {
+    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset`);
+    for (const label of ["Overview", "Datasets", "Surveys"]) {
       const link = sidebarLink(wrapper, label)!;
       expect(link.find("svg[data-icon=inline-start]").exists()).toBe(true);
     }
@@ -108,16 +108,16 @@ describe("AppLayout", () => {
     expect(activeTab(wrapper).text()).toBe("Datasets");
     expect(wrapper.text()).toContain("Datasets page");
 
-    await sidebarLink(wrapper, "Survey")!.trigger("click");
+    await sidebarLink(wrapper, "Surveys")!.trigger("click");
     await flushPromises();
-    expect(router.currentRoute.value.name).toBe("project-survey");
-    expect(activeTab(wrapper).text()).toBe("Survey");
-    expect(wrapper.text()).toContain("Survey page");
+    expect(router.currentRoute.value.name).toBe("project-surveys");
+    expect(activeTab(wrapper).text()).toBe("Surveys");
+    expect(wrapper.text()).toContain("Surveys page");
   });
 
   it("highlights only the active tab", async () => {
-    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets`);
-    const survey = sidebarLink(wrapper, "Survey")!;
+    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset`);
+    const survey = sidebarLink(wrapper, "Surveys")!;
     const data = sidebarLink(wrapper, "Datasets")!;
     expect(data.attributes("aria-current")).toBe("page");
     expect(survey.attributes("aria-current")).toBeUndefined();
@@ -126,7 +126,7 @@ describe("AppLayout", () => {
   });
 
   it("keeps the Datasets tab highlighted while a dataset is open", async () => {
-    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/datasets/Eq-OvCTLPC6Urz_TXE8eJ`);
+    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset/Eq-OvCTLPC6Urz_TXE8eJ`);
     expect(wrapper.text()).toContain("Dataset item page");
     const highlighted = wrapper
       .findAll('[aria-label="Project sections"] a')
@@ -143,7 +143,7 @@ describe("AppLayout", () => {
   });
 
   it("goes back to the Dashboard and hides the project navigation there", async () => {
-    const { wrapper, router } = await mountAt(`/project/${PROJECT_ID}/datasets`);
+    const { wrapper, router } = await mountAt(`/project/${PROJECT_ID}/dataset`);
     await sidebarLink(wrapper, "Dashboard")!.trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.name).toBe("home");

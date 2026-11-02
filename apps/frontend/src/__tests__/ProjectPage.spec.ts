@@ -10,8 +10,8 @@ import ProjectPage from "../components/ProjectPage.vue";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
 import ProjectOverviewView from "../views/ProjectOverviewView.vue";
-import ProjectSurveyItemView from "../views/ProjectSurveyItemView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
+import ProjectSurveysView from "../views/ProjectSurveysView.vue";
 import { fetchMock, jsonResponse, mockApi, requests } from "./helpers";
 
 const PROJECT_ID = "V11k9b8XeABv2ISddF304";
@@ -94,7 +94,7 @@ describe("Overview view", () => {
 
 describe.each([
   ["Datasets", ProjectDatasetsView, "New Dataset"],
-  ["Survey", ProjectSurveyView, "New Survey"],
+  ["Surveys", ProjectSurveysView, "New Survey"],
 ])("%s view", (_name, view, label) => {
   it(`shows the project name and a ${label} button like the Dashboard`, async () => {
     const wrapper = mountWith(view, loadedQueryClient());
@@ -124,13 +124,13 @@ async function mountItemView(component: Component, props: Record<string, string 
     routes: [
       { path: "/", component: { template: "<div />" } },
       {
-        path: "/project/:projectId/datasets",
+        path: "/project/:projectId/dataset",
         name: "project-datasets",
         component: { template: "<div />" },
       },
       {
         path: "/project/:projectId/survey",
-        name: "project-survey",
+        name: "project-surveys",
         component: { template: "<div />" },
       },
     ],
@@ -156,11 +156,11 @@ describe.each([
     url: `/api/projects/${PROJECT_ID}/datasets/${DATASET.id}`,
     noun: "dataset",
     backLabel: "Datasets",
-    backPath: `/project/${PROJECT_ID}/datasets`,
+    backPath: `/project/${PROJECT_ID}/dataset`,
   },
   {
     name: "Survey",
-    view: ProjectSurveyItemView,
+    view: ProjectSurveyView,
     props: { surveyId: SURVEY.id },
     item: SURVEY,
     url: `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`,
@@ -424,14 +424,14 @@ describe("Dataset component tabs", () => {
   });
 });
 
-describe("Survey item view", () => {
+describe("Survey view", () => {
   function actionButtons(wrapper: Awaited<ReturnType<typeof mountItemView>>) {
     return wrapper.find("a").element.parentElement!.children;
   }
 
   it("has a Publish button next to the back button", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
-    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
 
     const [back, publish] = actionButtons(wrapper);
     expect(back!.textContent?.trim()).toBe("Back to Surveys");
@@ -445,7 +445,7 @@ describe("Survey item view", () => {
     fetchMock.mockImplementation(async (input) =>
       (input as Request).method === "POST" ? jsonResponse(published) : jsonResponse(SURVEY),
     );
-    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
 
     await wrapper
       .findAll("button")
@@ -462,7 +462,7 @@ describe("Survey item view", () => {
 
   it("fills both panels with light grey and a small inner shadow", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
-    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
 
     const canvases = wrapper.findAll("section");
     expect(canvases).toHaveLength(2);
@@ -475,7 +475,7 @@ describe("Survey item view", () => {
 
   it("uses the left panel as the builder and the right panel as the preview", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
-    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
+    const wrapper = await mountItemView(ProjectSurveyView, { surveyId: SURVEY.id });
 
     const [left, right] = wrapper.findAll("section");
     expect(left!.find('[aria-label="Survey builder"]').exists()).toBe(true);

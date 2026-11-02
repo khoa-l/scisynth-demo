@@ -10,7 +10,7 @@ import {
   surveysGetSurveysQueryKey,
 } from "../client/@tanstack/vue-query.gen";
 import ProjectDatasetsView from "../views/ProjectDatasetsView.vue";
-import ProjectSurveyView from "../views/ProjectSurveyView.vue";
+import ProjectSurveysView from "../views/ProjectSurveysView.vue";
 import { dialog, fetchMock, jsonResponse, mockApi, requests, submitName } from "./helpers";
 
 const PROJECT_ID = "V11k9b8XeABv2ISddF304";
@@ -32,14 +32,14 @@ describe.each([
     queryKey: () => datasetsGetDatasetsQueryKey({ path: { project_id: PROJECT_ID } }),
     url: `/api/projects/${PROJECT_ID}/datasets`,
     noun: "dataset",
-    itemPath: `/project/${PROJECT_ID}/datasets`,
+    itemPath: `/project/${PROJECT_ID}/dataset`,
     newLabel: "New Dataset",
     initialName: "untitled-dataset",
     publishable: false,
   },
   {
-    name: "Survey",
-    view: ProjectSurveyView,
+    name: "Surveys",
+    view: ProjectSurveysView,
     queryKey: () => surveysGetSurveysQueryKey({ path: { project_id: PROJECT_ID } }),
     url: `/api/projects/${PROJECT_ID}/surveys`,
     noun: "survey",
@@ -64,13 +64,13 @@ describe.each([
       routes: [
         { path: "/", component: { template: "<div />" } },
         {
-          path: "/project/:projectId/datasets/:datasetId",
+          path: "/project/:projectId/dataset/:datasetId",
           name: "project-dataset",
           component: { template: "<div />" },
         },
         {
           path: "/project/:projectId/survey/:surveyId",
-          name: "project-survey-item",
+          name: "project-survey",
           component: { template: "<div />" },
         },
       ],

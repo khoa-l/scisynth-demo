@@ -20,17 +20,17 @@ describe("project routes", () => {
 
   it("serves Datasets and Survey at their own URLs", () => {
     const router = testRouter();
-    expect(router.resolve(`/project/${PROJECT_ID}/datasets`).name).toBe("project-datasets");
-    expect(router.resolve(`/project/${PROJECT_ID}/survey`).name).toBe("project-survey");
+    expect(router.resolve(`/project/${PROJECT_ID}/dataset`).name).toBe("project-datasets");
+    expect(router.resolve(`/project/${PROJECT_ID}/survey`).name).toBe("project-surveys");
   });
 
-  it("opens datasets and survey items at their own URLs", () => {
+  it("opens a dataset and a survey at their own URLs", () => {
     const router = testRouter();
-    expect(router.resolve(`/project/${PROJECT_ID}/datasets/Eq-OvCTLPC6Urz_TXE8eJ`).name).toBe(
+    expect(router.resolve(`/project/${PROJECT_ID}/dataset/Eq-OvCTLPC6Urz_TXE8eJ`).name).toBe(
       "project-dataset",
     );
     expect(router.resolve(`/project/${PROJECT_ID}/survey/pZtIo1NJJ5C48xzJcDG3F`).name).toBe(
-      "project-survey-item",
+      "project-survey",
     );
   });
 });
