@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM ghcr.io/voidzero-dev/vite-plus:1.4.0 AS frontend
 WORKDIR /app
 COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -16,10 +14,8 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_NO_DEV=1 \
     UV_PYTHON_DOWNLOADS=0
 WORKDIR /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=apps/backend/uv.lock,target=uv.lock \
-    --mount=type=bind,source=apps/backend/pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project
+COPY apps/backend/pyproject.toml apps/backend/uv.lock ./
+RUN uv sync --locked --no-install-project
 COPY apps/backend/ .
 
 FROM python:3.14-slim-trixie
