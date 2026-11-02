@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsGetProjects } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsGetProjects, projectsUpdateProject } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -147,10 +147,27 @@ export const projectsGetProjectsOptions = (options?: Options<ProjectsGetProjects
 /**
  * Create Project
  */
-export const projectsCreateProjectMutation = (options?: Partial<Options<ProjectsCreateProjectData>>): UseMutationOptions<ProjectsCreateProjectResponse, DefaultError, Options<ProjectsCreateProjectData>> => {
-    const mutationOptions: UseMutationOptions<ProjectsCreateProjectResponse, DefaultError, Options<ProjectsCreateProjectData>> = {
+export const projectsCreateProjectMutation = (options?: Partial<Options<ProjectsCreateProjectData>>): UseMutationOptions<ProjectsCreateProjectResponse, ProjectsCreateProjectError, Options<ProjectsCreateProjectData>> => {
+    const mutationOptions: UseMutationOptions<ProjectsCreateProjectResponse, ProjectsCreateProjectError, Options<ProjectsCreateProjectData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await projectsCreateProject({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update Project
+ */
+export const projectsUpdateProjectMutation = (options?: Partial<Options<ProjectsUpdateProjectData>>): UseMutationOptions<ProjectsUpdateProjectResponse, ProjectsUpdateProjectError, Options<ProjectsUpdateProjectData>> => {
+    const mutationOptions: UseMutationOptions<ProjectsUpdateProjectResponse, ProjectsUpdateProjectError, Options<ProjectsUpdateProjectData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await projectsUpdateProject({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

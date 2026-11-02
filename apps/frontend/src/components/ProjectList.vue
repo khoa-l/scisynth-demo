@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { ref } from "vue";
 
 import { projectsGetProjectsOptions } from "@/client/@tanstack/vue-query.gen";
+import ProjectActions from "@/components/ProjectActions.vue";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { projectGradient, projectTextColor } from "@/lib/gradient";
 
@@ -44,13 +45,14 @@ function setView(value: unknown) {
       <li
         v-for="project in projects"
         :key="project.id"
-        class="px-4 py-3 text-sm transition-colors hover:bg-muted"
+        class="group flex items-center justify-between gap-4 px-4 py-2 text-sm transition-colors hover:bg-muted"
       >
-        {{ project.name }}
+        <span class="truncate">{{ project.name }}</span>
+        <ProjectActions :project="project" class="shrink-0" />
       </li>
     </ul>
     <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-      <li v-for="project in projects" :key="project.id" class="group min-w-0">
+      <li v-for="project in projects" :key="project.id" class="group relative min-w-0">
         <div
           class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
           :style="{ background: projectGradient(project.id) }"
@@ -63,6 +65,7 @@ function setView(value: unknown) {
             {{ project.name }}
           </span>
         </div>
+        <ProjectActions :project="project" class="absolute top-2 right-2" />
         <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
       </li>
     </ul>

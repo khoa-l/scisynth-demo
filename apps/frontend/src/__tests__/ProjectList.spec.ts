@@ -55,6 +55,23 @@ describe("ProjectList", () => {
     expect(wrapper.findAll("li")).toHaveLength(2);
   });
 
+  it("shows rename and delete actions on hover in both views", async () => {
+    const wrapper = mountProjectList();
+    await flushPromises();
+
+    for (const view of ["Grid view", "List view"]) {
+      await wrapper.find(`[aria-label="${view}"]`).trigger("click");
+      const items = wrapper.findAll("li");
+      for (const item of items) {
+        const actions = item.find('[aria-label="Project actions"]');
+        expect(actions.classes()).toContain("opacity-0");
+        expect(actions.classes()).toContain("group-hover:opacity-100");
+        expect(actions.find('[aria-label="Rename project"]').exists()).toBe(true);
+        expect(actions.find('[aria-label="Delete project"]').exists()).toBe(true);
+      }
+    }
+  });
+
   it("renders icons with a thin stroke inside the app", async () => {
     const router = createRouter({
       history: createMemoryHistory(),

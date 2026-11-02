@@ -39,6 +39,16 @@ export type LoginRequest = {
 };
 
 /**
+ * ProjectCreate
+ */
+export type ProjectCreate = {
+    /**
+     * Name
+     */
+    name: string;
+};
+
+/**
  * ProjectPublic
  */
 export type ProjectPublic = {
@@ -54,6 +64,16 @@ export type ProjectPublic = {
      * Created At
      */
     created_at: string;
+};
+
+/**
+ * ProjectUpdate
+ */
+export type ProjectUpdate = {
+    /**
+     * Name
+     */
+    name: string;
 };
 
 /**
@@ -229,11 +249,20 @@ export type ProjectsGetProjectsResponses = {
 export type ProjectsGetProjectsResponse = ProjectsGetProjectsResponses[keyof ProjectsGetProjectsResponses];
 
 export type ProjectsCreateProjectData = {
-    body?: never;
+    body: ProjectCreate;
     path?: never;
     query?: never;
     url: '/api/projects';
 };
+
+export type ProjectsCreateProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsCreateProjectError = ProjectsCreateProjectErrors[keyof ProjectsCreateProjectErrors];
 
 export type ProjectsCreateProjectResponses = {
     /**
@@ -243,3 +272,33 @@ export type ProjectsCreateProjectResponses = {
 };
 
 export type ProjectsCreateProjectResponse = ProjectsCreateProjectResponses[keyof ProjectsCreateProjectResponses];
+
+export type ProjectsUpdateProjectData = {
+    body: ProjectUpdate;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}';
+};
+
+export type ProjectsUpdateProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsUpdateProjectError = ProjectsUpdateProjectErrors[keyof ProjectsUpdateProjectErrors];
+
+export type ProjectsUpdateProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectPublic;
+};
+
+export type ProjectsUpdateProjectResponse = ProjectsUpdateProjectResponses[keyof ProjectsUpdateProjectResponses];

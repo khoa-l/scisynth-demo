@@ -20,7 +20,6 @@
     "@vueuse/core": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
-    "pinia": "^4.0.3",
     "reka-ui": "catalog:",
     "shadcn-vue": "catalog:",
     "tw-animate-css": "catalog:",

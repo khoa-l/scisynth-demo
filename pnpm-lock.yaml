@@ -252,9 +252,6 @@ importers:
       cn:
         specifier: 'catalog:'
         version: 0.5.1
-      pinia:
-        specifier: ^4.0.3
-        version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3))
       reka-ui:
         specifier: 'catalog:'
         version: 2.11.0(vue@3.5.44(typescript@6.0.3))
@@ -6384,6 +6381,7 @@ snapshots:
       vue: 3.5.44(typescript@6.0.3)
     optionalDependencies:
       typescript: 6.0.3
+    optional: true
 
   pkce-challenge@5.0.1: {}
 

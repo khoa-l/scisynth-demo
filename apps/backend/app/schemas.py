@@ -1,7 +1,14 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    StringConstraints,
+)
 
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
 
@@ -29,3 +36,16 @@ class ProjectPublic(BaseModel):
     id: int
     name: str
     created_at: datetime
+
+
+ProjectName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)
+]
+
+
+class ProjectUpdate(BaseModel):
+    name: ProjectName
+
+
+class ProjectCreate(BaseModel):
+    name: ProjectName

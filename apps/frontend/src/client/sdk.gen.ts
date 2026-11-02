@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -89,12 +89,33 @@ export const projectsGetProjects = <ThrowOnError extends boolean = false>(option
 /**
  * Create Project
  */
-export const projectsCreateProject = <ThrowOnError extends boolean = false>(options?: Options<ProjectsCreateProjectData, ThrowOnError>): RequestResult<ProjectsCreateProjectResponses, unknown, ThrowOnError> => (options?.client ?? client).post<ProjectsCreateProjectResponses, unknown, ThrowOnError>({
+export const projectsCreateProject = <ThrowOnError extends boolean = false>(options: Options<ProjectsCreateProjectData, ThrowOnError>): RequestResult<ProjectsCreateProjectResponses, ProjectsCreateProjectErrors, ThrowOnError> => (options.client ?? client).post<ProjectsCreateProjectResponses, ProjectsCreateProjectErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'session',
             type: 'apiKey'
         }],
     url: '/api/projects',
-    ...options
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Update Project
+ */
+export const projectsUpdateProject = <ThrowOnError extends boolean = false>(options: Options<ProjectsUpdateProjectData, ThrowOnError>): RequestResult<ProjectsUpdateProjectResponses, ProjectsUpdateProjectErrors, ThrowOnError> => (options.client ?? client).patch<ProjectsUpdateProjectResponses, ProjectsUpdateProjectErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
