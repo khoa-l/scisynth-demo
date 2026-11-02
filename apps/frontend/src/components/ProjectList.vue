@@ -5,7 +5,7 @@ import { ref } from "vue";
 
 import { projectsGetProjectsOptions } from "@/client/@tanstack/vue-query.gen";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { projectGradient } from "@/lib/gradient";
+import { projectGradient, projectTextColor } from "@/lib/gradient";
 
 type View = "list" | "grid";
 
@@ -52,9 +52,17 @@ function setView(value: unknown) {
     <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
       <li v-for="project in projects" :key="project.id" class="group min-w-0">
         <div
-          class="aspect-square rounded-md border transition group-hover:brightness-95"
+          class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
           :style="{ background: projectGradient(project.id) }"
-        ></div>
+        >
+          <span
+            aria-hidden="true"
+            class="absolute bottom-4 left-3 text-3xl leading-none font-semibold whitespace-nowrap select-none"
+            :style="{ color: projectTextColor(project.id) }"
+          >
+            {{ project.name }}
+          </span>
+        </div>
         <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
       </li>
     </ul>

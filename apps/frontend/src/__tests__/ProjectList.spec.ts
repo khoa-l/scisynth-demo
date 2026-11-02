@@ -30,9 +30,12 @@ describe("ProjectList", () => {
     const wrapper = mountProjectList();
     await flushPromises();
     const items = wrapper.findAll("li");
-    expect(items.map((item) => item.text())).toEqual(["Second project", "First project"]);
-    expect(items.every((item) => item.find(".aspect-square").exists())).toBe(true);
-    expect(items.every((item) => item.find(".aspect-square").text() === "")).toBe(true);
+    expect(items.map((item) => item.find("p").text())).toEqual(["Second project", "First project"]);
+    for (const item of items) {
+      const square = item.find(".aspect-square");
+      expect(square.exists()).toBe(true);
+      expect(square.find('[aria-hidden="true"]').text()).toBe(item.find("p").text());
+    }
   });
 
   it("switches to a list", async () => {
