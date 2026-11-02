@@ -31,6 +31,14 @@ def create_project(
     return ProjectPublic.model_validate(project)
 
 
+@router.get("/{project_id}")
+def get_project(project_id: int, user: CurrentUser, db: SessionDep) -> ProjectPublic:
+    project = db.get(Project, project_id)
+    if project is None or project.owner_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found")
+    return ProjectPublic.model_validate(project)
+
+
 @router.patch("/{project_id}")
 def update_project(
     project_id: int, body: ProjectUpdate, user: CurrentUser, db: SessionDep

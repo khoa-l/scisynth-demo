@@ -303,6 +303,36 @@ export type ProjectsDeleteProjectResponses = {
 
 export type ProjectsDeleteProjectResponse = ProjectsDeleteProjectResponses[keyof ProjectsDeleteProjectResponses];
 
+export type ProjectsGetProjectData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: number;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}';
+};
+
+export type ProjectsGetProjectErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ProjectsGetProjectError = ProjectsGetProjectErrors[keyof ProjectsGetProjectErrors];
+
+export type ProjectsGetProjectResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectPublic;
+};
+
+export type ProjectsGetProjectResponse = ProjectsGetProjectResponses[keyof ProjectsGetProjectResponses];
+
 export type ProjectsUpdateProjectData = {
     body: ProjectUpdate;
     path: {

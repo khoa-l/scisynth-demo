@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProjects, projectsUpdateProject } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -177,6 +177,24 @@ export const projectsDeleteProjectMutation = (options?: Partial<Options<Projects
     };
     return mutationOptions;
 };
+
+export const projectsGetProjectQueryKey = (options: Options<ProjectsGetProjectData>) => createQueryKey('projectsGetProject', options);
+
+/**
+ * Get Project
+ */
+export const projectsGetProjectOptions = (options: Options<ProjectsGetProjectData>) => queryOptions<ProjectsGetProjectResponse, ProjectsGetProjectError, ProjectsGetProjectResponse, ReturnType<typeof projectsGetProjectQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await projectsGetProject({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: projectsGetProjectQueryKey(options)
+});
 
 /**
  * Update Project

@@ -119,3 +119,25 @@ def test_delete_project_of_another_user(client: TestClient) -> None:
 
 def test_delete_project_requires_session(client: TestClient) -> None:
     assert client.delete("/api/projects/1").status_code == 401
+
+
+def test_get_project(client: TestClient) -> None:
+    sign_up(client, "ada@example.com")
+    project = create(client, "Protein folding").json()
+
+    response = client.get(f"/api/projects/{project['id']}")
+    assert response.status_code == 200
+    assert response.json() == project
+
+
+def test_get_project_of_another_user(client: TestClient) -> None:
+    sign_up(client, "ada@example.com")
+    project = create(client).json()
+    client.cookies.clear()
+
+    sign_up(client, "grace@example.com")
+    assert client.get(f"/api/projects/{project['id']}").status_code == 404
+
+
+def test_get_project_requires_session(client: TestClient) -> None:
+    assert client.get("/api/projects/1").status_code == 401

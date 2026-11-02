@@ -19,9 +19,20 @@ function createQueryClient() {
   return queryClient;
 }
 
-function mountProjectList() {
+function createTestRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: "/", component: ProjectList },
+      { path: "/projects/:projectId", name: "project", component: { template: "<div />" } },
+    ],
+  });
+}
+
+function mountProjectList(router = createTestRouter()) {
   return mount(ProjectList, {
-    global: { plugins: [[VueQueryPlugin, { queryClient: createQueryClient() }]] },
+    attachTo: document.body,
+    global: { plugins: [router, [VueQueryPlugin, { queryClient: createQueryClient() }]] },
   });
 }
 
@@ -72,11 +83,40 @@ describe("ProjectList", () => {
     }
   });
 
+  it("opens a project when it is clicked in either view", async () => {
+    for (const view of ["Grid view", "List view"]) {
+      const router = createTestRouter();
+      await router.push("/");
+      const wrapper = mountProjectList(router);
+      await flushPromises();
+      await wrapper.find(`[aria-label="${view}"]`).trigger("click");
+
+      const link = wrapper.findAll("li")[1]!.find("a");
+      expect(link.attributes("href")).toBe("/projects/1");
+      await link.trigger("click");
+      await flushPromises();
+      expect(router.currentRoute.value.fullPath).toBe("/projects/1");
+      wrapper.unmount();
+    }
+  });
+
+  it("does not open the project when an action button is clicked", async () => {
+    const router = createTestRouter();
+    await router.push("/");
+    const wrapper = mountProjectList(router);
+    await flushPromises();
+    await wrapper.findAll("li")[0]!.find('[aria-label="Delete project"]').trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.fullPath).toBe("/");
+    expect(
+      wrapper.findAll("li")[0]!.find('[aria-label="Delete project"]').element.closest("a"),
+    ).toBeNull();
+    wrapper.unmount();
+    document.body.innerHTML = "";
+  });
+
   it("renders icons with a thin stroke inside the app", async () => {
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: "/", component: ProjectList }],
-    });
+    const router = createTestRouter();
     await router.push("/");
     const wrapper = mount(App, {
       global: { plugins: [router, [VueQueryPlugin, { queryClient: createQueryClient() }]] },

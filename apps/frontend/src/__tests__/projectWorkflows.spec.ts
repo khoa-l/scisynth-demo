@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import { client } from "../client/client.gen";
 import { projectsGetProjectsQueryKey } from "../client/@tanstack/vue-query.gen";
 import ProjectActions from "../components/ProjectActions.vue";
-import HomeView from "../views/HomeView.vue";
+import DashboardView from "../views/DashboardView.vue";
 
 const project = { id: 1, name: "Untitled project", created_at: "2026-11-02T00:00:00Z" };
 
@@ -105,12 +105,13 @@ describe("creating a project", () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
-        { path: "/", component: HomeView },
+        { path: "/", component: DashboardView },
+        { path: "/projects/:projectId", name: "project", component: { template: "<div />" } },
         { path: "/login", name: "login", component: { template: "<div />" } },
       ],
     });
     await router.push("/");
-    const wrapper = mount(HomeView, {
+    const wrapper = mount(DashboardView, {
       attachTo: document.body,
       global: { plugins: [router, [VueQueryPlugin, { queryClient: createQueryClient() }]] },
     });
@@ -125,7 +126,7 @@ describe("creating a project", () => {
     const wrapper = await openCreate();
     expect(dialog()?.textContent).toContain("New project");
     expect(document.querySelector<HTMLInputElement>('input[name="name"]')?.value).toBe(
-      "Untitled project",
+      "untitled-project",
     );
     wrapper.unmount();
   });

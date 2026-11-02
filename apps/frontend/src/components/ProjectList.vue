@@ -2,6 +2,7 @@
 import { LayoutGrid, List } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { ref } from "vue";
+import { RouterLink } from "vue-router";
 
 import { projectsGetProjectsOptions } from "@/client/@tanstack/vue-query.gen";
 import ProjectActions from "@/components/ProjectActions.vue";
@@ -45,28 +46,38 @@ function setView(value: unknown) {
       <li
         v-for="project in projects"
         :key="project.id"
-        class="group flex items-center justify-between gap-4 px-4 py-2 text-sm transition-colors hover:bg-muted"
+        class="group relative flex items-center justify-between gap-4 px-4 py-2 text-sm transition-colors focus-within:bg-muted hover:bg-muted"
       >
-        <span class="truncate">{{ project.name }}</span>
-        <ProjectActions :project="project" class="shrink-0" />
+        <RouterLink
+          :to="{ name: 'project', params: { projectId: project.id } }"
+          class="min-w-0 truncate outline-none after:absolute after:inset-0"
+        >
+          {{ project.name }}
+        </RouterLink>
+        <ProjectActions :project="project" class="relative z-10 shrink-0" />
       </li>
     </ul>
     <ul v-else class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
       <li v-for="project in projects" :key="project.id" class="group relative min-w-0">
-        <div
-          class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
-          :style="{ background: projectGradient(project.id) }"
+        <RouterLink
+          :to="{ name: 'project', params: { projectId: project.id } }"
+          class="block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span
-            aria-hidden="true"
-            class="absolute bottom-4 left-3 text-3xl leading-none font-semibold whitespace-nowrap select-none"
-            :style="{ color: projectTextColor(project.id) }"
+          <div
+            class="relative aspect-square overflow-hidden rounded-md transition group-hover:brightness-95"
+            :style="{ background: projectGradient(project.id) }"
           >
-            {{ project.name }}
-          </span>
-        </div>
+            <span
+              aria-hidden="true"
+              class="absolute bottom-4 left-3 text-3xl leading-none font-semibold whitespace-nowrap select-none"
+              :style="{ color: projectTextColor(project.id) }"
+            >
+              {{ project.name }}
+            </span>
+          </div>
+          <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
+        </RouterLink>
         <ProjectActions :project="project" class="absolute top-2 right-2" />
-        <p class="mt-1.5 truncate text-center text-sm">{{ project.name }}</p>
       </li>
     </ul>
   </div>
