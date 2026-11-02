@@ -3,9 +3,15 @@ from sqlmodel import Session, col, select
 
 from app.auth import CurrentUser
 from app.db import SessionDep
-from app.models import Survey, User
+from app.models import Survey, SurveyResponse, SurveyVersion, User, new_id
 from app.routers.projects import get_owned_project
-from app.schemas import SurveyCreate, SurveyPublic, SurveyUpdate
+from app.schemas import (
+    SurveyCreate,
+    SurveyPublic,
+    SurveyResponsePublic,
+    SurveyUpdate,
+    SurveyVersionPublic,
+)
 
 router = APIRouter(prefix="/projects/{project_id}/surveys", tags=["surveys"])
 
@@ -63,7 +69,7 @@ def update_survey(
     db: SessionDep,
 ) -> SurveyPublic:
     survey = get_owned_survey(project_id, survey_id, user, db)
-    survey.name = body.name
+    survey.sqlmodel_update(body.model_dump(exclude_none=True))
     db.add(survey)
     db.commit()
     db.refresh(survey)
@@ -77,3 +83,85 @@ def delete_survey(
     survey = get_owned_survey(project_id, survey_id, user, db)
     db.delete(survey)
     db.commit()
+
+
+@router.post("/{survey_id}/publish")
+def publish_survey(
+    project_id: str, survey_id: str, user: CurrentUser, db: SessionDep
+) -> SurveyPublic:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    latest = db.exec(
+        select(SurveyVersion)
+        .where(SurveyVersion.survey_id == survey.id)
+        .order_by(col(SurveyVersion.number).desc())
+    ).first()
+    if latest is None or latest.content != survey.content:
+        latest = SurveyVersion(
+            survey_id=survey.id,
+            number=latest.number + 1 if latest else 1,
+            content=survey.content,
+        )
+        db.add(latest)
+    survey.published_version = latest.number
+    survey.public_id = survey.public_id or new_id()
+    db.add(survey)
+    db.commit()
+    db.refresh(survey)
+    return SurveyPublic.model_validate(survey)
+
+
+@router.delete("/{survey_id}/publish")
+def unpublish_survey(
+    project_id: str, survey_id: str, user: CurrentUser, db: SessionDep
+) -> SurveyPublic:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    survey.published_version = None
+    db.add(survey)
+    db.commit()
+    db.refresh(survey)
+    return SurveyPublic.model_validate(survey)
+
+
+@router.get("/{survey_id}/versions")
+def get_survey_versions(
+    project_id: str, survey_id: str, user: CurrentUser, db: SessionDep
+) -> list[SurveyVersionPublic]:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    versions = db.exec(
+        select(SurveyVersion)
+        .where(SurveyVersion.survey_id == survey.id)
+        .order_by(col(SurveyVersion.number).desc())
+    ).all()
+    return [SurveyVersionPublic.model_validate(version) for version in versions]
+
+
+@router.get("/{survey_id}/responses")
+def get_survey_responses(
+    project_id: str,
+    survey_id: str,
+    user: CurrentUser,
+    db: SessionDep,
+    version: int | None = None,
+) -> list[SurveyResponsePublic]:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    query = (
+        select(SurveyResponse, SurveyVersion.number)
+        .join(SurveyVersion)
+        .where(SurveyResponse.survey_id == survey.id)
+        .order_by(
+            col(SurveyVersion.number).desc(),
+            col(SurveyResponse.submitted_at).desc(),
+            col(SurveyResponse.id),
+        )
+    )
+    if version is not None:
+        query = query.where(SurveyVersion.number == version)
+    return [
+        SurveyResponsePublic(
+            id=response.id,
+            version=number,
+            submitted_at=response.submitted_at,
+            data=response.data,
+        )
+        for response, number in db.exec(query).all()
+    ]

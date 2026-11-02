@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import (
     AfterValidator,
@@ -73,6 +73,9 @@ class SurveyPublic(BaseModel):
     id: str
     name: str
     created_at: datetime
+    content: dict[str, Any]
+    public_id: str | None
+    published_version: int | None
 
 
 class SurveyCreate(BaseModel):
@@ -80,4 +83,39 @@ class SurveyCreate(BaseModel):
 
 
 class SurveyUpdate(BaseModel):
-    name: Name
+    name: Name | None = None
+    content: dict[str, Any] | None = None
+
+
+class SurveyVersionPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    number: int
+    content: dict[str, Any]
+    published_at: datetime
+
+
+class SurveyResponsePublic(BaseModel):
+    id: str
+    version: int
+    submitted_at: datetime
+    data: dict[str, Any]
+
+
+class PublishedSurvey(BaseModel):
+    name: str
+    version_id: str
+    content: dict[str, Any]
+
+
+class SurveyResponseCreate(BaseModel):
+    version_id: str
+    data: dict[str, Any]
+
+
+class SurveyResponseReceipt(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    submitted_at: datetime
