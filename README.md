@@ -27,3 +27,10 @@ vp run -r build
 ```bash
 vp run dev
 ```
+
+- Run the backend and frontend separately:
+
+```bash
+vp run frontend#dev
+vp run backend#dev
+```

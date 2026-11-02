@@ -13,8 +13,16 @@
     "openapi-ts": "openapi-ts"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "catalog:",
+    "@lucide/vue": "catalog:",
     "@tanstack/vue-query": "catalog:",
+    "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
     "pinia": "^4.0.3",
+    "reka-ui": "catalog:",
+    "shadcn-vue": "catalog:",
+    "tw-animate-css": "catalog:",
     "vue": "^3.5.42",
     "vue-router": "^5.3.1"
   },
