@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from typing import Annotated
 
@@ -7,7 +8,7 @@ from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.pool import ConnectionPoolEntry
 from sqlmodel import Session, create_engine
 
-DATABASE_URL = "sqlite:///scisynth.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///scisynth.db")
 
 
 @event.listens_for(Engine, "connect")

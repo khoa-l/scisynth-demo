@@ -1,4 +1,5 @@
 import hashlib
+import os
 import secrets
 from datetime import timedelta
 from typing import Annotated
@@ -13,7 +14,7 @@ from app.models import User, UserSession, utcnow
 
 SESSION_COOKIE = "session"
 SESSION_TTL = timedelta(days=14)
-COOKIE_SECURE = False
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE") == "true"
 
 password_hash = PasswordHash.recommended()
 DUMMY_HASH = password_hash.hash("dummypassword")
