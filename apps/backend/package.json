@@ -1,0 +1,13 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run fastapi dev app/main.py",
+    "test": "uv run pytest",
+    "lint": "uv run ruff check",
+    "fmt": "uv run ruff format",
+    "type-check": "uv run ty check",
+    "migrate": "uv run alembic upgrade head"
+  }
+}
