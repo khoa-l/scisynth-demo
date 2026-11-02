@@ -1,4 +1,4 @@
-export type NodeShape = "input" | "default" | "output";
+type NodeShape = "input" | "default" | "output";
 
 export interface NodeKind {
   name: string;
@@ -6,7 +6,7 @@ export interface NodeKind {
   type: NodeShape;
 }
 
-export interface NodeCategory {
+interface NodeCategory {
   label: string;
   kinds: NodeKind[];
 }

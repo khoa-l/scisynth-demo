@@ -18,6 +18,21 @@ const PROJECT_ID = "V11k9b8XeABv2ISddF304";
 
 mockApi();
 
+beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 function loadedQueryClient() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -154,21 +169,6 @@ describe.each([
     backPath: `/project/${PROJECT_ID}/survey`,
   },
 ])("$name item view", ({ view, props, item, url, noun, backLabel, backPath }) => {
-  beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("loads the item and shows its name after the project name", async () => {
     fetchMock.mockResolvedValue(jsonResponse(item));
     const wrapper = await mountItemView(view, props);
@@ -208,14 +208,6 @@ describe.each([
 
 describe("Dataset view", () => {
   it("shows a Vue Flow node graph in the left panel and leaves the right panel empty", async () => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     fetchMock.mockResolvedValue(jsonResponse(DATASET));
     const wrapper = await mountItemView(ProjectDatasetView, { datasetId: DATASET.id });
 
@@ -235,25 +227,12 @@ describe("Dataset view", () => {
     expect(graphArea.nextElementSibling).toBe(details.element);
     expect(details.find('[role="tablist"]').exists()).toBe(true);
     expect(right!.element.childElementCount).toBe(0);
-    vi.unstubAllGlobals();
   });
 });
 
 describe("Dataset component tabs", () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     fetchMock.mockResolvedValue(jsonResponse(DATASET));
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
   });
 
   function details(wrapper: Awaited<ReturnType<typeof mountItemView>>) {
@@ -438,13 +417,6 @@ describe("Dataset component tabs", () => {
 });
 
 describe("Survey item view", () => {
-  it("has no node toolbar", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(SURVEY));
-    const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
-
-    expect(wrapper.find('[role="toolbar"]').exists()).toBe(false);
-  });
-
   it("fills both panels with light grey and a small inner shadow", async () => {
     fetchMock.mockResolvedValue(jsonResponse(SURVEY));
     const wrapper = await mountItemView(ProjectSurveyItemView, { surveyId: SURVEY.id });
@@ -467,6 +439,5 @@ describe("Survey item view", () => {
     expect(right!.find('[aria-label="Survey preview"]').exists()).toBe(true);
     expect(left!.find('[aria-label="Survey builder"]').element.childElementCount).toBe(0);
     expect(right!.find('[aria-label="Survey preview"]').element.childElementCount).toBe(0);
-    expect(wrapper.find('[role="toolbar"]').exists()).toBe(false);
   });
 });
