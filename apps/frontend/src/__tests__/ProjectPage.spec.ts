@@ -90,3 +90,20 @@ describe.each([
     expect(wrapper.text()).not.toContain("New Study");
   });
 });
+
+describe.each([
+  ["Data", ProjectDataView],
+  ["Survey", ProjectSurveyView],
+])("%s view canvases", (_name, view) => {
+  it("splits the panel into two canvases below the heading", async () => {
+    const wrapper = mountWith(view, loadedQueryClient());
+    await flushPromises();
+
+    const canvases = wrapper.findAll("section");
+    expect(canvases.map((canvas) => canvas.attributes("aria-label"))).toEqual([
+      "Left canvas",
+      "Right canvas",
+    ]);
+    expect(canvases[0]!.element.parentElement?.classList).toContain("grid-cols-2");
+  });
+});
