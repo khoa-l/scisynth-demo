@@ -10,12 +10,16 @@ export interface ContentBlock {
   text: string;
 }
 
-interface MarkerBlock {
+interface MarkerBlock<Type> {
   id: string;
-  type: "separator" | "page" | "end";
+  type: Type;
 }
 
-export type SurveyBlock = ContentBlock | MarkerBlock;
+export type SurveyBlock =
+  | ContentBlock
+  | MarkerBlock<"separator">
+  | MarkerBlock<"page">
+  | MarkerBlock<"end">;
 
 export const blockLabels: Record<SurveyBlock["type"], string> = {
   text: "Text",

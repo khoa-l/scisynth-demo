@@ -24,6 +24,7 @@ def project_id(client: TestClient) -> str:
 @pytest.mark.parametrize("items", ITEMS)
 def test_items_require_session(client: TestClient, items: str) -> None:
     assert client.get(f"/api/projects/{MISSING}/{items}").status_code == 401
+    assert client.get(f"/api/projects/{MISSING}/{items}/{MISSING}").status_code == 401
     assert (
         client.post(f"/api/projects/{MISSING}/{items}", json={"name": "x"}).status_code
         == 401
@@ -74,6 +75,7 @@ def test_items_belong_to_their_project(
 
     assert client.get(f"/api/projects/{other_id}/{items}").json() == []
     other_url = f"/api/projects/{other_id}/{items}/{item['id']}"
+    assert client.get(other_url).status_code == 404
     assert client.patch(other_url, json={"name": "x"}).status_code == 404
     assert client.delete(other_url).status_code == 404
 
@@ -112,6 +114,7 @@ def test_items_are_private_to_project_owner(
     sign_up(client, "grace@example.com")
     assert client.get(url).status_code == 404
     assert client.post(url, json={"name": "x"}).status_code == 404
+    assert client.get(f"{url}/{item['id']}").status_code == 404
     assert client.patch(f"{url}/{item['id']}", json={"name": "x"}).status_code == 404
     assert client.delete(f"{url}/{item['id']}").status_code == 404
 
@@ -148,29 +151,3 @@ def test_get_item(client: TestClient, project_id: str, items: str) -> None:
     assert response.status_code == 200
     assert response.json() == item
     assert client.get(f"{url}/{MISSING}").status_code == 404
-
-
-@pytest.mark.parametrize("items", ITEMS)
-def test_get_item_checks_project_and_owner(
-    client: TestClient, project_id: str, items: str
-) -> None:
-    item = client.post(
-        f"/api/projects/{project_id}/{items}", json={"name": "Mine"}
-    ).json()
-    other_project_id = client.post("/api/projects", json={"name": "Other"}).json()["id"]
-    assert (
-        client.get(f"/api/projects/{other_project_id}/{items}/{item['id']}").status_code
-        == 404
-    )
-    client.cookies.clear()
-
-    sign_up(client, "grace@example.com")
-    assert (
-        client.get(f"/api/projects/{project_id}/{items}/{item['id']}").status_code
-        == 404
-    )
-
-
-@pytest.mark.parametrize("items", ITEMS)
-def test_get_item_requires_session(client: TestClient, items: str) -> None:
-    assert client.get(f"/api/projects/{MISSING}/{items}/{MISSING}").status_code == 401

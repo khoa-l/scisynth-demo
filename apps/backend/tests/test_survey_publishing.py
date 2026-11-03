@@ -6,7 +6,14 @@ from sqlmodel import Session, select
 from app.models import SurveyResponse, SurveyVersion
 from tests.helpers import is_nanoid, sign_up
 
-QUESTIONS = {"questions": [{"id": "q1", "text": "How was it?"}]}
+QUESTIONS = {"blocks": [{"id": "q1", "type": "scale", "text": "How was it?"}]}
+FOLLOW_UP = {"blocks": [{"id": "q2", "type": "scale", "text": "Would you return?"}]}
+OWNER_ENDPOINTS = [
+    ("post", "/publish"),
+    ("delete", "/publish"),
+    ("get", "/versions"),
+    ("get", "/responses"),
+]
 
 
 @pytest.fixture
@@ -127,17 +134,59 @@ def test_unknown_public_link_is_not_found(client: TestClient) -> None:
 
 
 def test_anyone_can_submit_a_response(client: TestClient, survey_url: str) -> None:
+    client.patch(survey_url, json={"content": QUESTIONS})
     survey = publish(client, survey_url)
     client.cookies.clear()
     version_id = client.get(public_url(survey)).json()["version_id"]
 
     response = client.post(
         f"{public_url(survey)}/responses",
-        json={"version_id": version_id, "data": {"q1": "Great"}},
+        json={"version_id": version_id, "data": {"q1": 4}},
     )
     assert response.status_code == 201
     assert is_nanoid(response.json()["id"])
     assert set(response.json()) == {"id", "submitted_at"}
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        ({"q9": 3}, "Not a question in this survey: q9"),
+        ({"q1": 0}, "greater than or equal to 1"),
+        ({"q1": 6}, "less than or equal to 5"),
+        ({"q1": "4"}, "valid integer"),
+        ({"q1": True}, "valid integer"),
+        ({"q1": 2.5}, "valid integer"),
+    ],
+)
+def test_rejects_answers_that_dont_fit_the_survey(
+    client: TestClient, survey_url: str, data: dict, message: str
+) -> None:
+    client.patch(survey_url, json={"content": QUESTIONS})
+    survey = publish(client, survey_url)
+    version_id = client.get(public_url(survey)).json()["version_id"]
+
+    response = client.post(
+        f"{public_url(survey)}/responses", json={"version_id": version_id, "data": data}
+    )
+
+    assert response.status_code == 422
+    assert message in str(response.json()["detail"])
+    assert client.get(f"{survey_url}/responses").json() == []
+
+
+def test_accepts_a_response_that_skips_questions(
+    client: TestClient, survey_url: str
+) -> None:
+    client.patch(survey_url, json={"content": QUESTIONS})
+    survey = publish(client, survey_url)
+    version_id = client.get(public_url(survey)).json()["version_id"]
+
+    response = client.post(
+        f"{public_url(survey)}/responses", json={"version_id": version_id, "data": {}}
+    )
+
+    assert response.status_code == 201
 
 
 def test_response_must_use_a_version_of_this_survey(
@@ -160,14 +209,15 @@ def test_response_must_use_a_version_of_this_survey(
 def test_responses_to_an_older_version_are_kept(
     client: TestClient, survey_url: str
 ) -> None:
+    client.patch(survey_url, json={"content": QUESTIONS})
     survey = publish(client, survey_url)
     old_version_id = client.get(public_url(survey)).json()["version_id"]
-    client.patch(survey_url, json={"content": QUESTIONS})
+    client.patch(survey_url, json={"content": FOLLOW_UP})
     publish(client, survey_url)
 
     response = client.post(
         f"{public_url(survey)}/responses",
-        json={"version_id": old_version_id, "data": {"late": True}},
+        json={"version_id": old_version_id, "data": {"q1": 2}},
     )
     assert response.status_code == 201
     assert client.get(f"{survey_url}/responses").json()[0]["version"] == 1
@@ -176,47 +226,39 @@ def test_responses_to_an_older_version_are_kept(
 def test_owner_lists_responses_with_version_filter(
     client: TestClient, survey_url: str
 ) -> None:
+    client.patch(survey_url, json={"content": QUESTIONS})
     survey = publish(client, survey_url)
     first = client.get(public_url(survey)).json()["version_id"]
     client.post(
-        f"{public_url(survey)}/responses", json={"version_id": first, "data": {"n": 1}}
+        f"{public_url(survey)}/responses", json={"version_id": first, "data": {"q1": 1}}
     )
-    client.patch(survey_url, json={"content": QUESTIONS})
+    client.patch(survey_url, json={"content": FOLLOW_UP})
     publish(client, survey_url)
     second = client.get(public_url(survey)).json()["version_id"]
     client.post(
-        f"{public_url(survey)}/responses", json={"version_id": second, "data": {"n": 2}}
+        f"{public_url(survey)}/responses",
+        json={"version_id": second, "data": {"q2": 2}},
     )
 
     responses = client.get(f"{survey_url}/responses").json()
     assert [(r["version"], r["data"]) for r in responses] == [
-        (2, {"n": 2}),
-        (1, {"n": 1}),
+        (2, {"q2": 2}),
+        (1, {"q1": 1}),
     ]
     assert all(is_nanoid(r["id"]) for r in responses)
     filtered = client.get(f"{survey_url}/responses", params={"version": 1}).json()
-    assert [r["data"] for r in filtered] == [{"n": 1}]
+    assert [r["data"] for r in filtered] == [{"q1": 1}]
 
 
 def test_publishing_endpoints_are_private_to_owner(
     client: TestClient, survey_url: str
 ) -> None:
     client.cookies.clear()
-    for method, path in [
-        ("post", "/publish"),
-        ("delete", "/publish"),
-        ("get", "/versions"),
-        ("get", "/responses"),
-    ]:
+    for method, path in OWNER_ENDPOINTS:
         assert client.request(method, f"{survey_url}{path}").status_code == 401
 
     sign_up(client, "grace@example.com")
-    for method, path in [
-        ("post", "/publish"),
-        ("delete", "/publish"),
-        ("get", "/versions"),
-        ("get", "/responses"),
-    ]:
+    for method, path in OWNER_ENDPOINTS:
         assert client.request(method, f"{survey_url}{path}").status_code == 404
 
 

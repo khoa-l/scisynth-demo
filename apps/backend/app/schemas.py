@@ -7,6 +7,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    StrictInt,
     StringConstraints,
 )
 
@@ -53,11 +54,11 @@ Name = Annotated[
 ]
 
 
-class ProjectUpdate(BaseModel):
+class ProjectCreate(BaseModel):
     name: Name
 
 
-class ProjectCreate(BaseModel):
+class ProjectUpdate(BaseModel):
     name: Name
 
 
@@ -121,9 +122,12 @@ class PublishedSurvey(BaseModel):
     content: dict[str, Any]
 
 
+ScalePoint = Annotated[StrictInt, Field(ge=1, le=5)]
+
+
 class SurveyResponseCreate(BaseModel):
     version_id: str
-    data: dict[str, Any]
+    data: dict[Ref, ScalePoint] = Field(max_length=500)
 
 
 class SurveyResponseReceipt(BaseModel):

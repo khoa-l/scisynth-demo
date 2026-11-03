@@ -59,7 +59,8 @@ const pressed = computed(() => [
   ...(props.data.previewHidden ? ["hidden"] : []),
 ]);
 
-function setPressed(values: string[]) {
+function setPressed(value: unknown) {
+  const values = Array.isArray(value) ? value : [];
   if (values.includes("viewed") !== isViewed.value) {
     viewed.value = isViewed.value ? null : props.id;
   }

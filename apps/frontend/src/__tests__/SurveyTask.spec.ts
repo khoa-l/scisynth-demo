@@ -155,6 +155,45 @@ describe("Survey task", () => {
       expect(wrapper.text()).toContain("Hello");
     });
 
+    it("keeps answers when going between pages, and submits them", async () => {
+      const clear: SurveyBlock = { id: "q1", type: "scale", text: "How clear was it?" };
+      const hard: SurveyBlock = { id: "q2", type: "scale", text: "How hard was it?" };
+      const wrapper = task([clear, page("p1"), hard, end]);
+      const point = (n: number) => wrapper.findAll('[data-slot="toggle-group-item"]')[n - 1]!;
+
+      await point(4).trigger("click");
+      await action(wrapper).trigger("click");
+      await point(2).trigger("click");
+      await back(wrapper)!.trigger("click");
+      expect(point(4).attributes("aria-pressed")).toBe("true");
+
+      await action(wrapper).trigger("click");
+      expect(point(2).attributes("aria-pressed")).toBe("true");
+      await action(wrapper).trigger("click");
+
+      expect(wrapper.emitted("submit")).toEqual([[{ q1: 4, q2: 2 }]]);
+    });
+
+    it("forgets an answer that is unpicked", async () => {
+      const wrapper = task([{ id: "q1", type: "scale", text: "How clear was it?" }, end]);
+      const four = wrapper.findAll('[data-slot="toggle-group-item"]')[3]!;
+
+      await four.trigger("click");
+      await four.trigger("click");
+      await action(wrapper).trigger("click");
+
+      expect(wrapper.emitted("submit")).toEqual([[{}]]);
+    });
+
+    it("can't be submitted twice while sending", () => {
+      const wrapper = mount(SurveyTask, {
+        props: { name: "Intake form", content: { blocks: [hello, end] }, submitting: true },
+      });
+
+      expect(action(wrapper).text()).toBe("Submitting…");
+      expect(action(wrapper).attributes("disabled")).toBeDefined();
+    });
+
     it("has no button for an empty survey, even with an end", () => {
       const wrapper = task([end]);
 

@@ -4,6 +4,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { h } from "vue";
 
 import NameDialog from "../components/NameDialog.vue";
+import { button, dialog } from "./helpers";
 
 async function openDialog(props: Record<string, unknown> = {}) {
   const wrapper = mount(NameDialog, {
@@ -14,10 +15,6 @@ async function openDialog(props: Record<string, unknown> = {}) {
   await wrapper.find("button").trigger("click");
   await flushPromises();
   return wrapper;
-}
-
-function dialog() {
-  return document.querySelector('[role="dialog"]');
 }
 
 function nameInput() {
@@ -75,10 +72,7 @@ describe("NameDialog", () => {
   it("resets to the initial name each time it opens", async () => {
     const wrapper = await openDialog();
     await typeName("Discarded");
-    const cancel = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
-      (button) => button.textContent?.trim() === "Cancel",
-    )!;
-    cancel.click();
+    button(dialog(), "Cancel").click();
     await flushPromises();
     expect(dialog()).toBeNull();
     await wrapper.find("button").trigger("click");

@@ -48,7 +48,7 @@ function restoreIfBlank(name: string, def: NumberParam | IntegerParam, event: Fo
         :id="`${uid}-${name}`"
         :model-value="values[name]"
         class="w-full"
-        @update:model-value="emit('update', name, $event as string)"
+        @update:model-value="emit('update', name, String($event))"
       >
         <NativeSelectOption v-for="option in def.options" :key="option.value" :value="option.value">
           {{ option.label }}

@@ -13,9 +13,20 @@ import {
 } from "@/components/ui/card";
 import { surveyBlocks, surveyColumnClass, type ContentBlock } from "@/lib/survey-blocks";
 
-const props = defineProps<{ name: string; content: { [key: string]: unknown } }>();
+const props = defineProps<{
+  name: string;
+  content: { [key: string]: unknown };
+  submitting?: boolean;
+}>();
 
-defineEmits<{ submit: [] }>();
+defineEmits<{ submit: [answers: Record<string, number>] }>();
+
+const answers = ref<Record<string, number>>({});
+
+function setAnswer(id: string, point: number | undefined) {
+  if (point === undefined) delete answers.value[id];
+  else answers.value[id] = point;
+}
 
 const blocks = computed(() => surveyBlocks(props.content));
 
@@ -61,7 +72,11 @@ const hasFooter = computed(
             <p :id="`question-${block.id}`" class="text-sm font-medium wrap-anywhere">
               {{ block.text }}
             </p>
-            <SurveyScale :aria-labelledby="`question-${block.id}`" />
+            <SurveyScale
+              :model-value="answers[block.id]"
+              :aria-labelledby="`question-${block.id}`"
+              @update:model-value="setAnswer(block.id, $event)"
+            />
           </div>
           <p v-else class="text-sm wrap-anywhere whitespace-pre-line">{{ block.text }}</p>
         </template>
@@ -69,7 +84,14 @@ const hasFooter = computed(
       <CardFooter v-if="index === cards.length - 1 && hasFooter" class="gap-2">
         <Button v-if="page > 0" variant="outline" @click="page--">Back</Button>
         <Button v-if="!isLastPage" class="ml-auto" @click="page++">Next</Button>
-        <Button v-else-if="ends" class="ml-auto" @click="$emit('submit')">Submit</Button>
+        <Button
+          v-else-if="ends"
+          class="ml-auto"
+          :disabled="submitting"
+          @click="$emit('submit', answers)"
+        >
+          {{ submitting ? "Submitting…" : "Submit" }}
+        </Button>
       </CardFooter>
     </Card>
   </div>

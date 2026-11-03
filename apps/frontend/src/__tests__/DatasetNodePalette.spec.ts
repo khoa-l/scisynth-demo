@@ -2,8 +2,16 @@ import { describe, it, expect } from "vite-plus/test";
 
 import { flushPromises } from "@vue/test-utils";
 
-import { details, mountView, paletteItem, visiblePanel } from "./dataset-view";
+import { details, mountView, paletteItem, visiblePanel, type Wrapper } from "./dataset-view";
 import { fakeDataTransfer } from "./helpers";
+
+async function openTab(wrapper: Wrapper, label: string) {
+  await details(wrapper)
+    .findAll('[role="tab"]')
+    .find((tab) => tab.text() === label)!
+    .trigger("mousedown", { button: 0 });
+  await flushPromises();
+}
 
 describe("Dataset node palette", () => {
   it("has a folder tab for each node category, with Latent open first", async () => {
@@ -20,11 +28,7 @@ describe("Dataset node palette", () => {
   it("lists every stage, without sub-category headings, under Stages", async () => {
     const wrapper = await mountView();
 
-    await details(wrapper)
-      .findAll('[role="tab"]')
-      .find((tab) => tab.text() === "Stages")!
-      .trigger("mousedown", { button: 0 });
-    await flushPromises();
+    await openTab(wrapper, "Stages");
 
     const panel = visiblePanel(wrapper);
     expect(panel.find("h3").exists()).toBe(false);
@@ -37,11 +41,7 @@ describe("Dataset node palette", () => {
   it("offers PCA and UMAP under Projection", async () => {
     const wrapper = await mountView();
 
-    await details(wrapper)
-      .findAll('[role="tab"]')
-      .find((tab) => tab.text() === "Projection")!
-      .trigger("mousedown", { button: 0 });
-    await flushPromises();
+    await openTab(wrapper, "Projection");
 
     expect(
       visiblePanel(wrapper)
@@ -59,11 +59,7 @@ describe("Dataset node palette", () => {
     expect(background("Gaussian field")).toBe(background("Interpolated field"));
     expect(background("Gaussian field")).not.toBe(background("Sum"));
 
-    await details(wrapper)
-      .findAll('[role="tab"]')
-      .find((tab) => tab.text() === "Stages")!
-      .trigger("mousedown", { button: 0 });
-    await flushPromises();
+    await openTab(wrapper, "Stages");
     expect(background("Gaussian noise")).toBe(background("Gain"));
     expect(background("Gaussian noise")).not.toBe(background("Downsample"));
   });

@@ -10,13 +10,12 @@ describe("Survey view", () => {
     const wrapper = await mountView();
 
     const builder = wrapper.find('[aria-label="Survey builder"]');
-    const preview = wrapper.find('[aria-label="Survey preview"]');
-    for (const panel of [builder, preview]) {
+    for (const panel of [builder, preview(wrapper)]) {
       expect(panel.classes()).toEqual(
         expect.arrayContaining(["bg-muted", "inset-shadow-sm", "p-4"]),
       );
     }
-    for (const column of [builder.find("ol").element, preview.find("div").element]) {
+    for (const column of [builder.find("ol").element, preview(wrapper).find("div").element]) {
       expect([...column.classList]).toEqual(
         expect.arrayContaining(["mx-auto", "w-full", "max-w-2xl"]),
       );
@@ -30,7 +29,7 @@ describe("Survey view", () => {
     const [left, right] = wrapper.findAll("section");
     expect(left!.element.parentElement!.classList).toContain("grid-cols-2");
     expect(left!.element.contains(builder.element)).toBe(true);
-    expect(right!.element.contains(preview.element)).toBe(true);
+    expect(right!.element.contains(preview(wrapper).element)).toBe(true);
 
     const details = wrapper.find('[role="group"][aria-label="Survey details"]');
     const builderArea = builder.element.parentElement!;

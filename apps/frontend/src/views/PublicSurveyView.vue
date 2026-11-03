@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { useQuery } from "@tanstack/vue-query";
+import { CircleAlert } from "@lucide/vue";
+import { useMutation, useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
-import { publicGetPublishedOptions } from "@/client/@tanstack/vue-query.gen";
+import {
+  publicGetPublishedOptions,
+  publicSubmitResponseMutation,
+} from "@/client/@tanstack/vue-query.gen";
 import SurveyTask from "@/components/SurveyTask.vue";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { surveyColumnClass } from "@/lib/survey-blocks";
 
 const props = defineProps<{ publicId: string }>();
 
@@ -17,6 +24,20 @@ const {
     retry: false,
   })),
 );
+
+const {
+  mutate,
+  isPending: isSubmitting,
+  isSuccess: isSubmitted,
+  isError: submitFailed,
+} = useMutation(publicSubmitResponseMutation());
+
+function submit(versionId: string, answers: Record<string, number>) {
+  mutate({
+    path: { public_id: props.publicId },
+    body: { version_id: versionId, data: answers },
+  });
+}
 </script>
 
 <template>
@@ -25,6 +46,23 @@ const {
     <p v-else-if="isError || !survey" class="text-sm text-muted-foreground">
       This survey isn't available.
     </p>
-    <SurveyTask v-else :name="survey.name" :content="survey.content" />
+    <Card v-else-if="isSubmitted" :class="surveyColumnClass">
+      <CardHeader>
+        <CardTitle>{{ survey.name }}</CardTitle>
+        <CardDescription>Thanks, your response has been recorded.</CardDescription>
+      </CardHeader>
+    </Card>
+    <div v-else class="flex flex-col gap-4" :class="surveyColumnClass">
+      <SurveyTask
+        :name="survey.name"
+        :content="survey.content"
+        :submitting="isSubmitting"
+        @submit="submit(survey.version_id, $event)"
+      />
+      <Alert v-if="submitFailed" variant="destructive" class="shadow-sm">
+        <CircleAlert />
+        <AlertTitle>Couldn't send your response. Please try again.</AlertTitle>
+      </Alert>
+    </div>
   </main>
 </template>
