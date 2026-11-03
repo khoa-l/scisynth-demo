@@ -4,6 +4,7 @@ import { computed } from "vue";
 
 import FolderTabs from "@/components/FolderTabs.vue";
 import { NODE_KIND_MIME, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
+import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
@@ -31,6 +32,8 @@ function startDrag(event: DragEvent, name: string) {
         :key="kind.name"
         draggable="true"
         :class="paletteItemClass"
+        class="border-transparent"
+        :style="{ background: groupBackground(kind.group) }"
         @dragstart="startDrag($event, kind.name)"
       >
         {{ kind.label }}

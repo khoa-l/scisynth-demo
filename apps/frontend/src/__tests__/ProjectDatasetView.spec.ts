@@ -87,6 +87,32 @@ describe("Dataset view", () => {
     expect([items[0], items[12]]).toEqual(["Gaussian noise", "Downsample"]);
   });
 
+  it("colours each chip in a single hue for its group", async () => {
+    const wrapper = await mountView();
+    const background = (label: string) => paletteItem(wrapper, label).attributes("style");
+
+    const hues = [...background("Gaussian field")!.matchAll(/oklch\([\d.]+ [\d.]+ ([\d.]+)\)/g)];
+    expect(hues.map((match) => match[1])).toEqual(["250", "250"]);
+    expect(background("Gaussian field")).toBe(background("Interpolated field"));
+    expect(background("Gaussian field")).not.toBe(background("Sum"));
+
+    await details(wrapper)
+      .findAll('[role="tab"]')
+      .find((tab) => tab.text() === "Stages")!
+      .trigger("mousedown", { button: 0 });
+    await flushPromises();
+    expect(background("Gaussian noise")).toBe(background("Gain"));
+    expect(background("Gaussian noise")).not.toBe(background("Downsample"));
+  });
+
+  it("colours a node's title like its chip in the palette", async () => {
+    const wrapper = await mountView();
+    const chip = paletteItem(wrapper, "Gaussian field").attributes("style");
+
+    const node = await dropKind(wrapper, "GaussianField");
+    expect(node.find('[data-slot="node-title"]').attributes("style")).toBe(chip);
+  });
+
   it("makes every node kind draggable and puts its kind on the drag", async () => {
     const wrapper = await mountView();
 

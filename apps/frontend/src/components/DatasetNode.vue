@@ -5,6 +5,7 @@ import { computed } from "vue";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import { findKind, nodeCatalogQuery, type DatasetNodeData } from "@/lib/dataset-nodes/catalog";
+import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue } from "@/lib/dataset-nodes/types";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
@@ -25,7 +26,13 @@ function setParam(name: string, value: ParamValue) {
     class="w-64 rounded-lg border bg-background text-sm shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
   >
-    <div data-slot="node-title" class="border-b px-3 py-2 font-medium">{{ kind.label }}</div>
+    <div
+      data-slot="node-title"
+      class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
+      :style="{ background: groupBackground(kind.group) }"
+    >
+      {{ kind.label }}
+    </div>
     <div class="flex flex-col gap-1 py-2">
       <div v-for="port in kind.inputs" :key="port.id" class="relative px-3 text-muted-foreground">
         <Handle

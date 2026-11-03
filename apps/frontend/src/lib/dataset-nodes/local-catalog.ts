@@ -34,16 +34,20 @@ const bound = (label: string) => num(label, null, { optional: true });
 
 const splineOrder = int("Spline order", 1, { min: 0, max: 5 });
 
-function stage(name: string, label: string, params: NodeKindDef["params"] = {}): NodeKindDef {
-  return {
+function stage(group: string) {
+  return (name: string, label: string, params: NodeKindDef["params"] = {}): NodeKindDef => ({
     name,
     label,
     category: "stage",
+    group,
     inputs: [observation],
     outputs: [observation],
     params,
-  };
+  });
 }
+
+const defect = stage("defect");
+const transform = stage("transform");
 
 export const localCatalog: NodeCatalog = {
   version: 1,
@@ -58,6 +62,7 @@ export const localCatalog: NodeCatalog = {
       name: "GaussianField",
       label: "Gaussian field",
       category: "latent",
+      group: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -72,6 +77,7 @@ export const localCatalog: NodeCatalog = {
       name: "AnalyticField",
       label: "Analytic field",
       category: "latent",
+      group: "latent",
       inputs: [],
       outputs: [field],
       params: {},
@@ -80,6 +86,7 @@ export const localCatalog: NodeCatalog = {
       name: "InterpolatedField",
       label: "Interpolated field",
       category: "latent",
+      group: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -102,6 +109,7 @@ export const localCatalog: NodeCatalog = {
       name: "Sum",
       label: "Sum",
       category: "latent",
+      group: "composite",
       inputs: [fields("terms", "Terms")],
       outputs: [field],
       params: {},
@@ -110,6 +118,7 @@ export const localCatalog: NodeCatalog = {
       name: "Product",
       label: "Product",
       category: "latent",
+      group: "composite",
       inputs: [fields("terms", "Terms")],
       outputs: [field],
       params: {},
@@ -118,6 +127,7 @@ export const localCatalog: NodeCatalog = {
       name: "Multichannel",
       label: "Multichannel",
       category: "latent",
+      group: "composite",
       inputs: [fields("channels", "Channels")],
       outputs: [field],
       params: {},
@@ -126,6 +136,7 @@ export const localCatalog: NodeCatalog = {
       name: "GridSampler",
       label: "Grid sampler",
       category: "sampler",
+      group: "sampler",
       inputs: [latent],
       outputs: [observation],
       params: { shape: int("Grid size", 64, { min: 1 }) },
@@ -134,36 +145,38 @@ export const localCatalog: NodeCatalog = {
       name: "PointSampler",
       label: "Point sampler",
       category: "sampler",
+      group: "sampler",
       inputs: [latent],
       outputs: [observation],
       params: { n: int("Points", 1000, { min: 1 }) },
     },
-    stage("GaussianNoise", "Gaussian noise", {
+    defect("GaussianNoise", "Gaussian noise", {
       sigma: num("Sigma", 1, { min: 0 }),
       mean: num("Mean", 0),
     }),
-    stage("PoissonNoise", "Poisson noise", { scale: num("Count scale", 1, { min: 0 }) }),
-    stage("Quantize", "Quantize", {
+    defect("PoissonNoise", "Poisson noise", { scale: num("Count scale", 1, { min: 0 }) }),
+    defect("Quantize", "Quantize", {
       levels: int("Levels", 256, { min: 2 }),
       vmin: bound("Min"),
       vmax: bound("Max"),
     }),
-    stage("Clip", "Clip", { lo: bound("Low"), hi: bound("High") }),
-    stage("Saturate", "Saturate", { ceiling: num("Ceiling", 1, { min: 0 }) }),
-    stage("ValueOffset", "Value offset", { value: num("Offset", 0) }),
-    stage("Gain", "Gain", { factor: num("Factor", 1) }),
-    stage("Drift", "Drift", { rate: num("Rate", 0) }),
-    stage("CoordinateShift", "Coordinate shift", { shift: num("Shift", 0) }),
-    stage("RandomDropout", "Random dropout", {
+    defect("Clip", "Clip", { lo: bound("Low"), hi: bound("High") }),
+    defect("Saturate", "Saturate", { ceiling: num("Ceiling", 1, { min: 0 }) }),
+    defect("ValueOffset", "Value offset", { value: num("Offset", 0) }),
+    defect("Gain", "Gain", { factor: num("Factor", 1) }),
+    defect("Drift", "Drift", { rate: num("Rate", 0) }),
+    defect("CoordinateShift", "Coordinate shift", { shift: num("Shift", 0) }),
+    defect("RandomDropout", "Random dropout", {
       p: num("Probability", 0.1, { min: 0, max: 1, step: 0.01 }),
     }),
-    stage("PositionJitter", "Position jitter", { sigma: num("Sigma", 0, { min: 0 }) }),
-    stage("RandomInsertion", "Random insertion", { n: int("Points", 10, { min: 0 }) }),
-    stage("Downsample", "Downsample", { factor: int("Factor", 2, { min: 1 }) }),
+    defect("PositionJitter", "Position jitter", { sigma: num("Sigma", 0, { min: 0 }) }),
+    defect("RandomInsertion", "Random insertion", { n: int("Points", 10, { min: 0 }) }),
+    transform("Downsample", "Downsample", { factor: int("Factor", 2, { min: 1 }) }),
     {
       name: "Projection",
       label: "Projection",
       category: "projection",
+      group: "projection",
       inputs: [observation],
       outputs: [],
       params: {},
