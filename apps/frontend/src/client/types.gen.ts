@@ -169,6 +169,21 @@ export type Health = {
 };
 
 /**
+ * LatentPreview
+ */
+export type LatentPreview = {
+    /**
+     * X
+     */
+    x: Array<number>;
+    /**
+     * Y
+     */
+    y: Array<number>;
+    z: TypedArray;
+};
+
+/**
  * LoginRequest
  */
 export type LoginRequest = {
@@ -212,6 +227,22 @@ export type Position = {
      * Y
      */
     y: number;
+};
+
+/**
+ * PreviewRequest
+ */
+export type PreviewRequest = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Params
+     */
+    params?: {
+        [key: string]: number | number | string | null;
+    };
 };
 
 /**
@@ -284,22 +315,6 @@ export type RegisterRequest = {
      * Password
      */
     password: string;
-};
-
-/**
- * StagePreviewRequest
- */
-export type StagePreviewRequest = {
-    /**
-     * Kind
-     */
-    kind: string;
-    /**
-     * Params
-     */
-    params?: {
-        [key: string]: number | number | string | null;
-    };
 };
 
 /**
@@ -436,6 +451,24 @@ export type SurveyVersionPublic = {
      * Published At
      */
     published_at: string;
+};
+
+/**
+ * TypedArray
+ */
+export type TypedArray = {
+    /**
+     * Dtype
+     */
+    dtype: 'f4';
+    /**
+     * Bdata
+     */
+    bdata: string;
+    /**
+     * Shape
+     */
+    shape: string;
 };
 
 /**
@@ -1245,7 +1278,7 @@ export type PublicSubmitResponseResponses = {
 export type PublicSubmitResponseResponse = PublicSubmitResponseResponses[keyof PublicSubmitResponseResponses];
 
 export type PreviewsPreviewStageData = {
-    body: StagePreviewRequest;
+    body: PreviewRequest;
     path?: never;
     query?: never;
     url: '/api/previews/stages';
@@ -1268,3 +1301,28 @@ export type PreviewsPreviewStageResponses = {
 };
 
 export type PreviewsPreviewStageResponse = PreviewsPreviewStageResponses[keyof PreviewsPreviewStageResponses];
+
+export type PreviewsPreviewLatentData = {
+    body: PreviewRequest;
+    path?: never;
+    query?: never;
+    url: '/api/previews/latents';
+};
+
+export type PreviewsPreviewLatentErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewsPreviewLatentError = PreviewsPreviewLatentErrors[keyof PreviewsPreviewLatentErrors];
+
+export type PreviewsPreviewLatentResponses = {
+    /**
+     * Successful Response
+     */
+    200: LatentPreview;
+};
+
+export type PreviewsPreviewLatentResponse = PreviewsPreviewLatentResponses[keyof PreviewsPreviewLatentResponses];

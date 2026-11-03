@@ -5,3 +5,8 @@ declare module "*.vue" {
   const component: DefineComponent<{}, {}, unknown>;
   export default component;
 }
+
+declare module "plotly.js-cartesian-dist-min" {
+  import Plotly from "plotly.js";
+  export default Plotly;
+}

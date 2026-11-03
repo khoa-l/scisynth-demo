@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AfterValidator,
@@ -125,7 +125,7 @@ class SurveyResponseReceipt(BaseModel):
     submitted_at: datetime
 
 
-class StagePreviewRequest(BaseModel):
+class PreviewRequest(BaseModel):
     kind: Ref
     params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
 
@@ -133,3 +133,15 @@ class StagePreviewRequest(BaseModel):
 class PlotFigure(BaseModel):
     data: list[dict[str, Any]]
     layout: dict[str, Any]
+
+
+class TypedArray(BaseModel):
+    dtype: Literal["f4"]
+    bdata: str
+    shape: str
+
+
+class LatentPreview(BaseModel):
+    x: list[float]
+    y: list[float]
+    z: TypedArray

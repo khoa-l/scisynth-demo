@@ -18,6 +18,9 @@ import {
   testQueryClient,
 } from "./helpers";
 
+const plotly = vi.hoisted(() => ({ react: vi.fn(), purge: vi.fn() }));
+vi.mock("plotly.js-cartesian-dist-min", () => ({ default: plotly }));
+
 async function mountView(dataset: DatasetPublic = DATASET) {
   fetchMock.mockImplementation(async () => jsonResponse(dataset));
   const { wrapper } = await mountPage(ProjectDatasetView, {
@@ -532,6 +535,99 @@ describe("Dataset view", () => {
 
       expect(patches()).toHaveLength(2);
       expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    });
+  });
+
+  describe("latent thumbnail", () => {
+    const PREVIEW = {
+      x: [0, 1],
+      y: [0, 1],
+      z: { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" },
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+      plotly.react.mockClear();
+    });
+
+    function answerPreviews(preview: () => Response) {
+      fetchMock.mockImplementation(async (input) =>
+        new URL((input as Request).url).pathname === "/api/previews/latents"
+          ? preview()
+          : jsonResponse(DATASET),
+      );
+    }
+
+    function previews() {
+      return requests().filter((r) => new URL(r.url).pathname === "/api/previews/latents");
+    }
+
+    function thumbnail(node: DOMWrapper<Element>) {
+      return node.find('[role="img"]');
+    }
+
+    it("draws a static heatmap of a Gaussian field above its node", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+
+      const field = await dropKind(wrapper, "GaussianField");
+      await flushPromises();
+
+      expect(await previews()[0]!.json()).toEqual({
+        kind: "GaussianField",
+        params: { length_scale: 0.1, amplitude: 1, mean: 0, resolution: 128, order: 1 },
+      });
+      expect(thumbnail(field).attributes("aria-label")).toBe("Preview of GaussianField");
+      expect(thumbnail(field).classes()).toEqual(
+        expect.arrayContaining(["absolute", "-inset-x-px", "bottom-full", "aspect-square"]),
+      );
+      expect(plotly.react).toHaveBeenCalledWith(
+        thumbnail(field).element,
+        [{ type: "heatmap", ...PREVIEW, colorscale: "Viridis", showscale: false }],
+        {
+          margin: { t: 0, r: 0, b: 0, l: 0 },
+          xaxis: { visible: false },
+          yaxis: { visible: false },
+          paper_bgcolor: "rgba(0,0,0,0)",
+          plot_bgcolor: "rgba(0,0,0,0)",
+        },
+        { staticPlot: true },
+      );
+    });
+
+    it("only draws thumbnails for latents it can preview", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+
+      const sum = await dropKind(wrapper, "Sum");
+      await flushPromises();
+
+      expect(thumbnail(sum).exists()).toBe(false);
+      expect(previews()).toHaveLength(0);
+    });
+
+    it("redraws the thumbnail when a parameter changes", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+      const field = await dropKind(wrapper, "GaussianField");
+
+      await enter(field.find("input"), "0.3");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+
+      expect(previews()).toHaveLength(2);
+      expect((await previews()[1]!.json()).params.length_scale).toBe(0.3);
+    });
+
+    it("leaves the thumbnail out when the field can't be previewed", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse({ detail: "over the limit" }, 422));
+
+      const field = await dropKind(wrapper, "GaussianField");
+      await flushPromises();
+
+      expect(thumbnail(field).exists()).toBe(false);
     });
   });
 });

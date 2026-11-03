@@ -4,6 +4,7 @@ import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from
 import { computed } from "vue";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
+import DatasetNodeThumbnail from "@/components/DatasetNodeThumbnail.vue";
 import {
   findKind,
   nodeCatalogQuery,
@@ -14,6 +15,8 @@ import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
+
+const THUMBNAIL_KINDS = new Set(["GaussianField"]);
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
@@ -33,9 +36,15 @@ function setParam(name: string, value: ParamValue) {
 <template>
   <div
     v-if="kind"
-    class="w-64 rounded-lg border bg-background text-sm shadow-sm"
+    class="relative w-64 rounded-lg border bg-background text-sm shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
   >
+    <DatasetNodeThumbnail
+      v-if="THUMBNAIL_KINDS.has(kind.name)"
+      :kind="data.kind"
+      :params="data.params"
+      class="absolute -inset-x-px bottom-full mb-2"
+    />
     <div
       data-slot="node-title"
       class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
