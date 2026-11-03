@@ -64,15 +64,23 @@ afterEach(() => {
 
 describe("Survey builder", () => {
   describe("block palette", () => {
-    it("offers a sortable Text block under General and nothing under Data yet", async () => {
+    it("offers every survey block under General and nothing under Data yet", async () => {
       const wrapper = await mountView();
 
       const palette = wrapper.find(
         '[aria-label="Survey details"] [role="tabpanel"][data-state="active"]',
       );
       const blocks = palette.findAll("li");
-      expect(blocks.map((block) => block.text())).toEqual(["Text"]);
-      expect(blocks[0]!.attributes("aria-roledescription")).toBe("sortable");
+      expect(blocks.map((block) => block.text())).toEqual([
+        "Text",
+        "Number scale",
+        "Separator",
+        "New page",
+        "End of survey",
+      ]);
+      expect(blocks.every((block) => block.attributes("aria-roledescription") === "sortable")).toBe(
+        true,
+      );
       await wrapper
         .findAll('[role="tab"]')
         .find((tab) => tab.text() === "Data")!
@@ -89,11 +97,13 @@ describe("Survey builder", () => {
       const palette = sortableList("Survey blocks");
       expect(palette.group).toEqual({ name: "survey-blocks", pull: "clone", put: false });
       expect(palette.sort).toBe(false);
-      const [template] = (palette.items as () => SurveyBlock[])();
+      const [template, scale, separator] = (palette.items as () => SurveyBlock[])();
       const first = palette.clone!(template!);
       const second = palette.clone!(template!);
       expect(first).toEqual({ id: expect.any(String), type: "text", text: "" });
       expect(new Set([template!.id, first.id, second.id]).size).toBe(3);
+      expect(palette.clone!(scale!)).toEqual({ id: expect.any(String), type: "scale", text: "" });
+      expect(palette.clone!(separator!)).toEqual({ id: expect.any(String), type: "separator" });
     });
 
     it("drags a freshly drawn chip from the palette rather than a copy of the hovered one", async () => {
@@ -179,6 +189,75 @@ describe("Survey builder", () => {
         content: { blocks: [{ ...hello, text: "Read the passage below." }] },
       });
       expect((textarea.element as HTMLTextAreaElement).value).toBe("Read the passage below.");
+    });
+  });
+
+  describe("Number scale", () => {
+    const rating: SurveyBlock = { id: "b3", type: "scale", text: "How clear was it?" };
+
+    it("asks for the question to rate in a single line, above the scale", async () => {
+      const wrapper = await mountView({ ...SURVEY, content: { blocks: [rating] } });
+
+      const row = builderRows(wrapper)[0]!;
+      expect(row.find("span").text()).toBe("Number scale");
+      expect(row.find("textarea").exists()).toBe(false);
+      const question = row.find('input[aria-label="Question"]');
+      expect((question.element as HTMLInputElement).value).toBe("How clear was it?");
+      const points = row.findAll('[aria-label="Scale"] button');
+      expect(points.map((point) => point.text())).toEqual(["1", "2", "3", "4", "5"]);
+      expect(points.every((point) => point.attributes("disabled") !== undefined)).toBe(true);
+    });
+
+    it("saves the question when it is edited", async () => {
+      const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello, rating] } });
+      saveLikeTheServer();
+
+      const question = wrapper.find('input[aria-label="Question"]');
+      await question.setValue("How useful was it?");
+      await question.trigger("change");
+      await flushPromises();
+
+      expect(await request("PATCH").json()).toEqual({
+        content: { blocks: [hello, { ...rating, text: "How useful was it?" }] },
+      });
+      expect(preview(wrapper).text()).toContain("How useful was it?");
+    });
+  });
+
+  describe("Separator", () => {
+    it("shows as a rule with nothing to fill in, and saves unchanged around text edits", async () => {
+      const separator: SurveyBlock = { id: "s1", type: "separator" };
+      const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello, separator] } });
+      saveLikeTheServer();
+
+      const row = builderRows(wrapper)[1]!;
+      expect(row.find("span").text()).toBe("Separator");
+      expect(row.find('[data-slot="separator"]').exists()).toBe(true);
+      expect(row.find("input, textarea").exists()).toBe(false);
+
+      const textarea = builderRows(wrapper)[0]!.find("textarea");
+      await textarea.setValue("Hello there");
+      await textarea.trigger("change");
+      await flushPromises();
+      expect(await request("PATCH").json()).toEqual({
+        content: { blocks: [{ ...hello, text: "Hello there" }, separator] },
+      });
+    });
+  });
+
+  describe("New page and End of survey", () => {
+    it("show the button each one adds, without letting it be pressed", async () => {
+      const blocks: SurveyBlock[] = [
+        { id: "p1", type: "page" },
+        { id: "e1", type: "end" },
+      ];
+      const wrapper = await mountView({ ...SURVEY, content: { blocks } });
+
+      const rows = builderRows(wrapper);
+      expect(rows.map((row) => row.find("span").text())).toEqual(["New page", "End of survey"]);
+      const buttons = rows.flatMap((row) => row.findAll("button"));
+      expect(buttons.map((button) => button.text())).toEqual(["Back", "Next", "Submit"]);
+      expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);
     });
   });
 

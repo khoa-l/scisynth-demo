@@ -7,6 +7,10 @@ import type { SurveyPublic } from "@/client";
 import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import SortableRow from "@/components/SortableRow.vue";
+import SurveyScale from "@/components/SurveyScale.vue";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 import { storeSurvey } from "@/lib/survey-cache";
@@ -62,8 +66,10 @@ const { items } = makeSortableList(list, {
 });
 
 function withText(id: string, event: Event) {
-  const text = (event.target as HTMLTextAreaElement).value;
-  return blocks.value.map((block) => (block.id === id ? { ...block, text } : block));
+  const text = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+  return blocks.value.map((block) =>
+    block.id === id && "text" in block ? { ...block, text } : block,
+  );
 }
 </script>
 
@@ -90,7 +96,24 @@ function withText(id: string, event: Event) {
         class="flex cursor-grab flex-col gap-1.5 rounded-lg border bg-background p-3 active:cursor-grabbing"
       >
         <span class="text-xs text-muted-foreground">{{ blockLabels[block.type] }}</span>
+        <Separator v-if="block.type === 'separator'" />
+        <div v-else-if="block.type === 'page'" class="flex justify-between">
+          <Button disabled size="sm" variant="outline">Back</Button>
+          <Button disabled size="sm">Next</Button>
+        </div>
+        <Button v-else-if="block.type === 'end'" disabled size="sm" class="self-end">Submit</Button>
+        <template v-else-if="block.type === 'scale'">
+          <Input
+            :default-value="block.text"
+            aria-label="Question"
+            placeholder="Ask a question to rate from 1 to 5…"
+            @input="show(withText(block.id, $event))"
+            @change="save(withText(block.id, $event))"
+          />
+          <SurveyScale disabled aria-label="Scale" />
+        </template>
         <Textarea
+          v-else
           :default-value="block.text"
           aria-label="Text"
           placeholder="Write some text…"

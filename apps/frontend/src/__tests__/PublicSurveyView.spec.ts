@@ -38,7 +38,7 @@ describe("Public survey page", () => {
       expect.arrayContaining(["min-h-svh", "bg-muted", "items-start", "justify-center"]),
     );
     expect(main.classes()).not.toContain("items-center");
-    expect(wrapper.find('[data-slot="card"]').classes()).toEqual(
+    expect([...wrapper.find('[data-slot="card"]').element.parentElement!.classList]).toEqual(
       expect.arrayContaining(["w-full", "max-w-2xl"]),
     );
   });

@@ -16,8 +16,10 @@ describe("Survey view", () => {
         expect.arrayContaining(["bg-muted", "inset-shadow-sm", "p-4"]),
       );
     }
-    for (const column of [builder.find("ol"), preview.find('[data-slot="card"]')]) {
-      expect(column.classes()).toEqual(expect.arrayContaining(["mx-auto", "w-full", "max-w-2xl"]));
+    for (const column of [builder.find("ol").element, preview.find("div").element]) {
+      expect([...column.classList]).toEqual(
+        expect.arrayContaining(["mx-auto", "w-full", "max-w-2xl"]),
+      );
     }
     const hint = builder.find("p");
     expect(hint.text()).toBe("Drag a block here to build the task.");

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
+import { h, nextTick, ref } from "vue";
 
 import SurveyTask from "../components/SurveyTask.vue";
 import type { SurveyBlock } from "../lib/survey-blocks";
@@ -25,6 +26,141 @@ describe("Survey task", () => {
 
     expect(wrapper.text()).toContain("This survey has no questions yet.");
     expect(wrapper.find('[data-slot="card-content"]').exists()).toBe(false);
+  });
+
+  it("asks a number scale question as a single choice of five", async () => {
+    const wrapper = task([{ id: "b4", type: "scale", text: "How clear was it?" }]);
+
+    const question = wrapper.find("p");
+    expect(question.text()).toBe("How clear was it?");
+    const scale = wrapper.find('[data-slot="toggle-group"]');
+    expect(scale.attributes("aria-labelledby")).toBe(question.attributes("id"));
+    expect(scale.attributes("data-orientation")).toBe("horizontal");
+    const points = scale.findAll("button");
+    expect(points.map((point) => point.text())).toEqual(["1", "2", "3", "4", "5"]);
+
+    await points[3]!.trigger("click");
+    await points[1]!.trigger("click");
+    await flushPromises();
+
+    expect(points.map((point) => point.attributes("data-state"))).toEqual([
+      "off",
+      "on",
+      "off",
+      "off",
+      "off",
+    ]);
+  });
+
+  it("leaves out a scale that has no question yet", () => {
+    const wrapper = task([{ id: "b4", type: "scale", text: "" }]);
+
+    expect(wrapper.text()).toContain("This survey has no questions yet.");
+    expect(wrapper.find('[data-slot="toggle-group"]').exists()).toBe(false);
+  });
+
+  it("keeps blocks in one card until a separator starts a new one", () => {
+    const wrapper = task([
+      hello,
+      { id: "b4", type: "scale", text: "How clear was it?" },
+      { id: "s1", type: "separator" },
+      goodbye,
+    ]);
+
+    const cards = wrapper.findAll('[data-slot="card"]');
+    expect(cards).toHaveLength(2);
+    expect(cards[0]!.find('[data-slot="card-title"]').text()).toBe("Intake form");
+    expect(cards[0]!.text()).toMatch(/Hello.*How clear was it\?.*12345/s);
+    expect(cards[1]!.text()).toBe("Goodbye");
+    expect([...wrapper.element.classList]).toEqual(
+      expect.arrayContaining(["flex", "flex-col", "gap-4", "mx-auto", "w-full", "max-w-2xl"]),
+    );
+  });
+
+  it("doesn't make empty cards from extra separators", () => {
+    const separator = (id: string): SurveyBlock => ({ id, type: "separator" });
+    const wrapper = task([separator("s1"), hello, separator("s2"), blank, separator("s3")]);
+
+    const cards = wrapper.findAll('[data-slot="card"]');
+    expect(cards.map((card) => card.text())).toEqual(["Intake formHello"]);
+  });
+
+  describe("pages", () => {
+    const page = (id: string): SurveyBlock => ({ id, type: "page" });
+    const end: SurveyBlock = { id: "e1", type: "end" };
+
+    function action(wrapper: VueWrapper) {
+      return wrapper.find('[data-slot="card-footer"] button:last-child');
+    }
+
+    function back(wrapper: VueWrapper) {
+      return wrapper.findAll('[data-slot="card-footer"] button').find((b) => b.text() === "Back");
+    }
+
+    it("shows one page at a time, with Next at the bottom of its last card", async () => {
+      const second: SurveyBlock = { id: "b5", type: "text", text: "Second page" };
+      const wrapper = task([hello, { id: "s1", type: "separator" }, goodbye, page("p1"), second]);
+
+      const cards = wrapper.findAll('[data-slot="card"]');
+      expect(cards.map((card) => card.text())).toEqual(["Intake formHello", "GoodbyeNext"]);
+      expect(cards[0]!.find('[data-slot="card-footer"]').exists()).toBe(false);
+
+      await action(wrapper).trigger("click");
+
+      expect(wrapper.findAll('[data-slot="card"]').map((card) => card.text())).toEqual([
+        "Intake formSecond pageBack",
+      ]);
+      expect(action(wrapper).text()).toBe("Back");
+    });
+
+    it("goes back a page, with no Back on the first page", async () => {
+      const wrapper = task([hello, page("p1"), goodbye, page("p2"), blank, end]);
+      expect(back(wrapper)).toBeUndefined();
+
+      await action(wrapper).trigger("click");
+      expect(wrapper.text()).toContain("Goodbye");
+      await back(wrapper)!.trigger("click");
+
+      expect(wrapper.text()).toContain("Hello");
+      expect(back(wrapper)).toBeUndefined();
+      expect(action(wrapper).text()).toBe("Next");
+    });
+
+    it("offers Submit on the last page once the survey has an end", async () => {
+      const wrapper = task([hello, page("p1"), goodbye, end]);
+
+      await action(wrapper).trigger("click");
+      expect(action(wrapper).text()).toBe("Submit");
+      expect(back(wrapper)).toBeDefined();
+      await action(wrapper).trigger("click");
+
+      expect(wrapper.emitted("submit")).toHaveLength(1);
+    });
+
+    it("leaves out everything after the end, and pages with nothing on them", async () => {
+      const wrapper = task([hello, page("p1"), page("p2"), blank, end, page("p3"), goodbye]);
+
+      expect(wrapper.text()).not.toContain("Goodbye");
+      expect(action(wrapper).text()).toBe("Submit");
+    });
+
+    it("goes back to the last page when the page it was on is removed", async () => {
+      const content = ref({ blocks: [hello, page("p1"), goodbye] });
+      const wrapper = mount(() => h(SurveyTask, { name: "Intake form", content: content.value }));
+      await action(wrapper).trigger("click");
+
+      content.value = { blocks: [hello] };
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Hello");
+    });
+
+    it("has no button for an empty survey, even with an end", () => {
+      const wrapper = task([end]);
+
+      expect(wrapper.text()).toContain("This survey has no questions yet.");
+      expect(action(wrapper).exists()).toBe(false);
+    });
   });
 
   it("shows the text blocks in order, skipping empty ones", () => {
