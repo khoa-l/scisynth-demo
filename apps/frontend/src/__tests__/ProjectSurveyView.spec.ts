@@ -378,4 +378,82 @@ describe("Survey view", () => {
         .map((p) => p.text()),
     ).toEqual(["Goodbye", "Hello"]);
   });
+
+  /** Holds every PATCH until `release` is called, then answers it with `status`. */
+  function holdSaves() {
+    let release!: (status?: number) => void;
+    const gate = new Promise<number>((resolve) => (release = (status = 200) => resolve(status)));
+    fetchMock.mockImplementation(async (input) => {
+      const req = input as Request;
+      if (req.method !== "PATCH") return jsonResponse(PUBLISHED);
+      const status = await gate;
+      const body = await req.clone().json();
+      return status === 200
+        ? jsonResponse({ ...SURVEY, ...body })
+        : jsonResponse({ detail: "Server error" }, status);
+    });
+    return (status?: number) => release(status);
+  }
+
+  async function editText(wrapper: Awaited<ReturnType<typeof mountView>>, text: string) {
+    const textarea = wrapper.find('[aria-label="Survey builder"] textarea');
+    (textarea.element as HTMLTextAreaElement).value = text;
+    await textarea.trigger("input");
+    await textarea.trigger("change");
+  }
+
+  function methods() {
+    return requests().map((r) => r.method);
+  }
+
+  it("waits for a save in flight before publishing", async () => {
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
+    const release = holdSaves();
+
+    await editText(wrapper, "Hello there");
+    await findButton(wrapper, "Publish")!.trigger("click");
+    await flushPromises();
+    expect(methods()).toEqual(["GET", "PATCH"]);
+
+    release();
+    await flushPromises();
+    expect(methods()).toEqual(["GET", "PATCH", "POST"]);
+    expect(findButton(wrapper, "Unpublish")).toBeDefined();
+  });
+
+  it("doesn't publish when the save it was waiting for fails", async () => {
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
+    const release = holdSaves();
+
+    await editText(wrapper, "Hello there");
+    await findButton(wrapper, "Publish")!.trigger("click");
+    release(500);
+    await flushPromises();
+
+    expect(methods()).toEqual(["GET", "PATCH"]);
+    expect(wrapper.find('[role="alert"]').text()).toContain("Couldn't save your changes.");
+  });
+
+  it("shows a failed save, blocks publishing, and saves again on retry", async () => {
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
+    fetchMock.mockResolvedValue(jsonResponse({ detail: "Server error" }, 500));
+
+    await editText(wrapper, "Hello there");
+    await flushPromises();
+    const alert = wrapper.find('[aria-label="Survey builder"] [role="alert"]');
+    expect(alert.text()).toContain("Couldn't save your changes.");
+    expect(alert.classes()).toEqual(expect.arrayContaining(["text-destructive"]));
+    expect(preview(wrapper).find("p").text()).toBe("Hello there");
+    expect(findButton(wrapper, "Publish")!.attributes("disabled")).toBeDefined();
+
+    saveLikeTheServer();
+    await findButton(wrapper, "Try again")!.trigger("click");
+    await flushPromises();
+
+    expect(await request("PATCH").json()).toEqual({
+      content: { blocks: [{ ...hello, text: "Hello there" }] },
+    });
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(findButton(wrapper, "Publish")!.attributes("disabled")).toBeUndefined();
+  });
 });

@@ -6,8 +6,14 @@ import { computed, useTemplateRef } from "vue";
 import type { SurveyPublic } from "@/client";
 import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import SortableRow from "@/components/SortableRow.vue";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { storeSurvey } from "@/lib/survey-cache";
+import {
+  storeSurvey,
+  surveyMutationScope,
+  surveySaveKey,
+  useSurveySaveFailed,
+} from "@/lib/survey-cache";
 import {
   SURVEY_BLOCK_GROUP,
   TASK_BLOCK,
@@ -22,10 +28,14 @@ const props = defineProps<{ projectId: string; survey: SurveyPublic }>();
 const queryClient = useQueryClient();
 const blocks = computed(() => surveyBlocks(props.survey.content));
 
-const { mutate } = useMutation({
+// The cache already holds the edit (see `show`), so a successful save has nothing to store;
+// writing the response back could overwrite newer edits made while it was in flight.
+const { mutate } = useMutation(() => ({
   ...surveysUpdateSurveyMutation(),
-  onSuccess: (survey) => storeSurvey(queryClient, props.projectId, survey),
-});
+  mutationKey: surveySaveKey(props.survey.id),
+  scope: surveyMutationScope(props.survey.id),
+}));
+const saveFailed = useSurveySaveFailed(() => props.survey.id);
 
 function show(next: SurveyBlock[]) {
   const content = { ...props.survey.content, blocks: next };
@@ -76,6 +86,15 @@ function withText(id: string, event: Event) {
     >
       Drag a block here to build the task.
     </p>
+    <div
+      v-if="saveFailed"
+      role="alert"
+      class="mb-2 flex items-center justify-between gap-2 rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
+      :class="surveyColumnClass"
+    >
+      <span>Couldn't save your changes.</span>
+      <Button variant="outline" size="sm" @click="save(blocks)">Try again</Button>
+    </div>
     <ol ref="list" class="flex flex-col gap-2" :class="surveyColumnClass">
       <SortableRow
         v-for="block in items"
