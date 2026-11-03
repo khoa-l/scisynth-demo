@@ -1,10 +1,22 @@
 <script setup lang="ts">
-import { makeSortableList } from "@vue-dnd-kit/core";
-import { useTemplateRef } from "vue";
+import { makeSortableList, type OverlayProps } from "@vue-dnd-kit/core";
+import { cn } from "cn";
+import { h, useTemplateRef } from "vue";
 
 import SortableRow from "@/components/SortableRow.vue";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
-import { SURVEY_BLOCK_GROUP, blockLabels, blockTemplates, cloneBlock } from "@/lib/survey-blocks";
+import {
+  SURVEY_BLOCK_GROUP,
+  blockLabels,
+  blockTemplates,
+  cloneBlock,
+  type SurveyBlock,
+} from "@/lib/survey-blocks";
+
+function BlockOverlay({ items }: OverlayProps) {
+  const block = items[0]?.item as SurveyBlock;
+  return h("div", { class: cn(paletteItemClass, "size-full") }, blockLabels[block.type]);
+}
 
 const list = useTemplateRef<HTMLElement>("list");
 const { items } = makeSortableList(list, {
@@ -13,6 +25,7 @@ const { items } = makeSortableList(list, {
   group: { name: SURVEY_BLOCK_GROUP, pull: "clone", put: false },
   sort: false,
   clone: cloneBlock,
+  overlay: BlockOverlay,
 });
 </script>
 

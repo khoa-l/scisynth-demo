@@ -2,11 +2,13 @@ import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 
 import type {
   DnDEndEvent,
+  OverlayProps,
   DroppableOptions,
   SortableDropEvent,
   SortableListOptions,
 } from "@vue-dnd-kit/core";
-import { flushPromises } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
+import type { FunctionalComponent } from "vue";
 
 import type { SurveyBlock } from "../lib/survey-blocks";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
@@ -194,6 +196,22 @@ describe("Survey view", () => {
     const second = palette.clone!(template!);
     expect(first).toEqual({ id: expect.any(String), type: "text", text: "" });
     expect(new Set([template!.id, first.id, second.id]).size).toBe(3);
+  });
+
+  it("drags a freshly drawn chip from the palette rather than a copy of the hovered one", async () => {
+    await mountView();
+
+    const overlay = sortableList("Survey blocks").overlay as FunctionalComponent<OverlayProps>;
+    const chip = mount(overlay, {
+      props: {
+        items: [
+          { id: "new", item: { id: "new", type: "text", text: "" }, data: undefined, type: [] },
+        ],
+      },
+    } as never);
+
+    expect(chip.text()).toBe("Text");
+    expect(chip.attributes("style")).toBeUndefined();
   });
 
   it("lets the whole builder take drops from the palette's group", async () => {
