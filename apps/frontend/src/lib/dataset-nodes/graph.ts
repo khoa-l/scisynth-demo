@@ -10,7 +10,7 @@ export type DatasetGraph = DatasetGraphOutput;
 
 export const DATASET_NODE = "dataset-node";
 
-export type FlowNode = Node<DatasetNodeData> & { data: DatasetNodeData };
+type FlowNode = Node<DatasetNodeData> & { data: DatasetNodeData };
 
 export function flowNode(id: string, position: XYPosition, data: DatasetNodeData): FlowNode {
   return { id, type: DATASET_NODE, position, data };
