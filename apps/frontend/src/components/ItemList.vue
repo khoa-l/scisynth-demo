@@ -81,7 +81,7 @@ function itemLink(item: Item) {
     </ul>
     <ul
       v-else
-      class="grid grid-cols-[repeat(auto-fill,minmax(max(6.5rem,calc((100%_-_4.5rem)/10)),1fr))] gap-2"
+      class="grid grid-cols-[repeat(auto-fill,minmax(max(8rem,calc((100%_-_4.5rem)/10)),1fr))] gap-2"
     >
       <li v-for="item in items" :key="item.id" class="group relative min-w-0">
         <component
