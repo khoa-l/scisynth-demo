@@ -26,9 +26,14 @@ const { mutate } = useMutation({
   onSuccess: (survey) => storeSurvey(queryClient, props.projectId, survey),
 });
 
-function save(next: SurveyBlock[]) {
+function show(next: SurveyBlock[]) {
   const content = { ...props.survey.content, blocks: next };
   storeSurvey(queryClient, props.projectId, { ...props.survey, content });
+  return content;
+}
+
+function save(next: SurveyBlock[]) {
+  const content = show(next);
   mutate({
     path: { project_id: props.projectId, survey_id: props.survey.id },
     body: { content },
@@ -51,9 +56,9 @@ const { items } = makeSortableList(list, {
   },
 });
 
-function updateText(id: string, text: string) {
-  if (blocks.value.find((block) => block.id === id)?.text === text) return;
-  save(blocks.value.map((block) => (block.id === id ? { ...block, text } : block)));
+function withText(id: string, event: Event) {
+  const text = (event.target as HTMLTextAreaElement).value;
+  return blocks.value.map((block) => (block.id === id ? { ...block, text } : block));
 }
 </script>
 
@@ -83,7 +88,8 @@ function updateText(id: string, text: string) {
           :default-value="block.text"
           aria-label="Text"
           placeholder="Write some text…"
-          @change="updateText(block.id, ($event.target as HTMLTextAreaElement).value)"
+          @input="show(withText(block.id, $event))"
+          @change="save(withText(block.id, $event))"
         />
       </SortableRow>
     </ol>

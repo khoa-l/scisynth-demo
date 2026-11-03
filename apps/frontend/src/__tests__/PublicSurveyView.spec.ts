@@ -34,4 +34,19 @@ describe("Public survey page", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(wrapper.text()).toBe("This survey isn't available.");
   });
+
+  it("shows the published task's text blocks", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        name: "Intake form",
+        version_id: "Eq-OvCTLPC6Urz_TXE8eJ",
+        content: { blocks: [{ id: "b1", type: "text", text: "Read the passage below." }] },
+      }),
+    );
+    const wrapper = await mountView();
+
+    expect(wrapper.find('[data-slot="card-title"]').text()).toBe("Intake form");
+    expect(wrapper.findAll("p").map((p) => p.text())).toEqual(["Read the passage below."]);
+    expect(wrapper.text()).not.toContain("no questions");
+  });
 });

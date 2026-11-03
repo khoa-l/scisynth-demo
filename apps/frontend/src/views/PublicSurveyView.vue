@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
 import { publicGetPublishedOptions } from "@/client/@tanstack/vue-query.gen";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import SurveyTask from "@/components/SurveyTask.vue";
 
 const props = defineProps<{ publicId: string }>();
 
@@ -25,13 +25,6 @@ const {
     <p v-else-if="isError || !survey" class="text-sm text-muted-foreground">
       This survey isn't available.
     </p>
-    <Card v-else class="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle>{{ survey.name }}</CardTitle>
-        <CardDescription v-if="!Object.keys(survey.content).length">
-          This survey has no questions yet.
-        </CardDescription>
-      </CardHeader>
-    </Card>
+    <SurveyTask v-else :name="survey.name" :content="survey.content" class="w-full max-w-lg" />
   </main>
 </template>

@@ -2,7 +2,7 @@ export const SURVEY_BLOCK_GROUP = "survey-blocks";
 
 export const TASK_BLOCK = "survey-task-block";
 
-export interface TextBlock {
+interface TextBlock {
   id: string;
   type: "text";
   text: string;

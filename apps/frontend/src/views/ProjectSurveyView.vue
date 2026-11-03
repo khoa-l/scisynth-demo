@@ -9,6 +9,7 @@ import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyBuilder from "@/components/SurveyBuilder.vue";
 import SurveyDetails from "@/components/SurveyDetails.vue";
+import SurveyTask from "@/components/SurveyTask.vue";
 import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 import { Button } from "@/components/ui/button";
 
@@ -77,7 +78,18 @@ async function copyLink(link: string) {
       </DnDProvider>
     </template>
     <template #right>
-      <div role="group" aria-label="Survey preview" class="h-full bg-muted inset-shadow-sm" />
+      <div
+        role="group"
+        aria-label="Survey preview"
+        class="h-full overflow-y-auto bg-muted p-6 inset-shadow-sm"
+      >
+        <SurveyTask
+          v-if="survey"
+          :name="survey.name"
+          :content="survey.content"
+          class="mx-auto max-w-lg"
+        />
+      </div>
     </template>
   </ProjectItemPage>
 </template>

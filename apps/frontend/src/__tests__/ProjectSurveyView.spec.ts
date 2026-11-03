@@ -10,7 +10,15 @@ import { flushPromises } from "@vue/test-utils";
 
 import type { SurveyBlock } from "../lib/survey-blocks";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
-import { PROJECT_ID, SURVEY, fetchMock, jsonResponse, mountPage, request } from "./helpers";
+import {
+  PROJECT_ID,
+  SURVEY,
+  fetchMock,
+  jsonResponse,
+  mountPage,
+  request,
+  requests,
+} from "./helpers";
 
 const sortableLists = vi.hoisted(() => new Map<string, unknown>());
 const dropTargets = vi.hoisted(() => new Map<string, unknown>());
@@ -71,7 +79,7 @@ function findButton(wrapper: Awaited<ReturnType<typeof mountView>>, label: strin
 }
 
 describe("Survey view", () => {
-  it("has a grey builder with General and Data tabs below it, and an empty preview", async () => {
+  it("has a grey builder with General and Data tabs below it, and a grey preview", async () => {
     const wrapper = await mountView();
 
     const builder = wrapper.find('[aria-label="Survey builder"]');
@@ -85,7 +93,6 @@ describe("Survey view", () => {
     expect(hint.classes()).toEqual(
       expect.arrayContaining(["absolute", "inset-0", "flex", "items-center", "justify-center"]),
     );
-    expect(preview.element.childElementCount).toBe(0);
     const [left, right] = wrapper.findAll("section");
     expect(left!.element.contains(builder.element)).toBe(true);
     expect(right!.element.contains(preview.element)).toBe(true);
@@ -302,5 +309,60 @@ describe("Survey view", () => {
     expect(details().find(".absolute.inset-0").classes()).toEqual(
       expect.arrayContaining(["border-destructive", "bg-destructive/10", "text-destructive"]),
     );
+  });
+
+  function preview(wrapper: Awaited<ReturnType<typeof mountView>>) {
+    return wrapper.find('[aria-label="Survey preview"]');
+  }
+
+  it("previews an empty survey with its name", async () => {
+    const wrapper = await mountView();
+
+    expect(preview(wrapper).find('[data-slot="card-title"]').text()).toBe("Intake form");
+    expect(preview(wrapper).text()).toContain("This survey has no questions yet.");
+  });
+
+  it("previews the task's text blocks in order, skipping empty ones", async () => {
+    const blank: SurveyBlock = { id: "b3", type: "text", text: "" };
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [goodbye, blank, hello] } });
+
+    const paragraphs = preview(wrapper).findAll("p");
+    expect(paragraphs.map((p) => p.text())).toEqual(["Goodbye", "Hello"]);
+    expect(paragraphs[0]!.classes()).toEqual(
+      expect.arrayContaining(["whitespace-pre-line", "wrap-anywhere"]),
+    );
+    expect(preview(wrapper).text()).not.toContain("no questions");
+  });
+
+  it("updates the preview as you type, and saves only when you leave the box", async () => {
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
+    saveLikeTheServer();
+
+    const textarea = wrapper.find('[aria-label="Survey builder"] textarea');
+    (textarea.element as HTMLTextAreaElement).value = "Hello there";
+    await textarea.trigger("input");
+    await flushPromises();
+    expect(preview(wrapper).find("p").text()).toBe("Hello there");
+    expect(requests().some((r) => r.method === "PATCH")).toBe(false);
+
+    await textarea.trigger("change");
+    await flushPromises();
+    expect(await request("PATCH").json()).toEqual({
+      content: { blocks: [{ ...hello, text: "Hello there" }] },
+    });
+  });
+
+  it("updates the preview when blocks are reordered", async () => {
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello, goodbye] } });
+    saveLikeTheServer();
+
+    drop("Survey task", [goodbye, hello]);
+    await flushPromises();
+
+    expect(
+      preview(wrapper)
+        .findAll("p")
+        .map((p) => p.text()),
+    ).toEqual(["Goodbye", "Hello"]);
   });
 });
