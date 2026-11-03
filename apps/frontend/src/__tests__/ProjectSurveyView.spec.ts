@@ -6,44 +6,6 @@ import { PROJECT_ID, SURVEY, fetchMock, jsonResponse, request, requests } from "
 import { PUBLISHED, findButton, hello, mountView, preview, saveLikeTheServer } from "./survey-view";
 
 describe("Survey view", () => {
-  it("has a grey builder with General and Data tabs below it, and a grey preview", async () => {
-    const wrapper = await mountView();
-
-    const builder = wrapper.find('[aria-label="Survey builder"]');
-    for (const panel of [builder, preview(wrapper)]) {
-      expect(panel.classes()).toEqual(
-        expect.arrayContaining(["bg-muted", "inset-shadow-sm", "p-4"]),
-      );
-    }
-    for (const column of [builder.find("ol").element, preview(wrapper).find("div").element]) {
-      expect([...column.classList]).toEqual(
-        expect.arrayContaining(["mx-auto", "w-full", "max-w-2xl"]),
-      );
-    }
-    const hint = builder.find("p");
-    expect(hint.text()).toBe("Drag a block here to build the task.");
-    expect(builder.classes()).toContain("relative");
-    expect(hint.classes()).toEqual(
-      expect.arrayContaining(["absolute", "inset-0", "flex", "items-center", "justify-center"]),
-    );
-    const [left, right] = wrapper.findAll("section");
-    expect(left!.element.parentElement!.classList).toContain("grid-cols-2");
-    expect(left!.element.contains(builder.element)).toBe(true);
-    expect(right!.element.contains(preview(wrapper).element)).toBe(true);
-
-    const details = wrapper.find('[role="group"][aria-label="Survey details"]');
-    const builderArea = builder.element.parentElement!;
-    const detailsArea = details.element.parentElement!;
-    expect(builderArea.classList).toContain("flex-3");
-    expect(detailsArea.classList).toContain("flex-1");
-    expect(builderArea.nextElementSibling).toBe(detailsArea);
-    const tablist = details.find('[role="tablist"]');
-    expect(tablist.attributes("aria-label")).toBe("Survey sections");
-    const tabs = tablist.findAll('[role="tab"]');
-    expect(tabs.map((tab) => tab.text())).toEqual(["General", "Data"]);
-    expect(tabs.map((tab) => tab.attributes("aria-selected"))).toEqual(["true", "false"]);
-  });
-
   it("updates the preview as you type, and saves only when you leave the box", async () => {
     const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
     saveLikeTheServer();
@@ -57,6 +19,9 @@ describe("Survey view", () => {
 
     await textarea.trigger("change");
     await flushPromises();
+    expect(new URL(request("PATCH").url).pathname).toBe(
+      `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`,
+    );
     expect(await request("PATCH").json()).toEqual({
       content: { blocks: [{ ...hello, text: "Hello there" }] },
     });

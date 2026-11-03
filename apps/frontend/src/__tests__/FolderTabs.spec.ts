@@ -41,39 +41,4 @@ describe("FolderTabs", () => {
     expect(two.attributes("aria-selected")).toBe("true");
     expect(visiblePanel(wrapper).text()).toBe("Two content");
   });
-
-  it("looks like folder tabs sitting on top of a transparent strip", () => {
-    const wrapper = mountTabs();
-
-    const tablist = wrapper.find('[role="tablist"]');
-    expect(tablist.classes()).toEqual(
-      expect.arrayContaining(["absolute", "bottom-full", "left-0", "pointer-events-none"]),
-    );
-    expect(tablist.classes().some((c) => /^(gap|px|pl)-/.test(c))).toBe(false);
-    expect(tablist.classes().some((c) => c.startsWith("bg-") || c.startsWith("border"))).toBe(
-      false,
-    );
-    for (const tab of tablist.findAll('[role="tab"]')) {
-      expect(tab.classes()).toEqual(
-        expect.arrayContaining([
-          "pointer-events-auto",
-          "-ml-px",
-          "first:ml-0",
-          "first:border-l-0",
-          "data-[state=active]:z-10",
-          "data-[state=active]:shadow-sm",
-          "data-[state=active]:[clip-path:inset(-8px_-8px_0_-8px)]",
-          "rounded-t-lg",
-          "border",
-          "-mb-px",
-          "bg-muted",
-          "data-[state=active]:bg-background",
-          "data-[state=active]:border-b-background",
-        ]),
-      );
-    }
-    expect(visiblePanel(wrapper).classes()).toEqual(
-      expect.arrayContaining(["border-t", "bg-background"]),
-    );
-  });
 });

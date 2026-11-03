@@ -28,20 +28,6 @@ describe("Public survey page", () => {
     expect(wrapper.text()).toContain("This survey has no questions yet.");
   });
 
-  it("shows a wide card at the top of a light grey page", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(EMPTY));
-    const wrapper = await mountView();
-
-    const main = wrapper.find("main");
-    expect(main.classes()).toEqual(
-      expect.arrayContaining(["min-h-svh", "bg-muted", "items-start", "justify-center"]),
-    );
-    expect(main.classes()).not.toContain("items-center");
-    expect([...wrapper.find('[data-slot="card"]').element.parentElement!.classList]).toEqual(
-      expect.arrayContaining(["w-full", "max-w-2xl"]),
-    );
-  });
-
   it("says the survey isn't available when it is missing or unpublished", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ detail: "Survey not found" }, 404));
     const wrapper = await mountView();

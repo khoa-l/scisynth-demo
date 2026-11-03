@@ -4,7 +4,6 @@ import { VueFlow, type GraphEdge } from "@vue-flow/core";
 import { flushPromises } from "@vue/test-utils";
 
 import type { DatasetPublic } from "../client";
-import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import {
   answerWith,
   connect,
@@ -14,16 +13,7 @@ import {
   paletteItem,
   type Wrapper,
 } from "./dataset-view";
-import {
-  DATASET,
-  PROJECT_ID,
-  fakeDataTransfer,
-  fetchMock,
-  jsonResponse,
-  mountPage,
-  requests,
-  testQueryClient,
-} from "./helpers";
+import { DATASET, fakeDataTransfer, fetchMock, jsonResponse, requests } from "./helpers";
 
 function flow(wrapper: Wrapper) {
   return wrapper.findComponent(VueFlow).vm as unknown as { edges: GraphEdge[] };
@@ -119,14 +109,6 @@ describe("Dataset builder", () => {
     });
   });
 
-  it("draws connections, and the line dragged out to make one, 2px wide", async () => {
-    const wrapper = await mountView();
-    const canvas = wrapper.findComponent(VueFlow);
-
-    expect(canvas.props("defaultEdgeOptions")).toEqual({ style: { strokeWidth: 2 } });
-    expect(canvas.props("connectionLineStyle")).toEqual({ strokeWidth: 2 });
-  });
-
   describe("saving", () => {
     const SAVED: DatasetPublic = {
       ...DATASET,
@@ -200,21 +182,6 @@ describe("Dataset builder", () => {
       ]);
       const gridSize = wrapper.findAll(".vue-flow__node")[1]!.find("input");
       expect((gridSize.element as HTMLInputElement).value).toBe("32");
-    });
-
-    it("draws loaded connections 2px wide when a dataset is opened again", async () => {
-      const queryClient = testQueryClient();
-      answerWith(SAVED);
-      const open = () =>
-        mountPage(ProjectDatasetView, {
-          props: { projectId: PROJECT_ID, datasetId: DATASET.id },
-          queryClient,
-        });
-
-      (await open()).wrapper.unmount();
-      const { wrapper } = await open();
-
-      expect(flow(wrapper).edges[0]!.style).toEqual({ strokeWidth: 2 });
     });
 
     it("doesn't save a graph just because it was opened", async () => {

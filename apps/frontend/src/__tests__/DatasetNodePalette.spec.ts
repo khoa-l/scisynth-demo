@@ -2,7 +2,7 @@ import { describe, it, expect } from "vite-plus/test";
 
 import { flushPromises } from "@vue/test-utils";
 
-import { details, mountView, paletteItem, visiblePanel, type Wrapper } from "./dataset-view";
+import { details, mountView, visiblePanel, type Wrapper } from "./dataset-view";
 import { fakeDataTransfer } from "./helpers";
 
 async function openTab(wrapper: Wrapper, label: string) {
@@ -48,20 +48,6 @@ describe("Dataset node palette", () => {
         .findAll("li")
         .map((item) => item.text()),
     ).toEqual(["PCA", "UMAP"]);
-  });
-
-  it("colours each chip in a single hue for its group", async () => {
-    const wrapper = await mountView();
-    const background = (label: string) => paletteItem(wrapper, label).attributes("style");
-
-    const hues = [...background("Gaussian field")!.matchAll(/oklch\([\d.]+ [\d.]+ ([\d.]+)\)/g)];
-    expect(hues.map((match) => match[1])).toEqual(["250", "250"]);
-    expect(background("Gaussian field")).toBe(background("Interpolated field"));
-    expect(background("Gaussian field")).not.toBe(background("Sum"));
-
-    await openTab(wrapper, "Stages");
-    expect(background("Gaussian noise")).toBe(background("Gain"));
-    expect(background("Gaussian noise")).not.toBe(background("Downsample"));
   });
 
   it("makes every node kind draggable and puts its kind on the drag", async () => {

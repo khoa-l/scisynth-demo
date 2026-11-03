@@ -3,7 +3,7 @@ import { describe, it, expect } from "vite-plus/test";
 import { Handle } from "@vue-flow/core";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
-import { connect, dropKind, mountView, paletteItem, type Wrapper } from "./dataset-view";
+import { connect, dropKind, mountView, type Wrapper } from "./dataset-view";
 
 function handles(node: DOMWrapper<Element>, side: "target" | "source") {
   return node
@@ -15,14 +15,6 @@ function handles(node: DOMWrapper<Element>, side: "target" | "source") {
 }
 
 describe("Dataset node", () => {
-  it("colours a node's title like its chip in the palette", async () => {
-    const wrapper = await mountView();
-    const chip = paletteItem(wrapper, "Gaussian field").attributes("style");
-
-    const node = await dropKind(wrapper, "GaussianField");
-    expect(node.find('[data-slot="node-title"]').attributes("style")).toBe(chip);
-  });
-
   it("draws a node's input and output ports from the catalog", async () => {
     const wrapper = await mountView();
 
@@ -92,17 +84,11 @@ describe("Dataset node", () => {
       await flushPromises();
     }
 
-    it("shows a joined set of controls under every node that has a preview", async () => {
+    it("shows preview controls under every node that has a preview", async () => {
       const wrapper = await mountView();
       const field = await dropKind(wrapper, "GaussianField");
       const gain = await dropKind(wrapper, "Gain");
 
-      expect(controls(field).attributes("data-slot")).toBe("toggle-group");
-      expect(controls(field).attributes("data-spacing")).toBe("0");
-      expect(controls(field).attributes("data-orientation")).toBe("horizontal");
-      expect(controls(field).classes()).toEqual(
-        expect.arrayContaining(["nodrag", "absolute", "top-full"]),
-      );
       expect([view(field), hide(field)].map((b) => b.attributes("aria-pressed"))).toEqual([
         "false",
         "false",

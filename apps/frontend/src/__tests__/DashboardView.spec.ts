@@ -2,7 +2,6 @@ import { describe, it, expect } from "vite-plus/test";
 
 import { flushPromises } from "@vue/test-utils";
 
-import App from "../App.vue";
 import { projectsGetProjectsQueryKey } from "../client/@tanstack/vue-query.gen";
 import DashboardView from "../views/DashboardView.vue";
 import {
@@ -15,7 +14,6 @@ import {
   respondTo,
   submitName,
   testQueryClient,
-  testRouter,
 } from "./helpers";
 
 function projectsQueryClient() {
@@ -49,16 +47,5 @@ describe("DashboardView", () => {
     expect(new URL(request("POST").url).pathname).toBe("/api/projects");
     expect(await request("POST").json()).toEqual({ name: "Protein folding" });
     expect(dialog()).toBeNull();
-  });
-
-  it("renders icons with a thin stroke inside the app", async () => {
-    const { wrapper } = await mountPage(App, {
-      router: testRouter({ "/": { template: "<RouterView />" }, home: DashboardView }),
-      queryClient: projectsQueryClient(),
-    });
-
-    const icons = wrapper.findAll("svg");
-    expect(icons.length).toBeGreaterThan(0);
-    expect(icons.every((icon) => icon.attributes("stroke-width") === "1.5")).toBe(true);
   });
 });

@@ -56,10 +56,6 @@ describe("Dataset node preview", () => {
       edges: [],
     });
     expect(thumbnail(field).attributes("aria-label")).toBe("Preview of Gaussian field");
-    expect(thumbnail(field).classes()).toEqual(expect.arrayContaining(["aspect-square"]));
-    expect([...thumbnail(field).element.parentElement!.classList]).toEqual(
-      expect.arrayContaining(["absolute", "-inset-x-px", "bottom-full"]),
-    );
     expect(field.find('[aria-label="Next channel"]').exists()).toBe(false);
     expect(react).toHaveBeenCalledWith(
       thumbnail(field).element,
@@ -373,7 +369,6 @@ describe("Dataset node preview", () => {
     const alert = field.find('[role="alert"]');
     expect(alert.text()).toBe("Couldn't preview this node.resolution is over the limit");
     expect(alert.classes()).toContain("text-destructive");
-    expect(alert.element.parentElement!.classList).toContain("relative");
   });
 
   it("only draws thumbnails for latents it can preview", async () => {

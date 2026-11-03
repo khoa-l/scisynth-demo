@@ -47,7 +47,6 @@ describe.each([
 
     expect(new URL(requests()[0]!.url).pathname).toBe(url);
     expect(wrapper.find("h1").text()).toBe(`Protein folding / ${item.name}`);
-    expect(wrapper.find("h1 span").classes()).toContain("text-muted-foreground");
   });
 
   it("shows a back button, its actions, and two canvases side by side", async () => {

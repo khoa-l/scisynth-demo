@@ -11,7 +11,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import type { FunctionalComponent } from "vue";
 
 import type { SurveyBlock } from "../lib/survey-blocks";
-import { PROJECT_ID, SURVEY, request } from "./helpers";
+import { SURVEY, request } from "./helpers";
 import { goodbye, hello, mountView, preview, saveLikeTheServer } from "./survey-view";
 
 const sortableLists = vi.hoisted(() => new Map<string, unknown>());
@@ -194,25 +194,6 @@ describe("Survey builder", () => {
           .findAll("p")
           .map((p) => p.text()),
       ).toEqual(["Goodbye", "Hello"]);
-    });
-
-    it("saves the text of a block when it is edited", async () => {
-      const wrapper = await mountView({ ...SURVEY, content: { blocks: [hello] } });
-      saveLikeTheServer();
-
-      const textarea = wrapper.find('[aria-label="Survey builder"] textarea');
-      expect((textarea.element as HTMLTextAreaElement).value).toBe("Hello");
-      await textarea.setValue("Read the passage below.");
-      await textarea.trigger("change");
-      await flushPromises();
-
-      expect(new URL(request("PATCH").url).pathname).toBe(
-        `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`,
-      );
-      expect(await request("PATCH").json()).toEqual({
-        content: { blocks: [{ ...hello, text: "Read the passage below." }] },
-      });
-      expect((textarea.element as HTMLTextAreaElement).value).toBe("Read the passage below.");
     });
   });
 

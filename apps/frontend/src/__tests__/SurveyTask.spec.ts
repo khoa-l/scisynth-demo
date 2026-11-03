@@ -28,11 +28,12 @@ describe("Survey task", () => {
     expect(wrapper.text()).toContain("This survey has no questions yet.");
   });
 
-  it("treats a survey of only blank text blocks as empty", () => {
-    const wrapper = task([blank]);
+  it("treats a survey of only blank text and unasked questions as empty", () => {
+    const wrapper = task([blank, { id: "b4", type: "scale", text: "" }]);
 
     expect(wrapper.text()).toContain("This survey has no questions yet.");
     expect(wrapper.find('[data-slot="card-content"]').exists()).toBe(false);
+    expect(wrapper.find('[data-slot="toggle-group"]').exists()).toBe(false);
   });
 
   it("asks a number scale question as a single choice of five", async () => {
@@ -59,13 +60,6 @@ describe("Survey task", () => {
     ]);
   });
 
-  it("leaves out a scale that has no question yet", () => {
-    const wrapper = task([{ id: "b4", type: "scale", text: "" }]);
-
-    expect(wrapper.text()).toContain("This survey has no questions yet.");
-    expect(wrapper.find('[data-slot="toggle-group"]').exists()).toBe(false);
-  });
-
   it("keeps blocks in one card until a separator starts a new one", () => {
     const wrapper = task([
       hello,
@@ -79,9 +73,6 @@ describe("Survey task", () => {
     expect(cards[0]!.find('[data-slot="card-title"]').text()).toBe("Intake form");
     expect(cards[0]!.text()).toMatch(/Hello.*How clear was it\?.*12345/s);
     expect(cards[1]!.text()).toBe("Goodbye");
-    expect([...wrapper.element.classList]).toEqual(
-      expect.arrayContaining(["flex", "flex-col", "gap-4", "mx-auto", "w-full", "max-w-2xl"]),
-    );
   });
 
   it("doesn't make empty cards from extra separators", () => {

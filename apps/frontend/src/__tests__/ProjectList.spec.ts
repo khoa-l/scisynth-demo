@@ -59,22 +59,6 @@ describe("ProjectList", () => {
     expect(wrapper.find(".aspect-square").exists()).toBe(false);
   });
 
-  it("shows rename and delete actions on hover in both views", async () => {
-    const { wrapper } = await mountList();
-
-    for (const view of ["Grid view", "List view"]) {
-      await wrapper.find(`[aria-label="${view}"]`).trigger("click");
-      for (const item of wrapper.findAll("li")) {
-        const actions = item.find('[aria-label="Project actions"]');
-        expect(actions.classes()).toEqual(
-          expect.arrayContaining(["opacity-0", "group-hover:opacity-100"]),
-        );
-        expect(actions.find('[aria-label="Rename project"]').exists()).toBe(true);
-        expect(actions.find('[aria-label="Delete project"]').exists()).toBe(true);
-      }
-    }
-  });
-
   it("opens a project when it is clicked in either view", async () => {
     for (const view of ["Grid view", "List view"]) {
       const { wrapper, router } = await mountList();

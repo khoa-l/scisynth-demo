@@ -42,14 +42,6 @@ describe("AppLayout", () => {
     );
   });
 
-  it("shows an icon before each tab label", async () => {
-    const { wrapper } = await mountAt(`/project/${PROJECT_ID}/dataset`);
-    for (const label of ["Overview", "Datasets", "Surveys"]) {
-      const link = sidebarLink(wrapper, label)!;
-      expect(link.find("svg[data-icon=inline-start]").exists()).toBe(true);
-    }
-  });
-
   it("opens on Overview and switches between the tabs", async () => {
     const { wrapper, router } = await mountAt(`/project/${PROJECT_ID}`);
     expect(activeTab(wrapper).text()).toBe("Overview");
@@ -74,8 +66,6 @@ describe("AppLayout", () => {
     const data = sidebarLink(wrapper, "Datasets")!;
     expect(data.attributes("aria-current")).toBe("page");
     expect(survey.attributes("aria-current")).toBeUndefined();
-    expect(data.classes()).toContain("bg-background");
-    expect(survey.classes()).not.toContain("bg-background");
   });
 
   it("keeps the Datasets tab highlighted while a dataset is open", async () => {

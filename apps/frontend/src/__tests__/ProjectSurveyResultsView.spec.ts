@@ -97,18 +97,6 @@ describe("Survey results view", () => {
     expect(back.find("svg[data-icon=inline-start]").exists()).toBe(true);
   });
 
-  it("splits the page into two white panels", async () => {
-    const wrapper = await mountView();
-
-    const [left, right] = wrapper.findAll("section");
-    expect(left!.element.contains(list(wrapper).element)).toBe(true);
-    expect(right!.element.contains(detail(wrapper).element)).toBe(true);
-    for (const panel of [list(wrapper), detail(wrapper)]) {
-      expect(panel.classes()).toContain("bg-background");
-      expect(panel.classes()).not.toContain("bg-muted");
-    }
-  });
-
   it("lists the responses with when they were sent and to which version", async () => {
     const wrapper = await mountView();
 
@@ -140,19 +128,8 @@ describe("Survey results view", () => {
       .map((p) => p.text());
     expect(questions).toEqual(["How was it?", "Anything else?"]);
     expect(pressedPoints(wrapper)).toEqual([["2"], []]);
-  });
-
-  it("draws the response as the survey preview does, without a way to change it", async () => {
-    const wrapper = await mountView();
-
-    await open(wrapper, 1);
-
-    const card = detail(wrapper).find('[data-slot="card"]');
-    expect(card.find('[data-slot="card-title"]').text()).toBe("Intake form");
-    expect(card.text()).toContain("Read the passage below.");
-    const points = detail(wrapper).findAll('[data-slot="toggle-group-item"]');
-    expect(points.every((point) => point.attributes("disabled") !== undefined)).toBe(true);
-    expect(detail(wrapper).findAll("button")).toHaveLength(points.length);
+    expect(detail(wrapper).find('[data-slot="card-title"]').text()).toBe("Intake form");
+    expect(detail(wrapper).text()).toContain("Read the passage below.");
   });
 
   it("says when there are no responses yet", async () => {

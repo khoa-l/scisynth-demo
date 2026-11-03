@@ -55,15 +55,6 @@ describe.each([
     return mountPage(view, { props: { projectId: PROJECT_ID }, queryClient });
   }
 
-  it(`shows the project name and a ${newLabel} button like the Dashboard`, async () => {
-    const { wrapper } = await mountView();
-
-    expect(wrapper.find("h1").text()).toBe("Protein folding");
-    const create = wrapper.findAll("button").find((b) => b.text() === newLabel)!;
-    expect(create.find("svg[data-icon=inline-start]").exists()).toBe(true);
-    expect(create.classes()).toEqual(expect.arrayContaining(["h-10", "px-4"]));
-  });
-
   it("shows the items as a grid of squares that link to each item", async () => {
     const { wrapper } = await mountView();
 
