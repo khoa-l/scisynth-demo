@@ -10,6 +10,8 @@ from pydantic import (
     StringConstraints,
 )
 
+from app.graph import DatasetGraph
+
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
 
 
@@ -57,6 +59,7 @@ class DatasetPublic(BaseModel):
     id: str
     name: str
     created_at: datetime
+    content: DatasetGraph
 
 
 class DatasetCreate(BaseModel):
@@ -64,7 +67,8 @@ class DatasetCreate(BaseModel):
 
 
 class DatasetUpdate(BaseModel):
-    name: Name
+    name: Name | None = None
+    content: DatasetGraph | None = None
 
 
 class SurveyPublic(BaseModel):

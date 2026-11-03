@@ -5,6 +5,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import type { Component } from "vue";
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from "vue-router";
 
+import type { DatasetPublic } from "../client";
 import { projectsGetProjectQueryKey } from "../client/@tanstack/vue-query.gen";
 import { routes } from "../router";
 
@@ -16,10 +17,11 @@ export const PROJECT = {
   created_at: "2026-11-02T00:00:00Z",
 };
 
-export const DATASET = {
+export const DATASET: DatasetPublic = {
   id: "Eq-OvCTLPC6Urz_TXE8eJ",
   name: "Raw reads",
   created_at: "2026-11-02T00:00:00Z",
+  content: { version: 1, nodes: [], edges: [] },
 };
 
 export const SURVEY = {

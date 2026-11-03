@@ -32,6 +32,13 @@ class Project(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+def json_column() -> Any:
+    return Field(
+        default_factory=dict,
+        sa_column=Column(JSON, nullable=False, server_default=text("'{}'")),
+    )
+
+
 class Dataset(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True, max_length=ID_LENGTH)
     name: str = Field(max_length=200)
@@ -39,13 +46,7 @@ class Dataset(SQLModel, table=True):
         foreign_key="project.id", index=True, ondelete="CASCADE", max_length=ID_LENGTH
     )
     created_at: datetime = Field(default_factory=utcnow)
-
-
-def json_column() -> Any:
-    return Field(
-        default_factory=dict,
-        sa_column=Column(JSON, nullable=False, server_default=text("'{}'")),
-    )
+    content: dict[str, Any] = json_column()
 
 
 class Survey(SQLModel, table=True):

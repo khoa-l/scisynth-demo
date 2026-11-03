@@ -63,7 +63,10 @@ def update_dataset(
     db: SessionDep,
 ) -> DatasetPublic:
     dataset = get_owned_dataset(project_id, dataset_id, user, db)
-    dataset.name = body.name
+    if body.name is not None:
+        dataset.name = body.name
+    if body.content is not None:
+        dataset.content = body.content.model_dump()
     db.add(dataset)
     db.commit()
     db.refresh(dataset)
