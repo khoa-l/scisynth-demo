@@ -166,6 +166,25 @@ describe("Dataset node thumbnail", () => {
     ]);
   });
 
+  it("offers the channel arrows on a sampler of a Multichannel", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse({ ...PREVIEW, channels: [CHANNEL, SECOND_CHANNEL] }));
+    const channels = await dropKind(wrapper, "Multichannel");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), channels, "channels");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), channels, "channels");
+    const sampler = await dropKind(wrapper, "GridSampler");
+
+    await connect(wrapper, channels, sampler, "latent");
+    await flushPromises();
+    await sampler.find('[aria-label="Next channel"]').trigger("click");
+    await flushPromises();
+
+    expect(sampler.find('[aria-live="polite"]').text()).toBe("Channel 2");
+    const [element, [trace]] = react.mock.lastCall!;
+    expect(element).toBe(thumbnail(sampler).element);
+    expect((trace as PlotData).z).toEqual(SECOND_CHANNEL);
+  });
+
   it("draws a point sampler's preview as a coloured scatter", async () => {
     const wrapper = await mountView();
     const points = { ...AXIS, bdata: "AAAAAAAAAD8AAIA/", shape: "3" };

@@ -1,7 +1,18 @@
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.previews import NODES, decode, field, grid, preview, sampled, sampler
+from tests.previews import (
+    NODES,
+    composite,
+    decode,
+    field,
+    grid,
+    link,
+    preview,
+    sampled,
+    sampler,
+)
 
 
 def test_previews_a_grid_sampler_at_its_shape(signed_in: TestClient) -> None:
@@ -53,3 +64,19 @@ def test_rejects_samplers_it_cannot_preview(
 
     assert response.status_code == 422
     assert message in response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    ("kind", "params"), [("GridSampler", {"shape": 16}), ("PointSampler", {"n": 100})]
+)
+def test_samples_every_channel_of_a_multichannel(
+    signed_in: TestClient, kind: str, params: dict
+) -> None:
+    nodes = [field("a", seed=1), field("b", seed=2), composite("field", "Multichannel")]
+    nodes += [sampler("s", kind, **params)]
+    edges = [link("a", "field", "channels"), link("b", "field", "channels")]
+
+    result = preview(signed_in, "s", nodes, [*edges, sampled("s")])
+
+    assert len(result["channels"]) == 2
+    assert not np.array_equal(grid(result, 0), grid(result, 1))
