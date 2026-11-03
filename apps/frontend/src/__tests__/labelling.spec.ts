@@ -2,12 +2,12 @@ import { describe, it, expect } from "vite-plus/test";
 
 import type { NodePreview, TypedArray } from "../client";
 import {
-  addLabel,
   brushed,
   eraseLabels,
   lassoed,
   locations,
   nearest,
+  setLabel,
   type PlacedLocation,
 } from "../lib/labelling";
 
@@ -70,10 +70,11 @@ describe("Labelling", () => {
     expect(lassoed(row, outline)).toEqual([1, 2]);
   });
 
-  it("adds a label to points, keeping their other labels", () => {
-    const labelled = addLabel({ defect: [4, 1] }, "clean", [4]);
+  it("labels points, replacing any label they had", () => {
+    const labelled = setLabel({ defect: [4, 1] }, "clean", [4]);
+    expect(labelled).toEqual({ defect: [1], clean: [4] });
 
-    expect(addLabel(labelled, "defect", [2, 4])).toEqual({ defect: [1, 2, 4], clean: [4] });
+    expect(setLabel(labelled, "defect", [2, 4])).toEqual({ defect: [1, 2, 4] });
   });
 
   it("erases every label from points, dropping labels left empty", () => {

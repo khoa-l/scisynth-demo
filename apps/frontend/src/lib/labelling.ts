@@ -94,13 +94,14 @@ export function lassoed(points: PlacedLocation[], outline: Pixel[]): number[] {
   return points.filter((point) => isInside(point.at, outline)).map((point) => point.index);
 }
 
-export function addLabel(
+export function setLabel(
   labelled: LabelledPoints,
   labelId: string,
   indices: number[],
 ): LabelledPoints {
-  const merged = new Set([...(labelled[labelId] ?? []), ...indices]);
-  return { ...labelled, [labelId]: [...merged].sort((a, b) => a - b) };
+  const others = eraseLabels(labelled, indices);
+  const merged = new Set([...(others[labelId] ?? []), ...indices]);
+  return { ...others, [labelId]: [...merged].sort((a, b) => a - b) };
 }
 
 export function eraseLabels(labelled: LabelledPoints, indices: number[]): LabelledPoints {

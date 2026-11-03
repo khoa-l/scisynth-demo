@@ -71,7 +71,7 @@ def test_publishing_rejects_an_unfinished_labelling_block(
     assert message in response.json()["detail"]
 
 
-def test_accepts_points_with_several_labels_and_tidies_them(
+def test_accepts_labelled_points_and_tidies_them(
     client: TestClient, project_url: str, source: dict
 ) -> None:
     survey_url = create_survey(client, project_url, labelling(source), SCALE)
@@ -80,12 +80,12 @@ def test_accepts_points_with_several_labels_and_tidies_them(
     response = submit(
         client,
         version_url,
-        {"l1": {"defect": [5, 3, 3, 0], "clean": [3, 255]}, "q1": 4},
+        {"l1": {"defect": [5, 3, 3, 0], "clean": [4, 255]}, "q1": 4},
     )
 
     assert response.status_code == 201, response.json()
     [stored] = client.get(f"{survey_url}/responses").json()
-    assert stored["data"] == {"l1": {"defect": [0, 3, 5], "clean": [3, 255]}, "q1": 4}
+    assert stored["data"] == {"l1": {"defect": [0, 3, 5], "clean": [4, 255]}, "q1": 4}
 
 
 def test_leaves_out_a_labelling_answer_with_nothing_labelled(
@@ -105,6 +105,10 @@ def test_leaves_out_a_labelling_answer_with_nothing_labelled(
     [
         ({"l1": {"wrong": [0]}}, "wrong isn't a label of l1"),
         ({"l1": {"defect": [256]}}, "l1 labels points that aren't on its chart"),
+        (
+            {"l1": {"defect": [1, 2], "clean": [2]}},
+            "l1 gives a point more than one label",
+        ),
         ({"l1": {"defect": [-1]}}, "greater than or equal to 0"),
         ({"l1": {"defect": [True]}}, "valid integer"),
         ({"l1": 3}, "l1 is answered by labelling points"),

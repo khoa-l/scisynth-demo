@@ -148,7 +148,6 @@ describe("Chart blocks", () => {
 
     it("shows a chart with its data or blanked out", async () => {
       const wrapper = await mountBuilder(chart());
-
       const blank = row(wrapper)
         .findAll("button")
         .find((button) => button.text() === "Blank")!;

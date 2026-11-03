@@ -28,12 +28,16 @@ def check_labels(
     points = labellable(chart.preview)
     label_ids = {label.id for label in block.labels}
     checked = {}
+    seen: set[int] = set()
     for label_id, indices in answer.items():
         if label_id not in label_ids:
             raise ValueError(f"{label_id} isn't a label of {block.id}")
         unique = sorted(set(indices))
         if unique and (unique[-1] >= len(points) or not points[unique].all()):
             raise ValueError(f"{block.id} labels points that aren't on its chart")
+        if seen.intersection(unique):
+            raise ValueError(f"{block.id} gives a point more than one label")
+        seen.update(unique)
         if unique:
             checked[label_id] = unique
     return checked

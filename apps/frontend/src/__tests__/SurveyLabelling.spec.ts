@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vite-plus/test";
+import { describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient } from "@tanstack/vue-query";
 import { flushPromises, type DOMWrapper, type VueWrapper } from "@vue/test-utils";
+import Plotly from "plotly.js-cartesian-dist-min";
 
 import type { LabelBlock } from "../lib/survey-blocks";
 import ProjectSurveyResultsView from "../views/ProjectSurveyResultsView.vue";
@@ -41,12 +42,26 @@ function answerWith(block: LabelBlock) {
   });
 }
 
-function placeOnScreen(wrapper: VueWrapper) {
+function placeOnScreen(wrapper: VueWrapper, scale = 100) {
   const plot = wrapper.find('[role="img"]').element as HTMLElement & { _fullLayout?: object };
   plot._fullLayout = {
-    xaxis: { _offset: 0, l2p: (value: number) => value * 100 },
-    yaxis: { _offset: 0, l2p: (value: number) => 100 - value * 100 },
+    xaxis: { _offset: 0, l2p: (value: number) => value * scale },
+    yaxis: { _offset: 0, l2p: (value: number) => 100 - value * scale },
   };
+}
+
+function recordDrawing() {
+  const fillRect = vi.fn();
+  const context = {
+    scale: vi.fn(),
+    fillRect,
+    setLineDash: vi.fn(),
+    beginPath: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context as never);
+  return fillRect;
 }
 
 async function mountSurvey(block: LabelBlock = BLOCK) {
@@ -80,6 +95,10 @@ async function choose(wrapper: VueWrapper, name: string) {
   await button.trigger("click");
 }
 
+async function pickLabel(wrapper: VueWrapper, id: string) {
+  await wrapper.find('select[aria-label="Label"]').setValue(id);
+}
+
 async function submitted(wrapper: VueWrapper) {
   await choose(wrapper, "Submit");
   await flushPromises();
@@ -87,22 +106,41 @@ async function submitted(wrapper: VueWrapper) {
 }
 
 describe("Labelling a chart", () => {
-  it("asks the question above the chart, with the labels, an eraser and the tools", async () => {
+  it("asks the question above the chart, with a dropdown of labels, an eraser and the tools", async () => {
     const wrapper = await mountSurvey();
 
     expect(wrapper.find("figure p").text()).toBe("Paint the defects");
-    const labels = wrapper.find('[aria-label="Labels"]').findAll("button");
-    expect(labels.map((label) => label.text())).toEqual(["Defect", "Clean", "Eraser"]);
-    expect(labels[0]!.attributes("aria-pressed")).toBe("true");
+    const select = wrapper.find('select[aria-label="Label"]');
+    expect(select.findAll("option").map((option) => option.text())).toEqual(["Defect", "Clean"]);
+    expect((select.element as HTMLSelectElement).value).toBe("defect");
+    const eraser = wrapper.findAll("button").find((button) => button.text() === "Eraser")!;
+    expect(eraser.attributes("aria-pressed")).toBe("false");
     const tools = wrapper.find('[aria-label="Tools"]').findAll("button");
     expect(tools.map((tool) => tool.attributes("aria-label"))).toEqual(["Point", "Lasso", "Brush"]);
     expect(tools[0]!.attributes("aria-pressed")).toBe("true");
+    const navigation = wrapper.find('[aria-label="Navigation"]').findAll("button");
+    expect(navigation.map((button) => button.attributes("aria-label"))).toEqual([
+      "Move",
+      "Zoom",
+      "Reset view",
+    ]);
+  });
+
+  it("names a single label instead of offering a dropdown", async () => {
+    const wrapper = await mountSurvey({ ...BLOCK, labels: [BLOCK.labels[0]!] });
+
+    expect(wrapper.find("select").exists()).toBe(false);
+    expect(wrapper.find("figure").text()).toContain("Defect");
+    await drag(wrapper, [[0, 100]]);
+
+    expect(await submitted(wrapper)).toEqual({ l1: { defect: [0] } });
   });
 
   it("only offers the tools the author chose", async () => {
     const wrapper = await mountSurvey({ ...BLOCK, tools: ["lasso"] });
 
-    expect(wrapper.find('[aria-label="Tools"]').exists()).toBe(false);
+    const tools = wrapper.find('[aria-label="Tools"]').findAll("button");
+    expect(tools.map((tool) => tool.attributes("aria-label"))).toEqual(["Lasso"]);
     await drag(wrapper, [
       [-10, -10],
       [50, -10],
@@ -113,15 +151,15 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({ l1: { defect: [2] } });
   });
 
-  it("labels the point nearest a click, with as many labels as it is given", async () => {
+  it("labels the point nearest a click, replacing any label it had", async () => {
     const wrapper = await mountSurvey();
 
     await drag(wrapper, [[98, 3]]);
-    await choose(wrapper, "Clean");
+    await pickLabel(wrapper, "clean");
     await drag(wrapper, [[97, 2]]);
     await drag(wrapper, [[2, 98]]);
 
-    expect(await submitted(wrapper)).toEqual({ l1: { defect: [3], clean: [0, 3] } });
+    expect(await submitted(wrapper)).toEqual({ l1: { clean: [0, 3] } });
   });
 
   it("labels every point inside a lasso", async () => {
@@ -155,13 +193,25 @@ describe("Labelling a chart", () => {
     const wrapper = await mountSurvey();
     await drag(wrapper, [[0, 100]]);
     await drag(wrapper, [[100, 100]]);
-    await choose(wrapper, "Clean");
+    await pickLabel(wrapper, "clean");
     await drag(wrapper, [[0, 100]]);
 
     await choose(wrapper, "Eraser");
     await drag(wrapper, [[0, 100]]);
 
     expect(await submitted(wrapper)).toEqual({ l1: { defect: [1] } });
+  });
+
+  it("goes back to labelling when a label is picked while erasing", async () => {
+    const wrapper = await mountSurvey();
+    await choose(wrapper, "Eraser");
+
+    await pickLabel(wrapper, "clean");
+    await drag(wrapper, [[0, 100]]);
+
+    const eraser = wrapper.findAll("button").find((button) => button.text() === "Eraser")!;
+    expect(eraser.attributes("aria-pressed")).toBe("false");
+    expect(await submitted(wrapper)).toEqual({ l1: { clean: [0] } });
   });
 
   it("leaves the answer out when nothing is labelled", async () => {
@@ -173,14 +223,114 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({});
   });
 
-  it("shows the owner a response's labels without the tools", async () => {
+  it("hides the labels to show the points underneath, still labelling", async () => {
+    const fillRect = recordDrawing();
+    const wrapper = await mountSurvey();
+
+    await drag(wrapper, [[0, 100]]);
+    expect(fillRect).toHaveBeenLastCalledWith(-50, 50, 100, 100);
+    fillRect.mockClear();
+
+    await choose(wrapper, "Hide labels");
+    await flushPromises();
+    await drag(wrapper, [[100, 100]]);
+
+    const hide = wrapper.findAll("button").find((button) => button.text() === "Hide labels")!;
+    expect(hide.attributes("aria-pressed")).toBe("true");
+    expect(fillRect).not.toHaveBeenCalled();
+    expect(await submitted(wrapper)).toEqual({ l1: { defect: [0, 1] } });
+  });
+
+  it("moves and zooms the chart with plotly instead of labelling", async () => {
+    const relayout = vi.mocked(Plotly.relayout);
+    const wrapper = await mountSurvey();
+    const plot = wrapper.find('[role="img"]').element;
+    const [, , layout, config] = vi.mocked(Plotly.react).mock.lastCall!;
+    expect(layout).toMatchObject({ uirevision: "navigable" });
+    expect(config).toMatchObject({ scrollZoom: true, displayModeBar: false });
+
+    await choose(wrapper, "Move");
+    await flushPromises();
+    expect(relayout).toHaveBeenLastCalledWith(plot, { dragmode: "pan" });
+    expect(wrapper.find("canvas").classes()).toContain("pointer-events-none");
+    await drag(wrapper, [[0, 100]]);
+
+    await choose(wrapper, "Zoom");
+    await flushPromises();
+    expect(relayout).toHaveBeenLastCalledWith(plot, { dragmode: "zoom" });
+
+    await choose(wrapper, "Reset view");
+    await flushPromises();
+    expect(relayout).toHaveBeenLastCalledWith(plot, {
+      "xaxis.autorange": true,
+      "yaxis.autorange": true,
+    });
+
+    await choose(wrapper, "Point");
+    await flushPromises();
+    expect(relayout).toHaveBeenLastCalledWith(plot, { dragmode: false });
+    expect(await submitted(wrapper)).toEqual({});
+  });
+
+  it("goes back to the last labelling tool when the eraser is picked while moving", async () => {
+    const relayout = vi.mocked(Plotly.relayout);
+    const wrapper = await mountSurvey();
+    const pressed = (label: string) =>
+      wrapper.find(`[aria-label="${label}"]`).attributes("aria-pressed");
+    await drag(wrapper, [[0, 100]]);
+    await choose(wrapper, "Lasso");
+
+    await choose(wrapper, "Move");
+    await choose(wrapper, "Eraser");
+    await flushPromises();
+
+    expect([pressed("Move"), pressed("Lasso")]).toEqual(["false", "true"]);
+    expect(relayout).toHaveBeenLastCalledWith(wrapper.find('[role="img"]').element, {
+      dragmode: false,
+    });
+
+    await choose(wrapper, "Zoom");
+    const eraser = wrapper.findAll("button").find((button) => button.text() === "Eraser")!;
+    expect(eraser.attributes("aria-pressed")).toBe("false");
+
+    await choose(wrapper, "Eraser");
+    await drag(wrapper, [
+      [-10, 90],
+      [10, 90],
+      [10, 110],
+      [-10, 110],
+    ]);
+    expect(await submitted(wrapper)).toEqual({});
+  });
+
+  it("draws the labels again where the chart has moved to", async () => {
+    const listeners = new Map<string, () => void>();
+    vi.mocked(Plotly.react).mockImplementationOnce(async (element) => {
+      Object.assign(element as object, {
+        on: (event: string, listener: () => void) => listeners.set(event, listener),
+      });
+      return element as never;
+    });
+    const fillRect = recordDrawing();
+    const wrapper = await mountSurvey();
+    await drag(wrapper, [[0, 100]]);
+    fillRect.mockClear();
+
+    placeOnScreen(wrapper, 50);
+    listeners.get("plotly_relayout")!();
+
+    expect(fillRect).toHaveBeenLastCalledWith(-25, 75, 50, 50);
+    expect(listeners.has("plotly_relayouting")).toBe(true);
+  });
+
+  it("shows the owner a response's labels, to move around but not change", async () => {
     const SURVEY_URL = `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`;
     const version = { id: VERSION_ID, number: 1, content: { blocks: [BLOCK] }, published_at: "" };
     const response = {
       id: "r1",
       version: 1,
       submitted_at: "2026-11-02T10:00:00Z",
-      data: { l1: { defect: [0, 3], clean: [3] } },
+      data: { l1: { defect: [0], clean: [3] } },
     };
     fetchMock.mockImplementation(async (input) => {
       const { pathname } = new URL((input as Request).url);
@@ -198,8 +348,11 @@ describe("Labelling a chart", () => {
 
     const shown = wrapper.find('[aria-label="Response"]');
     const legend = shown.find('ul[aria-label="Labels"]');
-    expect(legend.findAll("li").map((item) => item.text())).toEqual(["Defect 2", "Clean 1"]);
+    expect(legend.findAll("li").map((item) => item.text())).toEqual(["Defect 1", "Clean 1"]);
     expect(shown.find('[aria-label="Tools"]').exists()).toBe(false);
+    const move = shown.find('[aria-label="Navigation"] [aria-label="Move"]');
+    expect(move.attributes("aria-pressed")).toBe("true");
+    expect(shown.findAll("button").some((button) => button.text() === "Hide labels")).toBe(true);
     expect(shown.find("canvas").classes()).toContain("pointer-events-none");
   });
 });

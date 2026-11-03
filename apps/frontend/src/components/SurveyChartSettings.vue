@@ -74,23 +74,37 @@ function setAppearance(value: unknown) {
 <template>
   <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
     <Label :for="`${uid}-data`" class="text-muted-foreground">Data</Label>
-    <NativeSelect
-      :id="`${uid}-data`"
-      :model-value="chosen"
-      class="w-full"
-      @update:model-value="choose(String($event))"
-    >
-      <NativeSelectOption value="" disabled>Choose a node from a dataset…</NativeSelectOption>
-      <NativeSelectOptGroup v-for="dataset in datasets" :key="dataset.id" :label="dataset.name">
-        <NativeSelectOption
-          v-for="option in nodeOptions(dataset)"
-          :key="option.value"
-          :value="option.value"
-        >
-          {{ option.label }}
-        </NativeSelectOption>
-      </NativeSelectOptGroup>
-    </NativeSelect>
+    <div class="flex items-center gap-2">
+      <NativeSelect
+        :id="`${uid}-data`"
+        :model-value="chosen"
+        class="w-full min-w-0 flex-1"
+        @update:model-value="choose(String($event))"
+      >
+        <NativeSelectOption value="" disabled>Choose a node from a dataset…</NativeSelectOption>
+        <NativeSelectOptGroup v-for="dataset in datasets" :key="dataset.id" :label="dataset.name">
+          <NativeSelectOption
+            v-for="option in nodeOptions(dataset)"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </NativeSelectOption>
+        </NativeSelectOptGroup>
+      </NativeSelect>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        orientation="horizontal"
+        aria-label="Show as"
+        class="shrink-0"
+        :model-value="block.appearance"
+        @update:model-value="setAppearance"
+      >
+        <ToggleGroupItem value="shown">Data</ToggleGroupItem>
+        <ToggleGroupItem value="blank">Blank</ToggleGroupItem>
+      </ToggleGroup>
+    </div>
     <template v-if="block.source && channelCount > 1">
       <span :id="`${uid}-channels`" class="text-sm text-muted-foreground">Channels</span>
       <ToggleGroup
@@ -111,17 +125,5 @@ function setAppearance(value: unknown) {
         </ToggleGroupItem>
       </ToggleGroup>
     </template>
-    <span :id="`${uid}-appearance`" class="text-sm text-muted-foreground">Show as</span>
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      orientation="horizontal"
-      :aria-labelledby="`${uid}-appearance`"
-      :model-value="block.appearance"
-      @update:model-value="setAppearance"
-    >
-      <ToggleGroupItem value="shown">Data</ToggleGroupItem>
-      <ToggleGroupItem value="blank">Blank</ToggleGroupItem>
-    </ToggleGroup>
   </div>
 </template>

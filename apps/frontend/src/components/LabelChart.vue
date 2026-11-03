@@ -1,19 +1,32 @@
 <script setup lang="ts">
-import { Brush, Eraser, Lasso, MousePointerClick } from "@lucide/vue";
+import {
+  Brush,
+  Eraser,
+  EyeOff,
+  Lasso,
+  MousePointerClick,
+  Move,
+  RotateCcw,
+  ZoomIn,
+} from "@lucide/vue";
 import { useResizeObserver } from "@vueuse/core";
 import { computed, ref, shallowRef, useTemplateRef, watch } from "vue";
 
 import type { NodePreview } from "@/client";
 import PreviewPlot from "@/components/PreviewPlot.vue";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-  addLabel,
   brushed,
   decode,
   eraseLabels,
   lassoed,
   locations,
   nearest,
+  setLabel,
   type Pixel,
   type PlacedLocation,
 } from "@/lib/labelling";
@@ -23,35 +36,62 @@ const props = defineProps<{ preview: NodePreview; block: LabelBlock; disabled?: 
 
 const labelled = defineModel<LabelledPoints>({ default: () => ({}) });
 
-const ERASER = "eraser";
 const POINT_RADIUS = 16;
 const BRUSH_RADIUS = 12;
 const MARK_RADIUS = 4;
 
-const tools = { point: MousePointerClick, lasso: Lasso, brush: Brush };
-const toolNames: Record<LabelTool, string> = { point: "Point", lasso: "Lasso", brush: "Brush" };
+type Navigation = "pan" | "zoom";
+type Tool = LabelTool | Navigation;
+
+const toolIcons = {
+  point: MousePointerClick,
+  lasso: Lasso,
+  brush: Brush,
+  pan: Move,
+  zoom: ZoomIn,
+};
+const toolNames: Record<Tool, string> = {
+  point: "Point",
+  lasso: "Lasso",
+  brush: "Brush",
+  pan: "Move",
+  zoom: "Zoom",
+};
 
 interface PlotAxis {
   _offset: number;
   l2p: (value: number) => number;
 }
 
-type PlotElement = HTMLDivElement & { _fullLayout?: { xaxis: PlotAxis; yaxis: PlotAxis } };
+type PlotElement = HTMLDivElement & {
+  _fullLayout?: { xaxis: PlotAxis; yaxis: PlotAxis };
+  on?: (event: string, listener: () => void) => void;
+};
 
 const plot = shallowRef<PlotElement | null>(null);
 const canvas = useTemplateRef<HTMLCanvasElement>("canvas");
+const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
 const stroke = ref<Pixel[]>([]);
 
-const chosenLabel = ref(props.block.labels[0]?.id ?? ERASER);
-const chosenTool = ref<LabelTool>("point");
-const label = computed(() =>
-  chosenLabel.value === ERASER || props.block.labels.some((l) => l.id === chosenLabel.value)
-    ? chosenLabel.value
-    : (props.block.labels[0]?.id ?? ERASER),
+const NAVIGATION = ["pan", "zoom"] as const;
+
+const paintTools = computed<LabelTool[]>(() => (props.disabled ? [] : props.block.tools));
+const chosenLabel = ref(props.block.labels[0]?.id);
+const chosenPaintTool = ref(props.block.tools[0]);
+const navigation = ref<Navigation | null>(props.disabled ? "pan" : null);
+const erasing = ref(false);
+const labelsHidden = ref(false);
+
+const label = computed(
+  () =>
+    props.block.labels.find((surveyLabel) => surveyLabel.id === chosenLabel.value) ??
+    props.block.labels[0],
 );
-const tool = computed(() =>
-  props.block.tools.includes(chosenTool.value) ? chosenTool.value : props.block.tools[0],
+const paintTool = computed(
+  () => paintTools.value.find((name) => name === chosenPaintTool.value) ?? paintTools.value[0],
 );
+const tool = computed<Tool | undefined>(() => navigation.value ?? paintTool.value);
+const navigating = computed(() => navigation.value !== null);
 const spots = computed(() => locations(props.preview));
 
 function placed(): PlacedLocation[] {
@@ -71,20 +111,44 @@ function cellSize(): number {
   return Math.abs(xaxis.l2p(second) - xaxis.l2p(first));
 }
 
-function chooseLabel(value: unknown) {
-  if (typeof value === "string") chosenLabel.value = value;
+function chooseLabel(id: string) {
+  chosenLabel.value = id;
+  erasing.value = false;
 }
 
-function chooseTool(value: unknown) {
-  if (value === "point" || value === "lasso" || value === "brush") chosenTool.value = value;
+function choosePaintTool(value: unknown) {
+  const chosen = paintTools.value.find((name) => name === value);
+  if (!chosen) return;
+  chosenPaintTool.value = chosen;
+  navigation.value = null;
+}
+
+function navigate(mode: Navigation) {
+  navigation.value = mode;
+  erasing.value = false;
+}
+
+function setErasing(on: boolean) {
+  erasing.value = on;
+  if (on) navigation.value = null;
+}
+
+async function setDragMode() {
+  const element = plot.value;
+  if (!element) return;
+  await (await plotly).relayout(element, { dragmode: navigation.value ?? false });
+}
+
+async function resetView() {
+  const element = plot.value;
+  if (!element) return;
+  await (await plotly).relayout(element, { "xaxis.autorange": true, "yaxis.autorange": true });
 }
 
 function apply(indices: number[]) {
   if (!indices.length) return;
-  labelled.value =
-    label.value === ERASER
-      ? eraseLabels(labelled.value, indices)
-      : addLabel(labelled.value, label.value, indices);
+  if (erasing.value) labelled.value = eraseLabels(labelled.value, indices);
+  else if (label.value) labelled.value = setLabel(labelled.value, label.value.id, indices);
 }
 
 function pixel(event: PointerEvent): Pixel {
@@ -93,6 +157,7 @@ function pixel(event: PointerEvent): Pixel {
 }
 
 function start(event: PointerEvent) {
+  if (props.disabled || navigating.value) return;
   const at = pixel(event);
   stroke.value = [at];
   if (tool.value === "point") apply(nearest(placed(), at, POINT_RADIUS));
@@ -122,25 +187,24 @@ function draw() {
   element.width = width * window.devicePixelRatio;
   element.height = height * window.devicePixelRatio;
   context.scale(window.devicePixelRatio, window.devicePixelRatio);
-  const positions = new Map(placed().map((point) => [point.index, point.at]));
-  const cell = props.preview.layout === "grid" ? cellSize() : 0;
-  const count = props.block.labels.length;
-  props.block.labels.forEach((surveyLabel, order) => {
-    const share = (count - order) / count;
-    context.fillStyle = surveyLabel.color;
-    for (const index of labelled.value[surveyLabel.id] ?? []) {
-      const at = positions.get(index);
-      if (!at) continue;
-      if (cell) {
-        const side = cell * share;
-        context.fillRect(at.x - side / 2, at.y - side / 2, side, side);
-      } else {
-        context.beginPath();
-        context.arc(at.x, at.y, MARK_RADIUS * share, 0, 2 * Math.PI);
-        context.fill();
+  if (!labelsHidden.value) {
+    const positions = new Map(placed().map((point) => [point.index, point.at]));
+    const cell = props.preview.layout === "grid" ? cellSize() : 0;
+    for (const surveyLabel of props.block.labels) {
+      context.fillStyle = surveyLabel.color;
+      for (const index of labelled.value[surveyLabel.id] ?? []) {
+        const at = positions.get(index);
+        if (!at) continue;
+        if (cell) {
+          context.fillRect(at.x - cell / 2, at.y - cell / 2, cell, cell);
+        } else {
+          context.beginPath();
+          context.arc(at.x, at.y, MARK_RADIUS, 0, 2 * Math.PI);
+          context.fill();
+        }
       }
     }
-  });
+  }
   if (tool.value === "lasso" && stroke.value.length > 1) {
     context.setLineDash([4, 4]);
     context.beginPath();
@@ -149,12 +213,18 @@ function draw() {
   }
 }
 
-function plotted(element: HTMLDivElement) {
-  plot.value = element;
+function plotted(element: PlotElement) {
+  if (plot.value !== element) {
+    plot.value = element;
+    element.on?.("plotly_relayout", draw);
+    element.on?.("plotly_relayouting", draw);
+  }
   draw();
+  void setDragMode();
 }
 
-watch([labelled, () => props.block.labels, stroke], draw, { deep: true });
+watch(navigation, setDragMode);
+watch([labelled, () => props.block.labels, stroke, labelsHidden], draw, { deep: true });
 useResizeObserver(canvas, draw);
 </script>
 
@@ -171,46 +241,73 @@ useResizeObserver(canvas, draw);
         <span class="text-muted-foreground">{{ labelled[surveyLabel.id]?.length ?? 0 }}</span>
       </li>
     </ul>
-    <div v-else class="flex flex-wrap items-center gap-2">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        orientation="horizontal"
-        aria-label="Labels"
-        :model-value="label"
-        @update:model-value="chooseLabel"
-      >
-        <ToggleGroupItem
-          v-for="surveyLabel in block.labels"
-          :key="surveyLabel.id"
-          :value="surveyLabel.id"
+    <div class="flex flex-wrap items-center gap-2">
+      <div v-if="!disabled && label" class="flex items-center gap-2 text-sm">
+        <span class="size-3 shrink-0 rounded-full" :style="{ background: label.color }" />
+        <NativeSelect
+          v-if="block.labels.length > 1"
+          aria-label="Label"
+          :model-value="label.id"
+          @update:model-value="chooseLabel(String($event))"
         >
-          <span class="size-3 rounded-full" :style="{ background: surveyLabel.color }" />
-          {{ surveyLabel.name }}
-        </ToggleGroupItem>
-        <ToggleGroupItem :value="ERASER">
-          <Eraser />
-          Eraser
-        </ToggleGroupItem>
-      </ToggleGroup>
+          <NativeSelectOption
+            v-for="surveyLabel in block.labels"
+            :key="surveyLabel.id"
+            :value="surveyLabel.id"
+          >
+            {{ surveyLabel.name }}
+          </NativeSelectOption>
+        </NativeSelect>
+        <span v-else>{{ label.name }}</span>
+      </div>
+      <Toggle
+        v-if="!disabled"
+        :model-value="erasing"
+        variant="outline"
+        @update:model-value="setErasing"
+      >
+        <Eraser />
+        Eraser
+      </Toggle>
       <ToggleGroup
-        v-if="block.tools.length > 1"
+        v-if="paintTools.length"
         type="single"
         variant="outline"
         orientation="horizontal"
         aria-label="Tools"
-        :model-value="tool"
-        @update:model-value="chooseTool"
+        :model-value="navigating ? undefined : paintTool"
+        @update:model-value="choosePaintTool"
       >
         <ToggleGroupItem
-          v-for="name in block.tools"
+          v-for="name in paintTools"
           :key="name"
           :value="name"
           :aria-label="toolNames[name]"
         >
-          <component :is="tools[name]" />
+          <component :is="toolIcons[name]" />
         </ToggleGroupItem>
       </ToggleGroup>
+      <ButtonGroup aria-label="Navigation">
+        <Button
+          v-for="mode in NAVIGATION"
+          :key="mode"
+          variant="outline"
+          size="icon"
+          :aria-label="toolNames[mode]"
+          :aria-pressed="navigation === mode"
+          class="aria-pressed:bg-muted"
+          @click="navigate(mode)"
+        >
+          <component :is="toolIcons[mode]" />
+        </Button>
+        <Button variant="outline" size="icon" aria-label="Reset view" @click="resetView">
+          <RotateCcw />
+        </Button>
+      </ButtonGroup>
+      <Toggle v-model="labelsHidden" variant="outline" class="ml-auto">
+        <EyeOff />
+        Hide labels
+      </Toggle>
     </div>
     <div class="relative">
       <PreviewPlot
@@ -218,12 +315,13 @@ useResizeObserver(canvas, draw);
         :label="block.text || 'Chart to label'"
         :blank="block.appearance === 'blank'"
         detailed
+        navigable
         @drawn="plotted"
       />
       <canvas
         ref="canvas"
         class="absolute inset-x-0 bottom-0 aspect-square w-full touch-none"
-        :class="disabled ? 'pointer-events-none' : 'cursor-crosshair'"
+        :class="disabled || navigating ? 'pointer-events-none' : 'cursor-crosshair'"
         @pointerdown="start"
         @pointermove="move"
         @pointerup="finish"

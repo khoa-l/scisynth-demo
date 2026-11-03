@@ -11,6 +11,7 @@ const props = defineProps<{
   label: string;
   detailed?: boolean;
   blank?: boolean;
+  navigable?: boolean;
 }>();
 
 const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
@@ -82,12 +83,16 @@ watch(
             y: value.y,
             marker: { color: z, colorscale, size: 3, showscale },
           };
-    const layout = props.detailed
-      ? detailedLayout(value, getComputedStyle(element).fontFamily)
-      : thumbnailLayout;
-    const config: Partial<Config> = props.detailed
-      ? { displaylogo: false, responsive: true }
-      : { staticPlot: true };
+    const layout: Partial<Layout> = {
+      ...(props.detailed
+        ? detailedLayout(value, getComputedStyle(element).fontFamily)
+        : thumbnailLayout),
+      ...(props.navigable && { uirevision: "navigable" }),
+    };
+    const config: Partial<Config> = {
+      ...(props.detailed ? { displaylogo: false, responsive: true } : { staticPlot: true }),
+      ...(props.navigable && { scrollZoom: true, displayModeBar: false }),
+    };
     const Plotly = await plotly;
     await Plotly.react(element, [trace as Data], layout, config);
     emit("drawn", element);
