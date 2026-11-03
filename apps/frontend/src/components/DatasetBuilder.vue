@@ -35,7 +35,8 @@ import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
 const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
-const defaultEdgeOptions = { style: { strokeWidth: 2 } };
+const lineStyle = { strokeWidth: 2 };
+const defaultEdgeOptions = { style: lineStyle };
 
 const queryClient = useQueryClient();
 const { data: catalog } = useQuery(nodeCatalogQuery);
@@ -158,6 +159,7 @@ function onDrop(event: DragEvent) {
     class="bg-muted inset-shadow-sm"
     :node-types="nodeTypes"
     :default-edge-options="defaultEdgeOptions"
+    :connection-line-style="lineStyle"
     :is-valid-connection="isValidConnection"
     @dragover="onDragOver"
     @drop="onDrop"

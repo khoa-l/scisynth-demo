@@ -187,7 +187,7 @@ describe("Dataset view", () => {
     expect(handles(field, "source")).toEqual([["field", "Field"]]);
 
     const sampler = await dropKind(wrapper, "GridSampler");
-    expect(handles(sampler, "target")).toEqual([["latent", "Latent"]]);
+    expect(handles(sampler, "target")).toEqual([["latent", "Latent 0/1"]]);
     expect(handles(sampler, "source")).toEqual([["observation", "Observation"]]);
 
     const projection = await dropKind(wrapper, "Projection");
@@ -265,12 +265,39 @@ describe("Dataset view", () => {
     expect(flow.edges[0]).toMatchObject(connection);
   });
 
-  it("draws connections 2px wide", async () => {
+  it("draws connections, and the line dragged out to make one, 2px wide", async () => {
     const wrapper = await mountView();
+    const flow = wrapper.findComponent(VueFlow);
 
-    expect(wrapper.findComponent(VueFlow).props("defaultEdgeOptions")).toEqual({
-      style: { strokeWidth: 2 },
-    });
+    expect(flow.props("defaultEdgeOptions")).toEqual({ style: { strokeWidth: 2 } });
+    expect(flow.props("connectionLineStyle")).toEqual({ strokeWidth: 2 });
+  });
+
+  it("shows how many connections an input still needs", async () => {
+    const wrapper = await mountView();
+    const sum = await dropKind(wrapper, "Sum");
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GaussianField");
+    const flow = wrapper.findComponent(VueFlow).vm as unknown as {
+      emits: { connect: (connection: Connection) => void };
+    };
+    const shortfall = () => sum.find('[data-slot="port-shortfall"]');
+    const connect = async (field: DOMWrapper<Element>) => {
+      flow.emits.connect({
+        source: field.attributes("data-id")!,
+        sourceHandle: "field",
+        target: sum.attributes("data-id")!,
+        targetHandle: "terms",
+      });
+      await flushPromises();
+    };
+
+    expect(shortfall().text()).toBe("0/2");
+    expect(shortfall().classes()).toContain("text-destructive");
+    await connect(first);
+    expect(shortfall().text()).toBe("1/2");
+    await connect(second);
+    expect(shortfall().exists()).toBe(false);
   });
 
   it("centres a dropped node on the mouse once its size is known", async () => {

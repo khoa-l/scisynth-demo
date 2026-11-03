@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/vue-query";
 
 import { localCatalog } from "./local-catalog";
-import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
+import type { NodeCatalog, NodeKindDef, ParamValues, PortDef } from "./types";
 
 export const NODE_KIND_MIME = "application/x-scisynth-node";
 
@@ -38,4 +38,8 @@ export function canConnect(catalog: NodeCatalog, link: Link): boolean {
   const source = sourceKind.outputs.find((p) => p.id === link.sourcePort);
   const target = targetKind.inputs.find((p) => p.id === link.targetPort);
   return !!source && !!target && source.type === target.type;
+}
+
+export function requiredConnections(port: PortDef): number {
+  return port.min ?? 1;
 }

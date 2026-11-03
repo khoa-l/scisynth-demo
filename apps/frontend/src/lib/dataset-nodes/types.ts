@@ -26,6 +26,7 @@ export interface PortDef {
   label: string;
   type: PortType;
   multiple?: boolean;
+  min?: number;
 }
 
 interface BaseParam {

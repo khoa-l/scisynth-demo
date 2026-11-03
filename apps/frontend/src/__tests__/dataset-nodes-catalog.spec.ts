@@ -7,6 +7,7 @@ import {
   defaultParams,
   findKind,
   nodeCatalogQuery,
+  requiredConnections,
 } from "../lib/dataset-nodes/catalog";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 import { isValidParam } from "../lib/dataset-nodes/params";
@@ -63,5 +64,17 @@ describe("Node catalog", () => {
         targetPort: "terms",
       }),
     ).toBe(true);
+  });
+
+  it("needs one connection on each input, and two terms for Sum and Product", () => {
+    const required = (name: string) =>
+      findKind(localCatalog, name)!.inputs.map((port) => requiredConnections(port));
+
+    expect(required("GridSampler")).toEqual([1]);
+    expect(required("GaussianNoise")).toEqual([1]);
+    expect(required("Projection")).toEqual([1]);
+    expect(required("Multichannel")).toEqual([1]);
+    expect(required("Sum")).toEqual([2]);
+    expect(required("Product")).toEqual([2]);
   });
 });

@@ -3,11 +3,12 @@ import type { IntegerParam, NodeCatalog, NodeKindDef, NumberParam, PortDef } fro
 const field: PortDef = { id: "field", label: "Field", type: "field" };
 const observation: PortDef = { id: "observation", label: "Observation", type: "observation" };
 const latent: PortDef = { id: "latent", label: "Latent", type: "field" };
-const fields = (id: string, label: string): PortDef => ({
+const fields = (id: string, label: string, min?: number): PortDef => ({
   id,
   label,
   type: "field",
   multiple: true,
+  min,
 });
 
 const num = (
@@ -110,7 +111,7 @@ export const localCatalog: NodeCatalog = {
       label: "Sum",
       category: "latent",
       group: "composite",
-      inputs: [fields("terms", "Terms")],
+      inputs: [fields("terms", "Terms", 2)],
       outputs: [field],
       params: {},
     },
@@ -119,7 +120,7 @@ export const localCatalog: NodeCatalog = {
       label: "Product",
       category: "latent",
       group: "composite",
-      inputs: [fields("terms", "Terms")],
+      inputs: [fields("terms", "Terms", 2)],
       outputs: [field],
       params: {},
     },

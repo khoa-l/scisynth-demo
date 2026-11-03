@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useQuery } from "@tanstack/vue-query";
-import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
+import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { computed } from "vue";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
-import { findKind, nodeCatalogQuery, type DatasetNodeData } from "@/lib/dataset-nodes/catalog";
+import {
+  findKind,
+  nodeCatalogQuery,
+  requiredConnections,
+  type DatasetNodeData,
+} from "@/lib/dataset-nodes/catalog";
 import { groupBackground } from "@/lib/dataset-nodes/group-colors";
-import type { ParamValue } from "@/lib/dataset-nodes/types";
+import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
@@ -14,6 +19,11 @@ const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
 const { updateNodeData } = useVueFlow();
+const incoming = useNodeConnections({ handleType: "target" });
+
+function connectionCount(port: PortDef) {
+  return incoming.value.filter((connection) => connection.targetHandle === port.id).length;
+}
 
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
@@ -43,6 +53,13 @@ function setParam(name: string, value: ParamValue) {
           :connectable="port.multiple ? true : 'single'"
         />
         {{ port.label }}
+        <span
+          v-if="connectionCount(port) < requiredConnections(port)"
+          data-slot="port-shortfall"
+          class="text-destructive"
+        >
+          {{ connectionCount(port) }}/{{ requiredConnections(port) }}
+        </span>
       </div>
       <div
         v-for="port in kind.outputs"
