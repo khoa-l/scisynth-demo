@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from "@lucide/vue";
+import { ChevronLeft, ChevronRight, CircleAlert } from "@lucide/vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { refDebounced } from "@vueuse/core";
 import type { Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import { previewsPreviewLatent, type LatentPreviewRequest } from "@/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const props = defineProps<{ label: string; request: LatentPreviewRequest }>();
 
@@ -14,7 +15,7 @@ const request = refDebounced(
   300,
 );
 
-const { data: preview, isError } = useQuery(
+const { data: preview, error } = useQuery(
   computed(() => ({
     queryKey: ["latent-preview", request.value],
     queryFn: async () => {
@@ -34,6 +35,11 @@ const layout: Partial<Layout> = {
   paper_bgcolor: "rgba(0,0,0,0)",
   plot_bgcolor: "rgba(0,0,0,0)",
 };
+
+const errorMessage = computed(() => {
+  const detail = (error.value as { detail?: unknown } | null)?.detail;
+  return typeof detail === "string" ? detail : undefined;
+});
 
 const channel = ref(0);
 const channelCount = computed(() => preview.value?.channels.length ?? 0);
@@ -70,7 +76,12 @@ onBeforeUnmount(async () => {
 </script>
 
 <template>
-  <div v-if="preview && !isError" class="flex flex-col gap-1">
+  <Alert v-if="error" variant="destructive" class="shadow-sm">
+    <CircleAlert />
+    <AlertTitle>Couldn't preview this node.</AlertTitle>
+    <AlertDescription v-if="errorMessage">{{ errorMessage }}</AlertDescription>
+  </Alert>
+  <div v-else-if="preview" class="flex flex-col gap-1">
     <div
       v-if="channelCount > 1"
       class="nodrag flex h-8 overflow-hidden rounded-lg border border-input bg-background text-sm shadow-sm"

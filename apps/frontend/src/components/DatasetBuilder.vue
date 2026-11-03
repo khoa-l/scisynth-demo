@@ -171,7 +171,7 @@ function onDrop(event: DragEvent) {
     @drop="onDrop"
   >
     <Background variant="lines" color="#dcdcdc" />
-    <Panel v-if="saveFailed" position="top-center">
+    <Panel v-if="saveFailed" position="top-center" class="w-max">
       <SaveFailedAlert @retry="save" />
     </Panel>
   </VueFlow>

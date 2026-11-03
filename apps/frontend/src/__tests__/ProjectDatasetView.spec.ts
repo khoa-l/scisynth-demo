@@ -746,14 +746,18 @@ describe("Dataset view", () => {
       expect(seeded.nodes[0].params.seed).toBe(5);
     });
 
-    it("leaves the thumbnail out when the field can't be previewed", async () => {
+    it("shows why a field can't be previewed in place of its thumbnail", async () => {
       const wrapper = await mountView();
-      answerPreviews(() => jsonResponse({ detail: "over the limit" }, 422));
+      answerPreviews(() => jsonResponse({ detail: "resolution is over the limit" }, 422));
 
       const field = await dropKind(wrapper, "GaussianField");
       await flushPromises();
 
       expect(thumbnail(field).exists()).toBe(false);
+      const alert = field.find('[role="alert"]');
+      expect(alert.text()).toBe("Couldn't preview this node.resolution is over the limit");
+      expect(alert.classes()).toContain("text-destructive");
+      expect(alert.element.parentElement!.classList).toContain("relative");
     });
 
     it("only draws thumbnails for latents it can preview", async () => {

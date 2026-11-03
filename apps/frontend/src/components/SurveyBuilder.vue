@@ -80,12 +80,7 @@ function withText(id: string, event: Event) {
     >
       Drag a block here to build the task.
     </p>
-    <SaveFailedAlert
-      v-if="saveFailed"
-      class="mb-2"
-      :class="surveyColumnClass"
-      @retry="save(blocks)"
-    />
+    <SaveFailedAlert v-if="saveFailed" class="mx-auto mb-2" @retry="save(blocks)" />
     <ol ref="list" class="flex flex-col gap-2" :class="surveyColumnClass">
       <SortableRow
         v-for="block in items"
