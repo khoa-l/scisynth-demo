@@ -5,6 +5,8 @@ import { enableAutoUnmount } from "@vue/test-utils";
 import { client } from "../client/client.gen";
 import { fetchMock } from "./helpers";
 
+vi.mock("plotly.js-cartesian-dist-min", () => ({ default: { react: vi.fn(), purge: vi.fn() } }));
+
 beforeEach(() => {
   fetchMock.mockReset();
   client.setConfig({ baseUrl: "http://test", fetch: fetchMock });

@@ -8,6 +8,7 @@ from sqlmodel.pool import StaticPool
 
 from app.db import get_session
 from app.main import app
+from tests.helpers import sign_up
 
 
 @pytest.fixture
@@ -30,3 +31,9 @@ def client(engine: Engine) -> Generator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def signed_in(client: TestClient) -> TestClient:
+    sign_up(client, "ada@example.com")
+    return client

@@ -3,11 +3,11 @@ import json
 from typing import cast
 
 import numpy as np
-import scisynth.stages
 from fastapi import APIRouter, HTTPException, status
 from scisynth.core import Domain, Observation, registry
 from scisynth.latent import FieldLatent, LatentGenerator, Multichannel, Product, Sum
 from scisynth.samplers import GridSampler, PointSampler, Sampler
+from scisynth.stages import Stage
 
 from app.auth import CurrentUser
 from app.dataset_graph import NodeSpec
@@ -36,9 +36,7 @@ def invalid(exc: Exception) -> HTTPException:
 @router.post("/stages")
 def preview_stage(body: StagePreviewRequest, user: CurrentUser) -> PlotFigure:
     try:
-        stage = scisynth.stages.Stage.from_dict(
-            {"type": body.kind, "params": body.params}
-        )
+        stage = Stage.from_dict({"type": body.kind, "params": body.params})
         figure = stage.preview()
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
@@ -96,16 +94,37 @@ def build_sampler(node: NodeSpec) -> Sampler:
     return sampler
 
 
+def only_input(body: NodePreviewRequest, node: NodeSpec) -> str:
+    sources = inputs(body, node.id)
+    if len(sources) != 1:
+        raise ValueError(f"{node.kind} needs one input connected")
+    return sources[0]
+
+
+def build_observation(
+    body: NodePreviewRequest, node_id: str, path: tuple[str, ...]
+) -> Observation:
+    if node_id in path:
+        raise ValueError("The observation's inputs form a loop")
+    node = find_node(body, node_id)
+    component = registry.get(node.kind)
+    source = only_input(body, node)
+    if issubclass(component, Sampler):
+        latent = build_latent(body, source, (*path, node_id))
+        return build_sampler(node).run(latent, seed=0)
+    if issubclass(component, Stage):
+        before = build_observation(body, source, (*path, node_id))
+        return Stage.from_dict({"type": node.kind, "params": node.params}).run(
+            before, seed=0
+        )
+    raise TypeError(f"{node.kind} doesn't produce an observation")
+
+
 def observe(body: NodePreviewRequest) -> Observation:
     node = find_node(body, body.node)
-    if node.kind not in COMPOSITES and issubclass(registry.get(node.kind), Sampler):
-        sources = inputs(body, node.id)
-        if len(sources) != 1:
-            raise ValueError(f"{node.kind} needs one latent connected")
-        return build_sampler(node).run(
-            build_latent(body, sources[0], (node.id,)), seed=0
-        )
-    return GridSampler(LATENT_SHAPE).run(build_latent(body, node.id, ()), seed=0)
+    if node.kind in COMPOSITES or issubclass(registry.get(node.kind), LatentGenerator):
+        return GridSampler(LATENT_SHAPE).run(build_latent(body, node.id, ()), seed=0)
+    return build_observation(body, node.id, ())
 
 
 @router.post("/nodes")
@@ -117,12 +136,14 @@ def preview_node(body: NodePreviewRequest, user: CurrentUser) -> NodePreview:
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
     x, y = observation.coords.values()
-    values = observation.values
+    values = np.where(observation.valid, observation.values, np.nan)
     if observation.layout == "grid":
         channels = [
             typed_array(values[..., i].T) for i in range(observation.n_channels)
         ]
     else:
+        x = np.where(observation.mask, x, np.nan)
+        y = np.where(observation.mask, y, np.nan)
         channels = [typed_array(values[:, i]) for i in range(observation.n_channels)]
     return NodePreview(
         layout=observation.layout,
