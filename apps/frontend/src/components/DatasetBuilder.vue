@@ -52,6 +52,7 @@ const {
   setEdges,
   setNodes,
   updateNode,
+  vueFlowRef,
 } = useVueFlow();
 
 const graph = computed(() => toGraph(nodes.value, edges.value));
@@ -139,10 +140,13 @@ function onDrop(event: DragEvent) {
   const id = crypto.randomUUID();
   const { off } = onNodesInitialized(() => {
     off();
+    const title = vueFlowRef.value?.querySelector<HTMLElement>(
+      `[data-id="${id}"] [data-slot="node-title"]`,
+    );
     updateNode(id, (node) => ({
       position: {
         x: node.position.x - node.dimensions.width / 2,
-        y: node.position.y - node.dimensions.height / 2,
+        y: node.position.y - (title?.offsetHeight ?? 0) / 2,
       },
     }));
   });

@@ -330,7 +330,7 @@ describe("Dataset view", () => {
     expect(shortfall().exists()).toBe(false);
   });
 
-  it("centres a dropped node on the mouse once its size is known", async () => {
+  it("centres a dropped node's title bar on the mouse once its size is known", async () => {
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -349,7 +349,11 @@ describe("Dataset view", () => {
       },
     );
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(150);
-    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(40);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.slot === "node-title" ? 36 : 200;
+    });
     const wrapper = await mountView();
     const dataTransfer = fakeDataTransfer();
 
@@ -357,7 +361,7 @@ describe("Dataset view", () => {
     await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
     await flushPromises();
 
-    expect(wrapper.find(".vue-flow__node").attributes("style")).toContain("translate(45px,60px)");
+    expect(wrapper.find(".vue-flow__node").attributes("style")).toContain("translate(45px,62px)");
   });
 
   it("ignores drops that are not node kinds", async () => {
