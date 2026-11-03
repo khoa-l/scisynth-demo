@@ -11,7 +11,7 @@ export const nodeCatalogQuery = queryOptions({
   staleTime: Infinity,
 });
 
-export interface CatalogNodeData {
+export interface DatasetNodeData {
   kind: string;
   params: ParamValues;
 }

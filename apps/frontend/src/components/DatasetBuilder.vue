@@ -27,14 +27,14 @@ import {
   defaultParams,
   findKind,
   nodeCatalogQuery,
-  type CatalogNodeData,
-} from "@/lib/nodes/catalog";
-import { CATALOG_NODE, flowNode, fromGraph, toGraph } from "@/lib/nodes/graph";
+  type DatasetNodeData,
+} from "@/lib/dataset-nodes/catalog";
+import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
-const nodeTypes = { [CATALOG_NODE]: markRaw(DatasetNode) };
+const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
 const defaultEdgeOptions = { style: { strokeWidth: 2 } };
 
 const queryClient = useQueryClient();
@@ -116,9 +116,9 @@ const isValidConnection: ValidConnectionFunc = (connection, { sourceNode, target
   !!catalog.value &&
   connection.source !== connection.target &&
   canConnect(catalog.value, {
-    sourceKind: (sourceNode.data as CatalogNodeData).kind,
+    sourceKind: (sourceNode.data as DatasetNodeData).kind,
     sourcePort: connection.sourceHandle,
-    targetKind: (targetNode.data as CatalogNodeData).kind,
+    targetKind: (targetNode.data as DatasetNodeData).kind,
     targetPort: connection.targetHandle,
   });
 

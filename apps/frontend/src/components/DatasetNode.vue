@@ -4,10 +4,10 @@ import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { computed } from "vue";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
-import { findKind, nodeCatalogQuery, type CatalogNodeData } from "@/lib/nodes/catalog";
-import type { ParamValue } from "@/lib/nodes/types";
+import { findKind, nodeCatalogQuery, type DatasetNodeData } from "@/lib/dataset-nodes/catalog";
+import type { ParamValue } from "@/lib/dataset-nodes/types";
 
-const props = defineProps<NodeProps<CatalogNodeData>>();
+const props = defineProps<NodeProps<DatasetNodeData>>();
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
@@ -15,7 +15,7 @@ const kind = computed(() => catalog.value && findKind(catalog.value, props.data.
 const { updateNodeData } = useVueFlow();
 
 function setParam(name: string, value: ParamValue) {
-  updateNodeData<CatalogNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
+  updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
 }
 </script>
 

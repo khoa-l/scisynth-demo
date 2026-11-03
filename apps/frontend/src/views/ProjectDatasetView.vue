@@ -37,7 +37,7 @@ const { data: dataset, isError } = useQuery(
             :dataset="dataset"
           />
         </div>
-        <div role="group" aria-label="Node details" class="min-h-0 flex-1">
+        <div role="group" aria-label="Dataset details" class="min-h-0 flex-1">
           <DatasetNodePalette />
         </div>
       </div>

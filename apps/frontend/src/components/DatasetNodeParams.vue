@@ -2,14 +2,14 @@
 import { useId } from "vue";
 
 import { Input } from "@/components/ui/input";
-import { parseParam } from "@/lib/nodes/params";
+import { parseParam } from "@/lib/dataset-nodes/params";
 import type {
   IntegerParam,
   NumberParam,
   ParamDef,
   ParamValue,
   ParamValues,
-} from "@/lib/nodes/types";
+} from "@/lib/dataset-nodes/types";
 
 const props = defineProps<{ params: Record<string, ParamDef>; values: ParamValues }>();
 const emit = defineEmits<{ update: [name: string, value: ParamValue] }>();

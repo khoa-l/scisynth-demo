@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { fromGraph, toGraph, type DatasetGraph } from "../lib/nodes/graph";
-import { localCatalog } from "../lib/nodes/local-catalog";
+import { fromGraph, toGraph, type DatasetGraph } from "../lib/dataset-nodes/graph";
+import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
 function savedNode(id: string, kind: string, params: DatasetGraph["nodes"][number]["params"]) {
   return { id, kind, params, position: { x: 10, y: 20 } };
@@ -45,7 +45,7 @@ describe("Dataset graph", () => {
     const nodes = [
       {
         id: "a",
-        type: "catalog",
+        type: "dataset-node",
         position: { x: 1, y: 2 },
         data: { kind: "Gain", params: { factor: 2 } },
         selected: true,
@@ -79,12 +79,12 @@ describe("Dataset graph", () => {
     expect(saved.nodes[0]!.params).toEqual({ factor: 2 });
   });
 
-  it("loads a saved graph as catalogue nodes and port-to-port edges", () => {
+  it("loads a saved graph as dataset nodes and port-to-port edges", () => {
     const { nodes, edges } = load(GRAPH);
 
     expect(nodes[1]).toEqual({
       id: "sampler",
-      type: "catalog",
+      type: "dataset-node",
       position: { x: 10, y: 20 },
       data: { kind: "GridSampler", params: { shape: 32 } },
     });

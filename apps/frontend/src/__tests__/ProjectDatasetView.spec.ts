@@ -5,7 +5,7 @@ import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import type { DatasetPublic } from "../client";
 import DatasetNode from "../components/DatasetNode.vue";
-import type { CatalogNodeData } from "../lib/nodes/catalog";
+import type { DatasetNodeData } from "../lib/dataset-nodes/catalog";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import {
   DATASET,
@@ -28,7 +28,7 @@ async function mountView(dataset: DatasetPublic = DATASET) {
 type Wrapper = Awaited<ReturnType<typeof mountView>>;
 
 function details(wrapper: Wrapper) {
-  return wrapper.find('[role="group"][aria-label="Node details"]');
+  return wrapper.find('[role="group"][aria-label="Dataset details"]');
 }
 
 function visiblePanel(wrapper: Wrapper) {
@@ -37,14 +37,14 @@ function visiblePanel(wrapper: Wrapper) {
     .find((panel) => panel.attributes("data-state") === "active")!;
 }
 
-function component(wrapper: Wrapper, label: string) {
+function paletteItem(wrapper: Wrapper, label: string) {
   return visiblePanel(wrapper)
     .findAll("li")
     .find((item) => item.text() === label)!;
 }
 
 describe("Dataset view", () => {
-  it("shows a grey Vue Flow grid above the component tabs and an empty right panel", async () => {
+  it("shows a grey Vue Flow grid above the node category tabs and an empty right panel", async () => {
     const wrapper = await mountView();
 
     const [left, right] = wrapper.findAll("section");
@@ -59,11 +59,11 @@ describe("Dataset view", () => {
     expect(right!.element.childElementCount).toBe(0);
   });
 
-  it("has a folder tab for each component category, with Latent open first", async () => {
+  it("has a folder tab for each node category, with Latent open first", async () => {
     const wrapper = await mountView();
 
     const tablist = details(wrapper).find('[role="tablist"]');
-    expect(tablist.attributes("aria-label")).toBe("Component categories");
+    expect(tablist.attributes("aria-label")).toBe("Node categories");
     const tabs = tablist.findAll('[role="tab"]');
     expect(tabs.map((tab) => tab.text())).toEqual(["Latent", "Sampler", "Stages", "Projection"]);
     expect(tabs[0]!.attributes("aria-selected")).toBe("true");
@@ -87,7 +87,7 @@ describe("Dataset view", () => {
     expect([items[0], items[12]]).toEqual(["Gaussian noise", "Downsample"]);
   });
 
-  it("makes every component draggable and puts its kind on the drag", async () => {
+  it("makes every node kind draggable and puts its kind on the drag", async () => {
     const wrapper = await mountView();
 
     const items = visiblePanel(wrapper).findAll("li");
@@ -98,13 +98,13 @@ describe("Dataset view", () => {
     expect(dataTransfer.effectAllowed).toBe("copy");
   });
 
-  it("adds the dragged component to the canvas when it is dropped", async () => {
+  it("adds the dragged node to the canvas when it is dropped", async () => {
     const wrapper = await mountView();
     const canvas = wrapper.find(".vue-flow");
 
     for (const label of ["Gaussian field", "Multichannel"]) {
       const dataTransfer = fakeDataTransfer();
-      await component(wrapper, label).trigger("dragstart", { dataTransfer });
+      await paletteItem(wrapper, label).trigger("dragstart", { dataTransfer });
       await canvas.trigger("dragover", { dataTransfer });
       expect(dataTransfer.dropEffect).toBe("copy");
       await canvas.trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
@@ -116,7 +116,9 @@ describe("Dataset view", () => {
       "Gaussian field",
       "Multichannel",
     ]);
-    expect(nodes.every((node) => node.classes().includes("vue-flow__node-catalog"))).toBe(true);
+    expect(nodes.every((node) => node.classes().includes("vue-flow__node-dataset-node"))).toBe(
+      true,
+    );
   });
 
   async function dropKind(wrapper: Wrapper, name: string) {
@@ -130,7 +132,7 @@ describe("Dataset view", () => {
 
   function lastNodeData(wrapper: Wrapper) {
     const nodes = wrapper.findAllComponents(DatasetNode);
-    return (nodes[nodes.length - 1]!.props() as { data: CatalogNodeData }).data;
+    return (nodes[nodes.length - 1]!.props() as { data: DatasetNodeData }).data;
   }
 
   function handles(node: DOMWrapper<Element>, side: "target" | "source") {
@@ -151,7 +153,7 @@ describe("Dataset view", () => {
     await input.trigger("change");
   }
 
-  it("draws a node's input and output ports from the catalogue", async () => {
+  it("draws a node's input and output ports from the catalog", async () => {
     const wrapper = await mountView();
 
     const field = await dropKind(wrapper, "GaussianField");
@@ -268,14 +270,14 @@ describe("Dataset view", () => {
     const wrapper = await mountView();
     const dataTransfer = fakeDataTransfer();
 
-    await component(wrapper, "Gaussian field").trigger("dragstart", { dataTransfer });
+    await paletteItem(wrapper, "Gaussian field").trigger("dragstart", { dataTransfer });
     await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
     await flushPromises();
 
     expect(wrapper.find(".vue-flow__node").attributes("style")).toContain("translate(45px,60px)");
   });
 
-  it("ignores drops that are not components", async () => {
+  it("ignores drops that are not node kinds", async () => {
     const wrapper = await mountView();
     const canvas = wrapper.find(".vue-flow");
     const dataTransfer = fakeDataTransfer();

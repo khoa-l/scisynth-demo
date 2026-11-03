@@ -2,12 +2,17 @@ import { describe, it, expect } from "vite-plus/test";
 
 import { QueryClient } from "@tanstack/vue-query";
 
-import { canConnect, defaultParams, findKind, nodeCatalogQuery } from "../lib/nodes/catalog";
-import { localCatalog } from "../lib/nodes/local-catalog";
-import { isValidParam } from "../lib/nodes/params";
+import {
+  canConnect,
+  defaultParams,
+  findKind,
+  nodeCatalogQuery,
+} from "../lib/dataset-nodes/catalog";
+import { localCatalog } from "../lib/dataset-nodes/local-catalog";
+import { isValidParam } from "../lib/dataset-nodes/params";
 
-describe("Node catalogue", () => {
-  it("is what the catalogue query loads", async () => {
+describe("Node catalog", () => {
+  it("is what the catalog query loads", async () => {
     expect(await new QueryClient().fetchQuery(nodeCatalogQuery)).toBe(localCatalog);
   });
 

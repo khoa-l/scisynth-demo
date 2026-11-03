@@ -2,18 +2,18 @@ import type { Edge, Node, XYPosition } from "@vue-flow/core";
 
 import type { DatasetGraphOutput } from "@/client";
 
-import { canConnect, findKind, type CatalogNodeData } from "./catalog";
+import { canConnect, findKind, type DatasetNodeData } from "./catalog";
 import { isValidParam } from "./params";
 import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 
 export type DatasetGraph = DatasetGraphOutput;
 
-export const CATALOG_NODE = "catalog";
+export const DATASET_NODE = "dataset-node";
 
-export type FlowNode = Node<CatalogNodeData> & { data: CatalogNodeData };
+export type FlowNode = Node<DatasetNodeData> & { data: DatasetNodeData };
 
-export function flowNode(id: string, position: XYPosition, data: CatalogNodeData): FlowNode {
-  return { id, type: CATALOG_NODE, position, data };
+export function flowNode(id: string, position: XYPosition, data: DatasetNodeData): FlowNode {
+  return { id, type: DATASET_NODE, position, data };
 }
 
 export function toGraph(nodes: FlowNode[], edges: Edge[]): DatasetGraph {

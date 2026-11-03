@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { isValidParam, parseParam } from "../lib/nodes/params";
-import type { IntegerParam, NumberParam, ParamDef } from "../lib/nodes/types";
+import { isValidParam, parseParam } from "../lib/dataset-nodes/params";
+import type { IntegerParam, NumberParam, ParamDef } from "../lib/dataset-nodes/types";
 
 const probability: NumberParam = { type: "number", label: "P", default: 0.1, min: 0, max: 1 };
 const bound: NumberParam = { type: "number", label: "Min", default: null, optional: true };
