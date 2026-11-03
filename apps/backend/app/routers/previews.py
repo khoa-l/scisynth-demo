@@ -6,8 +6,10 @@ import numpy as np
 from fastapi import APIRouter, HTTPException, status
 from scisynth.core import Domain, Observation, registry
 from scisynth.latent import FieldLatent, LatentGenerator, Multichannel, Product, Sum
+from scisynth.projection import Projection
 from scisynth.samplers import GridSampler, PointSampler, Sampler
 from scisynth.stages import Stage
+from sklearn.decomposition import PCA
 
 from app.auth import CurrentUser
 from app.dataset_graph import NodeSpec
@@ -27,6 +29,7 @@ LATENT_MAX_CELLS = 512 * 512
 SAMPLE_MAX_CELLS = 256 * 256
 POINTS_LIMIT = 10_000
 COMPOSITES = {"Sum": Sum, "Product": Product, "Multichannel": Multichannel}
+PROJECTIONS = ("PCA", "UMAP")
 
 
 def invalid(exc: Exception) -> HTTPException:
@@ -126,8 +129,32 @@ def build_observation(
     raise TypeError(f"{node.kind} doesn't produce an observation")
 
 
+def build_estimator(kind: str, params: dict, seed: int) -> object:
+    if kind == "PCA":
+        return PCA(n_components=2, random_state=seed, **params)
+    from umap import UMAP
+
+    return UMAP(n_components=2, random_state=seed, n_jobs=1, **params)
+
+
+def project(body: NodePreviewRequest, node: NodeSpec) -> Observation:
+    before = build_observation(body, only_input(body, node), (node.id,))
+    valid = int(before.mask.sum())
+    if valid > POINTS_LIMIT:
+        raise ValueError(
+            f"Too many locations to project: {valid:,}, at most {POINTS_LIMIT:,}"
+        )
+    if node.kind == "PCA" and before.n_channels < 2:
+        raise ValueError("PCA needs an observation with at least two channels")
+    params, seed = split_seed(node)
+    projection = Projection(build_estimator(node.kind, params, seed))
+    return projection.fit(before).transform(before)
+
+
 def observe(body: NodePreviewRequest) -> Observation:
     node = find_node(body, body.node)
+    if node.kind in PROJECTIONS:
+        return project(body, node)
     if node.kind in COMPOSITES or issubclass(registry.get(node.kind), LatentGenerator):
         return GridSampler(LATENT_SHAPE).run(build_latent(body, node.id, ()), seed=0)
     return build_observation(body, node.id, ())

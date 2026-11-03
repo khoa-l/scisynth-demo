@@ -101,6 +101,38 @@ describe("Dataset node preview", () => {
     expect(config).toEqual({ displaylogo: false, responsive: true });
   });
 
+  it("keeps the full chart square when its axes span different ranges", async () => {
+    const gappy = { ...AXIS, bdata: "AACAvwAAwH8AAIA/", shape: "3" };
+    const narrow = { ...AXIS, bdata: "AACAPwAAwD8AAABA", shape: "3" };
+    const wrapper = await mountView();
+    answerPreviews(() =>
+      jsonResponse({
+        layout: "points",
+        axes: ["c0", "c1"],
+        x: gappy,
+        y: narrow,
+        channels: [gappy],
+      }),
+    );
+    const sampler = await dropKind(wrapper, "PointSampler");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+
+    await sampler.find('[aria-label="View preview"]').trigger("click");
+    await flushPromises();
+
+    const [element, , layout] = react.mock.lastCall!;
+    expect(element).toBe(wrapper.find('[aria-label="Viewed node"] [role="img"]').element);
+    expect(layout).toMatchObject({
+      xaxis: { title: { text: "c0" }, range: [expect.closeTo(-1.1), expect.closeTo(1.1)] },
+      yaxis: {
+        title: { text: "c1" },
+        range: [expect.closeTo(0.95), expect.closeTo(2.05)],
+        scaleanchor: "x",
+        scaleratio: expect.closeTo(2),
+      },
+    });
+  });
+
   it("previews a composite once enough terms are connected", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse(PREVIEW));
@@ -264,6 +296,30 @@ describe("Dataset node preview", () => {
     await flushPromises();
 
     expect(thumbnail(downsample).attributes("aria-label")).toBe("Preview of Downsample");
+  });
+
+  it("previews a projection of the observation connected to it", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const umap = await dropKind(wrapper, "UMAP");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+    expect(thumbnail(umap).exists()).toBe(false);
+    expect(umap.find('[aria-label="Preview controls"]').exists()).toBe(false);
+
+    await connect(wrapper, sampler, umap, "observation", "observation");
+    await flushPromises();
+
+    expect(thumbnail(umap).attributes("aria-label")).toBe("Preview of UMAP");
+    expect(umap.find('[aria-label="Preview controls"]').exists()).toBe(true);
+    const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+    const body = bodies.find((b) => b.node === umap.attributes("data-id"))!;
+    expect(body.nodes.find((n: { kind: string }) => n.kind === "UMAP").params).toEqual({
+      n_neighbors: 15,
+      min_dist: 0.1,
+      metric: "euclidean",
+      seed: 0,
+    });
   });
 
   it("sends only the nodes upstream of the preview", async () => {

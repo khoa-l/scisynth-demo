@@ -21,7 +21,13 @@ import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
 const PREVIEWABLE_GENERATORS = new Set(["GaussianField"]);
-const PREVIEWED_FROM_INPUTS = new Set(["composite", "sampler", "defect", "transform"]);
+const PREVIEWED_FROM_INPUTS = new Set([
+  "composite",
+  "sampler",
+  "defect",
+  "transform",
+  "projection",
+]);
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));

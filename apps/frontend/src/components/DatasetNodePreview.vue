@@ -5,7 +5,12 @@ import { refDebounced } from "@vueuse/core";
 import type { Config, Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
-import { previewsPreviewNode, type NodePreviewRequest } from "@/client";
+import {
+  previewsPreviewNode,
+  type NodePreview,
+  type NodePreviewRequest,
+  type TypedArray,
+} from "@/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const props = defineProps<{ label: string; request: NodePreviewRequest; detailed?: boolean }>();
@@ -37,11 +42,29 @@ const thumbnailLayout: Partial<Layout> = {
   ...transparent,
 };
 
-function detailedLayout([x, y]: string[], font: string): Partial<Layout> {
+function paddedRange({ bdata }: TypedArray): [number, number] {
+  const bytes = Uint8Array.from(atob(bdata), (char) => char.charCodeAt(0));
+  const values = new Float32Array(bytes.buffer).filter(Number.isFinite);
+  const [min, max] = [Math.min(...values), Math.max(...values)];
+  const pad = (max - min) * 0.05;
+  return [min - pad, max + pad];
+}
+
+function detailedLayout(preview: NodePreview, font: string): Partial<Layout> {
+  const [x, y] = preview.axes;
+  const [xRange, yRange] = [paddedRange(preview.x), paddedRange(preview.y)];
+  const scaleratio = (xRange[1] - xRange[0]) / (yRange[1] - yRange[0]) || 1;
+  const points = preview.layout === "points";
   return {
     margin: { t: 8, r: 8, b: 40, l: 48 },
-    xaxis: { title: { text: x }, constrain: "domain" },
-    yaxis: { title: { text: y }, scaleanchor: "x", constrain: "domain" },
+    xaxis: { title: { text: x }, constrain: "domain", range: points ? xRange : undefined },
+    yaxis: {
+      title: { text: y },
+      scaleanchor: "x",
+      scaleratio,
+      constrain: "domain",
+      range: points ? yRange : undefined,
+    },
     font: { family: font },
     ...transparent,
   };
@@ -78,7 +101,7 @@ watch(
             marker: { color: z, colorscale: "Viridis", size: 3, showscale },
           };
     const layout = props.detailed
-      ? detailedLayout(value.axes, getComputedStyle(element).fontFamily)
+      ? detailedLayout(value, getComputedStyle(element).fontFamily)
       : thumbnailLayout;
     const config: Partial<Config> = props.detailed
       ? { displaylogo: false, responsive: true }

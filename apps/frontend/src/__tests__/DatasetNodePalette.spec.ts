@@ -34,6 +34,22 @@ describe("Dataset node palette", () => {
     expect([items[0], items[12]]).toEqual(["Gaussian noise", "Downsample"]);
   });
 
+  it("offers PCA and UMAP under Projection", async () => {
+    const wrapper = await mountView();
+
+    await details(wrapper)
+      .findAll('[role="tab"]')
+      .find((tab) => tab.text() === "Projection")!
+      .trigger("mousedown", { button: 0 });
+    await flushPromises();
+
+    expect(
+      visiblePanel(wrapper)
+        .findAll("li")
+        .map((item) => item.text()),
+    ).toEqual(["PCA", "UMAP"]);
+  });
+
   it("colours each chip in a single hue for its group", async () => {
     const wrapper = await mountView();
     const background = (label: string) => paletteItem(wrapper, label).attributes("style");

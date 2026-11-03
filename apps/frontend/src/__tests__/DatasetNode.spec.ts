@@ -34,7 +34,8 @@ describe("Dataset node", () => {
     expect(handles(sampler, "target")).toEqual([["latent", "Latent 0/1"]]);
     expect(handles(sampler, "source")).toEqual([["observation", "Observation"]]);
 
-    const projection = await dropKind(wrapper, "Projection");
+    const projection = await dropKind(wrapper, "UMAP");
+    expect(handles(projection, "target")).toEqual([["observation", "Observation 0/1"]]);
     expect(handles(projection, "source")).toEqual([]);
   });
 

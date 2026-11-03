@@ -31,6 +31,7 @@ describe("Node catalog", () => {
       "RandomDropout",
       "PositionJitter",
       "RandomInsertion",
+      "UMAP",
     ]);
   });
 
@@ -41,7 +42,8 @@ describe("Node catalog", () => {
     expect(link("GaussianField", "field", "Sum", "terms")).toBe(true);
     expect(link("GaussianField", "field", "GridSampler", "latent")).toBe(true);
     expect(link("GridSampler", "observation", "GaussianNoise", "observation")).toBe(true);
-    expect(link("GaussianNoise", "observation", "Projection", "observation")).toBe(true);
+    expect(link("GaussianNoise", "observation", "PCA", "observation")).toBe(true);
+    expect(link("Downsample", "observation", "UMAP", "observation")).toBe(true);
 
     expect(link("GaussianField", "field", "GaussianNoise", "observation")).toBe(false);
     expect(link("GridSampler", "observation", "Sum", "terms")).toBe(false);
@@ -65,7 +67,8 @@ describe("Node catalog", () => {
 
     expect(required("GridSampler")).toEqual([1]);
     expect(required("GaussianNoise")).toEqual([1]);
-    expect(required("Projection")).toEqual([1]);
+    expect(required("PCA")).toEqual([1]);
+    expect(required("UMAP")).toEqual([1]);
     expect(required("Multichannel")).toEqual([1]);
     expect(required("Sum")).toEqual([2]);
     expect(required("Product")).toEqual([2]);
