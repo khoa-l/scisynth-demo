@@ -8,12 +8,15 @@ defineSlots<{ default?: (props: { tab: Tab }) => unknown }>();
 
 <template>
   <TabsRoot :default-value="tabs[0]?.label" class="relative h-full">
-    <TabsList :aria-label="label" class="pointer-events-none absolute bottom-full left-0 z-10 flex">
+    <TabsList
+      :aria-label="label"
+      class="pointer-events-none absolute bottom-full left-0 z-10 flex drop-shadow-sm [clip-path:inset(-8px_-8px_-1px_-8px)]"
+    >
       <TabsTrigger
         v-for="tab in tabs"
         :key="tab.label"
         :value="tab.label"
-        class="pointer-events-auto relative -mb-px -ml-px rounded-t-lg border bg-muted px-4 py-1.5 text-sm text-muted-foreground outline-none first:ml-0 first:border-l-0 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=active]:z-10 data-[state=active]:shadow-sm data-[state=active]:[clip-path:inset(-8px_-8px_0_-8px)] data-[state=active]:border-b-background data-[state=active]:bg-background data-[state=active]:text-foreground"
+        class="pointer-events-auto relative -mb-px -ml-px rounded-t-lg border bg-muted px-4 py-1.5 text-sm text-muted-foreground outline-none first:ml-0 first:border-l-0 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=active]:z-10 data-[state=active]:shadow-sm data-[state=active]:shadow-black/25 data-[state=active]:[clip-path:inset(-8px_-8px_0_-8px)] data-[state=active]:border-b-background data-[state=active]:bg-background data-[state=active]:text-foreground"
       >
         {{ tab.label }}
       </TabsTrigger>
