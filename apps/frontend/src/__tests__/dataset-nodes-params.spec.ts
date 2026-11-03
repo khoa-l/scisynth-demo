@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { isValidParam, parseParam } from "../lib/dataset-nodes/params";
+import { isValidParam } from "../lib/dataset-nodes/params";
 import type { IntegerParam, NumberParam, ParamDef } from "../lib/dataset-nodes/types";
 
 const probability: NumberParam = { type: "number", label: "P", default: 0.1, min: 0, max: 1 };
@@ -35,14 +35,5 @@ describe("Node parameters", () => {
     expect(isValidParam(mode, "grid-wrap")).toBe(true);
     expect(isValidParam(mode, "wrap")).toBe(false);
     expect(isValidParam(mode, 1)).toBe(false);
-  });
-
-  it("reads typed numbers, turning a blank box into null where allowed", () => {
-    expect(parseParam(probability, " 0.25 ")).toBe(0.25);
-    expect(parseParam(levels, "1e3")).toBe(1000);
-    expect(parseParam(bound, "")).toBeNull();
-    expect(parseParam(probability, "")).toBeUndefined();
-    expect(parseParam(probability, "abc")).toBeUndefined();
-    expect(parseParam(levels, "2.5")).toBeUndefined();
   });
 });

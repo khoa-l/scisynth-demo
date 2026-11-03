@@ -1,5 +1,4 @@
 export interface NodeCatalog {
-  version: 1;
   categories: NodeCategory[];
   kinds: NodeKindDef[];
 }

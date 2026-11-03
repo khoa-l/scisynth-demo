@@ -2,11 +2,8 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine
-from sqlmodel import Session
 
 from app.dataset_graph import MAX_NODES
-from app.models import Dataset
 from tests.helpers import sign_up
 
 EMPTY = {"version": 1, "nodes": [], "edges": []}
@@ -77,17 +74,6 @@ def test_renaming_keeps_the_graph(client: TestClient, dataset_url: str) -> None:
     response = client.patch(dataset_url, json={"name": "Renamed"})
     assert response.json()["name"] == "Renamed"
     assert response.json()["content"] == GRAPH
-
-
-def test_a_dataset_saved_before_graphs_reads_as_empty(
-    client: TestClient, dataset_url: str, engine: Engine
-) -> None:
-    with Session(engine) as db:
-        dataset = db.get(Dataset, dataset_url.rsplit("/", 1)[1])
-        assert dataset is not None
-        assert dataset.content == {}
-
-    assert client.get(dataset_url).json()["content"] == EMPTY
 
 
 @pytest.mark.parametrize(

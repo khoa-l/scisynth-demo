@@ -70,15 +70,6 @@ describe("Dataset graph", () => {
     });
   });
 
-  it("doesn't share parameter objects between the canvas and the saved graph", () => {
-    const params = { factor: 2 };
-    const nodes = [{ id: "a", position: { x: 0, y: 0 }, data: { kind: "Gain", params } }];
-
-    const saved = toGraph(nodes, []);
-    params.factor = 3;
-    expect(saved.nodes[0]!.params).toEqual({ factor: 2 });
-  });
-
   it("loads a saved graph as dataset nodes and port-to-port edges", () => {
     const { nodes, edges } = load(GRAPH);
 

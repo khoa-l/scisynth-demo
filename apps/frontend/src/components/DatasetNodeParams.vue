@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { useId } from "vue";
+import { ChevronDown, ChevronUp } from "@lucide/vue";
+import { nextTick, useId } from "vue";
 
-import { Input } from "@/components/ui/input";
-import { parseParam } from "@/lib/dataset-nodes/params";
+import {
+  NumberField,
+  NumberFieldContent,
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldInput,
+} from "@/components/ui/number-field";
 import type {
   IntegerParam,
   NumberParam,
@@ -15,12 +21,19 @@ const props = defineProps<{ params: Record<string, ParamDef>; values: ParamValue
 const emit = defineEmits<{ update: [name: string, value: ParamValue] }>();
 
 const uid = useId();
+const formatOptions = { useGrouping: false, maximumFractionDigits: 20 };
 
-function commitNumber(name: string, def: NumberParam | IntegerParam, event: Event) {
+function commitNumber(name: string, def: NumberParam | IntegerParam, value: number | undefined) {
+  if (value !== undefined) emit("update", name, value);
+  else if (def.optional) emit("update", name, null);
+}
+
+function restoreIfBlank(name: string, def: NumberParam | IntegerParam, event: FocusEvent) {
   const input = event.target as HTMLInputElement;
-  const value = parseParam(def, input.value);
-  if (value === undefined) input.value = String(props.values[name] ?? "");
-  else emit("update", name, value);
+  if (def.optional || input.value.trim() !== "") return;
+  void nextTick(() => {
+    input.value = String(props.values[name]);
+  });
 }
 </script>
 
@@ -41,18 +54,40 @@ function commitNumber(name: string, def: NumberParam | IntegerParam, event: Even
           {{ option.label }}
         </option>
       </select>
-      <Input
+      <NumberField
         v-else
         :id="`${uid}-${name}`"
-        type="number"
+        :model-value="values[name] as number | null"
         :min="def.min"
         :max="def.max"
-        :step="def.type === 'integer' ? 1 : (def.step ?? 'any')"
-        :placeholder="def.optional ? 'Auto' : undefined"
-        :model-value="values[name] ?? ''"
-        class="px-1.5"
-        @change="commitNumber(name, def, $event)"
-      />
+        :step="def.type === 'integer' ? 1 : (def.step ?? 1)"
+        :step-snapping="def.type === 'integer'"
+        :format-options="formatOptions"
+        class="nowheel"
+        @update:model-value="commitNumber(name, def, $event)"
+      >
+        <NumberFieldContent>
+          <NumberFieldInput
+            :placeholder="def.optional ? 'Auto' : undefined"
+            class="pl-1.5 text-left"
+            @blur="restoreIfBlank(name, def, $event)"
+          />
+          <div
+            class="absolute inset-y-px right-px flex w-5 flex-col overflow-hidden rounded-r-[calc(var(--radius-lg)-1px)] border-l border-input"
+          >
+            <NumberFieldIncrement
+              class="static flex flex-1 translate-y-0 items-center justify-center border-b border-input p-0 hover:bg-muted"
+            >
+              <ChevronUp class="size-3" />
+            </NumberFieldIncrement>
+            <NumberFieldDecrement
+              class="static flex flex-1 translate-y-0 items-center justify-center p-0 hover:bg-muted"
+            >
+              <ChevronDown class="size-3" />
+            </NumberFieldDecrement>
+          </div>
+        </NumberFieldContent>
+      </NumberField>
     </template>
   </div>
 </template>

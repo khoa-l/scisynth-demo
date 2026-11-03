@@ -51,7 +51,6 @@ const defect = stage("defect");
 const transform = stage("transform");
 
 export const localCatalog: NodeCatalog = {
-  version: 1,
   categories: [
     { id: "latent", label: "Latent" },
     { id: "sampler", label: "Sampler" },

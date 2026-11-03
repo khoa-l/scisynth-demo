@@ -15,6 +15,7 @@ import {
   jsonResponse,
   mountPage,
   requests,
+  testQueryClient,
 } from "./helpers";
 
 async function mountView(dataset: DatasetPublic = DATASET) {
@@ -176,7 +177,14 @@ describe("Dataset view", () => {
 
   async function enter(input: DOMWrapper<Element>, value: string) {
     (input.element as HTMLInputElement).value = value;
-    await input.trigger("change");
+    await input.trigger("input");
+    await input.trigger("blur");
+  }
+
+  async function press(button: DOMWrapper<Element>) {
+    button.element.dispatchEvent(new PointerEvent("pointerdown", { button: 0, bubbles: true }));
+    window.dispatchEvent(new PointerEvent("pointerup"));
+    await flushPromises();
   }
 
   it("draws a node's input and output ports from the catalog", async () => {
@@ -206,8 +214,30 @@ describe("Dataset view", () => {
     expect(lastNodeData(wrapper).params).toEqual({ sigma: 0.5, mean: 0 });
 
     await enter(sigma, "-1");
-    expect(inputValue(sigma)).toBe("0.5");
-    expect(lastNodeData(wrapper).params.sigma).toBe(0.5);
+    expect(inputValue(sigma)).toBe("0");
+    expect(lastNodeData(wrapper).params.sigma).toBe(0);
+  });
+
+  it("steps numbers with the up and down arrows inside each box", async () => {
+    const wrapper = await mountView();
+    const levels = (await dropKind(wrapper, "Quantize")).find("input");
+    const noise = await dropKind(wrapper, "GaussianNoise");
+    const [up, down] = noise.findAll("button");
+    expect([up, down].map((button) => button!.attributes("aria-label"))).toEqual([
+      "Increase",
+      "Decrease",
+    ]);
+
+    await press(up!);
+    expect(lastNodeData(wrapper).params.sigma).toBe(2);
+    await press(down!);
+    await press(down!);
+    await press(down!);
+    expect(lastNodeData(wrapper).params.sigma).toBe(0);
+    expect(down!.attributes("disabled")).toBeDefined();
+
+    await enter(levels, "2.4");
+    expect(inputValue(levels)).toBe("2");
   });
 
   it("lets optional parameters be blank and picks options from a list", async () => {
@@ -408,6 +438,21 @@ describe("Dataset view", () => {
       ]);
       const gridSize = wrapper.findAll(".vue-flow__node")[1]!.find("input");
       expect((gridSize.element as HTMLInputElement).value).toBe("32");
+    });
+
+    it("draws loaded connections 2px wide when a dataset is opened again", async () => {
+      const queryClient = testQueryClient();
+      fetchMock.mockImplementation(async () => jsonResponse(SAVED));
+      const open = () =>
+        mountPage(ProjectDatasetView, {
+          props: { projectId: PROJECT_ID, datasetId: DATASET.id },
+          queryClient,
+        });
+
+      (await open()).wrapper.unmount();
+      const { wrapper } = await open();
+
+      expect(flow(wrapper).edges[0]!.style).toEqual({ strokeWidth: 2 });
     });
 
     it("doesn't save a graph just because it was opened", async () => {

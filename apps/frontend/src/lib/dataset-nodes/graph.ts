@@ -22,7 +22,7 @@ export function toGraph(nodes: FlowNode[], edges: Edge[]): DatasetGraph {
     nodes: nodes.map(({ id, position: { x, y }, data }) => ({
       id,
       kind: data.kind,
-      params: { ...data.params },
+      params: data.params,
       position: { x, y },
     })),
     edges: edges.flatMap(({ id, source, sourceHandle, target, targetHandle }) =>

@@ -11,7 +11,7 @@ import {
   useVueFlow,
   type ValidConnectionFunc,
 } from "@vue-flow/core";
-import { useDebounceFn, whenever } from "@vueuse/core";
+import { useDebounceFn, useMounted, whenever } from "@vueuse/core";
 import { computed, markRaw, onBeforeUnmount, watch } from "vue";
 
 import type { DatasetPublic } from "@/client";
@@ -59,8 +59,10 @@ const serialized = computed(() => JSON.stringify(graph.value));
 let loaded = false;
 let lastSaved: string | undefined;
 
+const mounted = useMounted();
+
 whenever(
-  catalog,
+  () => mounted.value && catalog.value,
   (value) => {
     const saved = fromGraph(props.dataset.content, value);
     setNodes(saved.nodes);
@@ -74,7 +76,7 @@ whenever(
       });
     }
   },
-  { immediate: true, once: true },
+  { once: true },
 );
 
 const { mutate } = useMutation(() => ({
