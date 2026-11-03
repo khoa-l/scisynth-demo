@@ -21,11 +21,12 @@ import {
 const plotly = vi.hoisted(() => ({ react: vi.fn(), purge: vi.fn() }));
 vi.mock("plotly.js-cartesian-dist-min", () => ({ default: plotly }));
 
-const NO_PREVIEW = { x: [], y: [], channels: [] };
+const AXIS = { dtype: "f4", bdata: "AAAAAAAAgD8=", shape: "2" };
+const NO_PREVIEW = { layout: "grid", x: AXIS, y: AXIS, channels: [] };
 
 function answerWith(dataset: DatasetPublic) {
   fetchMock.mockImplementation(async (input) =>
-    new URL((input as Request).url).pathname === "/api/previews/latents"
+    new URL((input as Request).url).pathname === "/api/previews/nodes"
       ? jsonResponse(NO_PREVIEW)
       : jsonResponse(dataset),
   );
@@ -180,6 +181,24 @@ describe("Dataset view", () => {
     return (nodes[nodes.length - 1]!.props() as { data: DatasetNodeData }).data;
   }
 
+  async function connect(
+    wrapper: Wrapper,
+    source: DOMWrapper<Element>,
+    target: DOMWrapper<Element>,
+    targetHandle: string,
+  ) {
+    const flow = wrapper.findComponent(VueFlow).vm as unknown as {
+      emits: { connect: (connection: Connection) => void };
+    };
+    flow.emits.connect({
+      source: source.attributes("data-id")!,
+      sourceHandle: "field",
+      target: target.attributes("data-id")!,
+      targetHandle,
+    });
+    await flushPromises();
+  }
+
   function handles(node: DOMWrapper<Element>, side: "target" | "source") {
     return node
       .findAll(`.vue-flow__handle.${side}`)
@@ -293,24 +312,19 @@ describe("Dataset view", () => {
     const wrapper = await mountView();
     const field = await dropKind(wrapper, "GaussianField");
     const sampler = await dropKind(wrapper, "GridSampler");
-    const flow = wrapper.findComponent(VueFlow).vm as unknown as {
-      emits: { connect: (connection: Connection) => void };
-      edges: GraphEdge[];
-    };
-    const connection = {
-      source: field.attributes("data-id")!,
-      sourceHandle: "field",
-      target: sampler.attributes("data-id")!,
-      targetHandle: "latent",
-    };
+    const flow = wrapper.findComponent(VueFlow).vm as unknown as { edges: GraphEdge[] };
 
-    flow.emits.connect(connection);
-    flow.emits.connect(connection);
-    await flushPromises();
+    await connect(wrapper, field, sampler, "latent");
+    await connect(wrapper, field, sampler, "latent");
 
     expect(flow.edges).toHaveLength(1);
     expect(flow.edges[0]!.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(flow.edges[0]).toMatchObject(connection);
+    expect(flow.edges[0]).toMatchObject({
+      source: field.attributes("data-id"),
+      sourceHandle: "field",
+      target: sampler.attributes("data-id"),
+      targetHandle: "latent",
+    });
   });
 
   it("draws connections, and the line dragged out to make one, 2px wide", async () => {
@@ -326,25 +340,13 @@ describe("Dataset view", () => {
     const sum = await dropKind(wrapper, "Sum");
     const first = await dropKind(wrapper, "GaussianField");
     const second = await dropKind(wrapper, "GaussianField");
-    const flow = wrapper.findComponent(VueFlow).vm as unknown as {
-      emits: { connect: (connection: Connection) => void };
-    };
     const shortfall = () => sum.find('[data-slot="port-shortfall"]');
-    const connect = async (field: DOMWrapper<Element>) => {
-      flow.emits.connect({
-        source: field.attributes("data-id")!,
-        sourceHandle: "field",
-        target: sum.attributes("data-id")!,
-        targetHandle: "terms",
-      });
-      await flushPromises();
-    };
 
     expect(shortfall().text()).toBe("0/2");
     expect(shortfall().classes()).toContain("text-destructive");
-    await connect(first);
+    await connect(wrapper, first, sum, "terms");
     expect(shortfall().text()).toBe("1/2");
-    await connect(second);
+    await connect(wrapper, second, sum, "terms");
     expect(shortfall().exists()).toBe(false);
   });
 
@@ -551,7 +553,7 @@ describe("Dataset view", () => {
   describe("latent thumbnail", () => {
     const CHANNEL = { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" };
     const SECOND_CHANNEL = { ...CHANNEL, bdata: "AACAQAAAoEAAAMBAAADgQA==" };
-    const PREVIEW = { x: [0, 1], y: [0, 1], channels: [CHANNEL] };
+    const PREVIEW = { layout: "grid", x: AXIS, y: AXIS, channels: [CHANNEL] };
     const FIELD_PARAMS = {
       length_scale: 0.1,
       amplitude: 1,
@@ -568,36 +570,18 @@ describe("Dataset view", () => {
 
     function answerPreviews(preview: () => Response) {
       fetchMock.mockImplementation(async (input) =>
-        new URL((input as Request).url).pathname === "/api/previews/latents"
+        new URL((input as Request).url).pathname === "/api/previews/nodes"
           ? preview()
           : jsonResponse(DATASET),
       );
     }
 
     function previews() {
-      return requests().filter((r) => new URL(r.url).pathname === "/api/previews/latents");
+      return requests().filter((r) => new URL(r.url).pathname === "/api/previews/nodes");
     }
 
     function thumbnail(node: DOMWrapper<Element>) {
       return node.find('[role="img"]');
-    }
-
-    async function connect(
-      wrapper: Wrapper,
-      source: DOMWrapper<Element>,
-      target: DOMWrapper<Element>,
-      targetHandle: string,
-    ) {
-      const flow = wrapper.findComponent(VueFlow).vm as unknown as {
-        emits: { connect: (connection: Connection) => void };
-      };
-      flow.emits.connect({
-        source: source.attributes("data-id")!,
-        sourceHandle: "field",
-        target: target.attributes("data-id")!,
-        targetHandle,
-      });
-      await flushPromises();
     }
 
     it("draws a static heatmap of a Gaussian field above its node", async () => {
@@ -612,7 +596,7 @@ describe("Dataset view", () => {
         nodes: [{ id: field.attributes("data-id"), kind: "GaussianField", params: FIELD_PARAMS }],
         edges: [],
       });
-      expect(thumbnail(field).attributes("aria-label")).toBe("Preview of GaussianField");
+      expect(thumbnail(field).attributes("aria-label")).toBe("Preview of Gaussian field");
       expect(thumbnail(field).classes()).toEqual(expect.arrayContaining(["aspect-square"]));
       expect([...thumbnail(field).element.parentElement!.classList]).toEqual(
         expect.arrayContaining(["absolute", "-inset-x-px", "bottom-full"]),
@@ -623,8 +607,8 @@ describe("Dataset view", () => {
         [
           {
             type: "heatmap",
-            x: [0, 1],
-            y: [0, 1],
+            x: AXIS,
+            y: AXIS,
             z: CHANNEL,
             colorscale: "Viridis",
             showscale: false,
@@ -692,6 +676,49 @@ describe("Dataset view", () => {
       expect(next.attributes("disabled")).toBeDefined();
       expect(previous.attributes("disabled")).toBeUndefined();
       expect(shownChannel()).toEqual(SECOND_CHANNEL);
+    });
+
+    it("previews a sampler once a latent is connected to it", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+      const sampler = await dropKind(wrapper, "GridSampler");
+      await flushPromises();
+      expect(thumbnail(sampler).exists()).toBe(false);
+
+      await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+      await flushPromises();
+
+      expect(thumbnail(sampler).attributes("aria-label")).toBe("Preview of Grid sampler");
+      const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+      const body = bodies.find((b) => b.node === sampler.attributes("data-id"))!;
+      expect(body.nodes.map((n: { kind: string }) => n.kind).sort()).toEqual([
+        "GaussianField",
+        "GridSampler",
+      ]);
+    });
+
+    it("draws a point sampler's preview as a coloured scatter", async () => {
+      const wrapper = await mountView();
+      const points = { ...AXIS, bdata: "AAAAAAAAAD8AAIA/", shape: "3" };
+      answerPreviews(() =>
+        jsonResponse({ layout: "points", x: points, y: points, channels: [points] }),
+      );
+      const sampler = await dropKind(wrapper, "PointSampler");
+      await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+      await flushPromises();
+
+      const call = plotly.react.mock.calls.find(
+        ([element]) => element === thumbnail(sampler).element,
+      );
+      expect(call![1]).toEqual([
+        {
+          type: "scatter",
+          mode: "markers",
+          x: points,
+          y: points,
+          marker: { color: points, colorscale: "Viridis", size: 3 },
+        },
+      ]);
     });
 
     it("previews a Multichannel from a single channel", async () => {

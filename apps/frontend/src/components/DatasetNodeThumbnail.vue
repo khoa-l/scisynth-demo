@@ -5,10 +5,10 @@ import { refDebounced } from "@vueuse/core";
 import type { Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
-import { previewsPreviewLatent, type LatentPreviewRequest } from "@/client";
+import { previewsPreviewNode, type NodePreviewRequest } from "@/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const props = defineProps<{ label: string; request: LatentPreviewRequest }>();
+const props = defineProps<{ label: string; request: NodePreviewRequest }>();
 
 const request = refDebounced(
   computed(() => props.request),
@@ -17,9 +17,9 @@ const request = refDebounced(
 
 const { data: preview, error } = useQuery(
   computed(() => ({
-    queryKey: ["latent-preview", request.value],
+    queryKey: ["node-preview", request.value],
     queryFn: async () => {
-      const { data } = await previewsPreviewLatent({ body: request.value, throwOnError: true });
+      const { data } = await previewsPreviewNode({ body: request.value, throwOnError: true });
       return data;
     },
     placeholderData: keepPreviousData,
@@ -55,14 +55,16 @@ watch(
   async ([value, element, index]) => {
     const z = value?.channels[index];
     if (!value || !element || !z) return;
-    const trace = {
-      type: "heatmap",
-      x: value.x,
-      y: value.y,
-      z,
-      colorscale: "Viridis",
-      showscale: false,
-    };
+    const trace =
+      value.layout === "grid"
+        ? { type: "heatmap", x: value.x, y: value.y, z, colorscale: "Viridis", showscale: false }
+        : {
+            type: "scatter",
+            mode: "markers",
+            x: value.x,
+            y: value.y,
+            marker: { color: z, colorscale: "Viridis", size: 3 },
+          };
     const Plotly = await plotly;
     await Plotly.react(element, [trace as Data], layout, { staticPlot: true });
   },

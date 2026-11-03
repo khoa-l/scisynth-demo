@@ -63,7 +63,7 @@ def test_requires_a_session(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-LATENTS = "/api/previews/latents"
+NODES = "/api/previews/nodes"
 FIELD = {"length_scale": 0.1, "amplitude": 1, "mean": 0, "resolution": 128, "order": 1}
 
 
@@ -89,18 +89,21 @@ def link(source: str, target: str, port: str = "terms") -> dict:
     }
 
 
+def decode(array: dict) -> np.ndarray:
+    assert array["dtype"] == "f4"
+    shape = tuple(int(n) for n in array["shape"].split(","))
+    return np.frombuffer(base64.b64decode(array["bdata"]), np.float32).reshape(shape)
+
+
 def grid(preview: dict, channel: int = 0) -> np.ndarray:
-    z = preview["channels"][channel]
-    assert z["dtype"] == "f4"
-    shape = tuple(int(n) for n in z["shape"].split(","))
-    return np.frombuffer(base64.b64decode(z["bdata"]), np.float32).reshape(shape)
+    return decode(preview["channels"][channel])
 
 
 def preview(
     client: TestClient, node: str, nodes: list, edges: list | None = None
 ) -> dict:
     body = {"node": node, "nodes": nodes, "edges": edges or []}
-    response = client.post(LATENTS, json=body)
+    response = client.post(NODES, json=body)
     assert response.status_code == 200, response.json()
     return response.json()
 
@@ -108,11 +111,12 @@ def preview(
 def test_previews_a_field_as_a_heatmap_grid(signed_in: TestClient) -> None:
     result = preview(signed_in, "a", [field("a")])
 
+    assert result["layout"] == "grid"
     assert len(result["channels"]) == 1
     assert grid(result).shape == (64, 64)
-    assert len(result["x"]) == len(result["y"]) == 64
-    assert [result["x"][0], result["x"][-1]] == [0, 1]
-    assert [result["y"][0], result["y"][-1]] == [0, 1]
+    x, y = decode(result["x"]), decode(result["y"])
+    assert len(x) == len(y) == 64
+    assert [x[0], x[-1], y[0], y[-1]] == [0, 1, 0, 1]
 
 
 def test_field_preview_follows_its_parameters_and_seed(signed_in: TestClient) -> None:
@@ -147,7 +151,7 @@ def test_previews_composites_only_with_enough_terms(signed_in: TestClient) -> No
     a = field("a")
     body = {"node": "c", "nodes": [a, composite("c", "Sum")], "edges": [link("a", "c")]}
 
-    response = signed_in.post(LATENTS, json=body)
+    response = signed_in.post(NODES, json=body)
     assert response.status_code == 422
     assert response.json()["detail"] == "Sum needs at least two fields"
 
@@ -170,36 +174,45 @@ def test_previews_composites_of_composites(signed_in: TestClient) -> None:
 def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
     body = {"node": "a", "nodes": [field("a", resolution=4096, max_cells=10**12)]}
 
-    response = signed_in.post(LATENTS, json=body)
+    response = signed_in.post(NODES, json=body)
 
     assert response.status_code == 422
     assert "over the limit of 262,144" in response.json()["detail"]
 
 
 @pytest.mark.parametrize(
-    ("nodes", "edges", "message"),
+    ("node", "nodes", "edges", "message"),
     [
-        ([composite("c", "Sum")], [], "Sum needs at least two fields"),
+        ("c", [composite("c", "Sum")], [], "Sum needs at least two fields"),
+        ("c", [composite("c", "Multichannel")], [], "needs at least one channel"),
         (
-            [composite("c", "Multichannel")],
-            [],
-            "Multichannel needs at least one channel",
-        ),
-        (
+            "p",
             [composite("s", "Sum"), composite("p", "Product")],
             [link("s", "p"), link("p", "s")],
             "form a loop",
         ),
-        ([composite("c", "Sum")], [link("gone", "c")], "isn't part of the preview"),
-        ([{"id": "c", "kind": "NoSuchLatent", "params": {}}], [], "Unknown component"),
         (
+            "c",
+            [composite("c", "Sum")],
+            [link("gone", "c")],
+            "isn't part of the preview",
+        ),
+        (
+            "c",
+            [{"id": "c", "kind": "NoSuchLatent", "params": {}}],
+            [],
+            "Unknown component",
+        ),
+        (
+            "c",
             [{"id": "c", "kind": "GaussianNoise", "params": {}}],
             [],
-            "is not a LatentGenerator",
+            "is not a Latent",
         ),
-        ([field("c", length_scale=0)], [], "length_scale"),
-        ([field("c", seed=-1)], [], "seed must be"),
+        ("c", [field("c", length_scale=0)], [], "length_scale"),
+        ("c", [field("c", seed=-1)], [], "seed must be"),
         (
+            "c",
             [{"id": "c", "kind": "AnalyticField", "params": {}}],
             [],
             "Unknown component",
@@ -207,11 +220,10 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
     ],
 )
 def test_rejects_latents_it_cannot_preview(
-    signed_in: TestClient, nodes: list, edges: list, message: str
+    signed_in: TestClient, node: str, nodes: list, edges: list, message: str
 ) -> None:
-    node = "p" if nodes[0]["id"] == "s" else "c"
     response = signed_in.post(
-        LATENTS, json={"node": node, "nodes": nodes, "edges": edges}
+        NODES, json={"node": node, "nodes": nodes, "edges": edges}
     )
 
     assert response.status_code == 422
@@ -219,5 +231,70 @@ def test_rejects_latents_it_cannot_preview(
 
 
 def test_latent_preview_requires_a_session(client: TestClient) -> None:
-    response = client.post(LATENTS, json={"node": "a", "nodes": [field("a")]})
+    response = client.post(NODES, json={"node": "a", "nodes": [field("a")]})
     assert response.status_code == 401
+
+
+def sampler(node_id: str, kind: str, **params: object) -> dict:
+    return {"id": node_id, "kind": kind, "params": params}
+
+
+def sampled(node_id: str) -> dict:
+    return {
+        "id": f"field-{node_id}",
+        "source": "field",
+        "source_port": "field",
+        "target": node_id,
+        "target_port": "latent",
+    }
+
+
+def test_previews_a_grid_sampler_at_its_shape(signed_in: TestClient) -> None:
+    nodes = [field("field"), sampler("grid", "GridSampler", shape=16)]
+
+    result = preview(signed_in, "grid", nodes, [sampled("grid")])
+
+    assert result["layout"] == "grid"
+    assert grid(result).shape == (16, 16)
+    x = decode(result["x"])
+    assert len(x) == 16
+    assert [x[0], x[-1]] == [0, 1]
+
+
+def test_previews_a_point_sampler_as_points(signed_in: TestClient) -> None:
+    nodes = [field("field"), sampler("points", "PointSampler", n=500)]
+
+    result = preview(signed_in, "points", nodes, [sampled("points")])
+
+    assert result["layout"] == "points"
+    x, y, values = decode(result["x"]), decode(result["y"]), grid(result)
+    assert x.shape == y.shape == values.shape == (500,)
+    assert x.min() >= 0 and x.max() <= 1
+    assert y.min() >= 0 and y.max() <= 1
+
+
+@pytest.mark.parametrize(
+    ("node", "edges", "message"),
+    [
+        (sampler("s", "GridSampler", shape=16), [], "needs one latent connected"),
+        (
+            sampler("s", "GridSampler", shape=1024),
+            [sampled("s")],
+            "over the limit of 65,536",
+        ),
+        (
+            sampler("s", "PointSampler", n=20_000),
+            [sampled("s")],
+            "Too many points to preview",
+        ),
+    ],
+)
+def test_rejects_samplers_it_cannot_preview(
+    signed_in: TestClient, node: dict, edges: list, message: str
+) -> None:
+    body = {"node": "s", "nodes": [field("field"), node], "edges": edges}
+
+    response = signed_in.post(NODES, json=body)
+
+    assert response.status_code == 422
+    assert message in response.json()["detail"]

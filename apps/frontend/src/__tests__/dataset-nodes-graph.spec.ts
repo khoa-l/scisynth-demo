@@ -2,7 +2,7 @@ import { describe, it, expect } from "vite-plus/test";
 
 import {
   fromGraph,
-  latentPreviewRequest,
+  nodePreviewRequest,
   toGraph,
   type DatasetGraph,
 } from "../lib/dataset-nodes/graph";
@@ -156,7 +156,7 @@ describe("Dataset graph", () => {
       ],
     };
 
-    expect(latentPreviewRequest(graph, "sum")).toEqual({
+    expect(nodePreviewRequest(graph, "sum")).toEqual({
       node: "sum",
       nodes: [
         { id: "a", kind: "GaussianField", params: { seed: 1 } },
@@ -165,7 +165,7 @@ describe("Dataset graph", () => {
       ],
       edges: [graph.edges[0], graph.edges[1]],
     });
-    expect(latentPreviewRequest(graph, "other")).toEqual({
+    expect(nodePreviewRequest(graph, "other")).toEqual({
       node: "other",
       nodes: [{ id: "other", kind: "GaussianField", params: { seed: 3 } }],
       edges: [],

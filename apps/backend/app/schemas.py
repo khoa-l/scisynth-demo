@@ -133,7 +133,7 @@ class SurveyResponseReceipt(BaseModel):
     submitted_at: datetime
 
 
-class PreviewRequest(BaseModel):
+class StagePreviewRequest(BaseModel):
     kind: Ref
     params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
 
@@ -143,7 +143,7 @@ class PlotFigure(BaseModel):
     layout: dict[str, Any]
 
 
-class LatentPreviewRequest(BaseModel):
+class NodePreviewRequest(BaseModel):
     node: Ref
     nodes: list[NodeSpec] = Field(max_length=MAX_NODES)
     edges: list[GraphEdge] = Field(default_factory=list, max_length=MAX_EDGES)
@@ -155,7 +155,8 @@ class TypedArray(BaseModel):
     shape: str
 
 
-class LatentPreview(BaseModel):
-    x: list[float]
-    y: list[float]
+class NodePreview(BaseModel):
+    layout: Literal["grid", "points"]
+    x: TypedArray
+    y: TypedArray
     channels: list[TypedArray]

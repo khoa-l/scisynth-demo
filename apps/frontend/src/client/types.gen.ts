@@ -169,17 +169,29 @@ export type Health = {
 };
 
 /**
- * LatentPreview
+ * LoginRequest
  */
-export type LatentPreview = {
+export type LoginRequest = {
     /**
-     * X
+     * Email
      */
-    x: Array<number>;
+    email: string;
     /**
-     * Y
+     * Password
      */
-    y: Array<number>;
+    password: string;
+};
+
+/**
+ * NodePreview
+ */
+export type NodePreview = {
+    /**
+     * Layout
+     */
+    layout: 'grid' | 'points';
+    x: TypedArray;
+    y: TypedArray;
     /**
      * Channels
      */
@@ -187,9 +199,9 @@ export type LatentPreview = {
 };
 
 /**
- * LatentPreviewRequest
+ * NodePreviewRequest
  */
-export type LatentPreviewRequest = {
+export type NodePreviewRequest = {
     /**
      * Node
      */
@@ -202,20 +214,6 @@ export type LatentPreviewRequest = {
      * Edges
      */
     edges?: Array<GraphEdge>;
-};
-
-/**
- * LoginRequest
- */
-export type LoginRequest = {
-    /**
-     * Email
-     */
-    email: string;
-    /**
-     * Password
-     */
-    password: string;
 };
 
 /**
@@ -268,22 +266,6 @@ export type Position = {
      * Y
      */
     y: number;
-};
-
-/**
- * PreviewRequest
- */
-export type PreviewRequest = {
-    /**
-     * Kind
-     */
-    kind: string;
-    /**
-     * Params
-     */
-    params?: {
-        [key: string]: number | number | string | null;
-    };
 };
 
 /**
@@ -356,6 +338,22 @@ export type RegisterRequest = {
      * Password
      */
     password: string;
+};
+
+/**
+ * StagePreviewRequest
+ */
+export type StagePreviewRequest = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Params
+     */
+    params?: {
+        [key: string]: number | number | string | null;
+    };
 };
 
 /**
@@ -1319,7 +1317,7 @@ export type PublicSubmitResponseResponses = {
 export type PublicSubmitResponseResponse = PublicSubmitResponseResponses[keyof PublicSubmitResponseResponses];
 
 export type PreviewsPreviewStageData = {
-    body: PreviewRequest;
+    body: StagePreviewRequest;
     path?: never;
     query?: never;
     url: '/api/previews/stages';
@@ -1343,27 +1341,27 @@ export type PreviewsPreviewStageResponses = {
 
 export type PreviewsPreviewStageResponse = PreviewsPreviewStageResponses[keyof PreviewsPreviewStageResponses];
 
-export type PreviewsPreviewLatentData = {
-    body: LatentPreviewRequest;
+export type PreviewsPreviewNodeData = {
+    body: NodePreviewRequest;
     path?: never;
     query?: never;
-    url: '/api/previews/latents';
+    url: '/api/previews/nodes';
 };
 
-export type PreviewsPreviewLatentErrors = {
+export type PreviewsPreviewNodeErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type PreviewsPreviewLatentError = PreviewsPreviewLatentErrors[keyof PreviewsPreviewLatentErrors];
+export type PreviewsPreviewNodeError = PreviewsPreviewNodeErrors[keyof PreviewsPreviewNodeErrors];
 
-export type PreviewsPreviewLatentResponses = {
+export type PreviewsPreviewNodeResponses = {
     /**
      * Successful Response
      */
-    200: LatentPreview;
+    200: NodePreview;
 };
 
-export type PreviewsPreviewLatentResponse = PreviewsPreviewLatentResponses[keyof PreviewsPreviewLatentResponses];
+export type PreviewsPreviewNodeResponse = PreviewsPreviewNodeResponses[keyof PreviewsPreviewNodeResponses];
