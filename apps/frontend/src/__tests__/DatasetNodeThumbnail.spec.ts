@@ -210,6 +210,20 @@ describe("Dataset node thumbnail", () => {
     expect(body.edges).toHaveLength(2);
   });
 
+  it("previews a Downsample of the observation connected to it", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const downsample = await dropKind(wrapper, "Downsample");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+    expect(thumbnail(downsample).exists()).toBe(false);
+
+    await connect(wrapper, sampler, downsample, "observation", "observation");
+    await flushPromises();
+
+    expect(thumbnail(downsample).attributes("aria-label")).toBe("Preview of Downsample");
+  });
+
   it("sends only the nodes upstream of the preview", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     const wrapper = await mountView();

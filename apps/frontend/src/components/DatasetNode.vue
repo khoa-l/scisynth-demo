@@ -18,7 +18,7 @@ import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
 const PREVIEWABLE_GENERATORS = new Set(["GaussianField"]);
-const PREVIEWED_FROM_INPUTS = new Set(["composite", "sampler", "defect"]);
+const PREVIEWED_FROM_INPUTS = new Set(["composite", "sampler", "defect", "transform"]);
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
