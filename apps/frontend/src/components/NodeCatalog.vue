@@ -1,7 +1,20 @@
 <script setup lang="ts">
+import { useQuery } from "@tanstack/vue-query";
+import { computed } from "vue";
+
 import FolderTabs from "@/components/FolderTabs.vue";
-import { NODE_KIND_MIME, nodeCategories } from "@/lib/node-kinds";
+import { NODE_KIND_MIME, nodeCatalogQuery } from "@/lib/nodes/catalog";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
+
+const { data: catalog } = useQuery(nodeCatalogQuery);
+
+const tabs = computed(() => {
+  const { categories = [], kinds = [] } = catalog.value ?? {};
+  return categories.map((category) => ({
+    label: category.label,
+    kinds: kinds.filter((kind) => kind.category === category.id),
+  }));
+});
 
 function startDrag(event: DragEvent, name: string) {
   if (!event.dataTransfer) return;
@@ -11,7 +24,12 @@ function startDrag(event: DragEvent, name: string) {
 </script>
 
 <template>
-  <FolderTabs v-slot="{ tab: category }" :tabs="nodeCategories" label="Component categories">
+  <FolderTabs
+    v-if="tabs.length"
+    v-slot="{ tab: category }"
+    :tabs="tabs"
+    label="Component categories"
+  >
     <ul :class="paletteListClass">
       <li
         v-for="kind in category.kinds"

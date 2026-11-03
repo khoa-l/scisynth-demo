@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vite-plus/test";
 
-import { flushPromises } from "@vue/test-utils";
+import { Handle, VueFlow } from "@vue-flow/core";
+import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
+import CatalogNode from "../components/CatalogNode.vue";
+import type { CatalogNodeData } from "../lib/nodes/catalog";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import {
   DATASET,
@@ -107,9 +110,114 @@ describe("Dataset view", () => {
     }
 
     const nodes = wrapper.findAll(".vue-flow__node");
-    expect(nodes.map((node) => node.text())).toEqual(["Gaussian field", "Multichannel"]);
-    expect(nodes[0]!.classes()).toContain("vue-flow__node-input");
-    expect(nodes[1]!.classes()).toContain("vue-flow__node-default");
+    expect(nodes.map((node) => node.find('[data-slot="node-title"]').text())).toEqual([
+      "Gaussian field",
+      "Multichannel",
+    ]);
+    expect(nodes.every((node) => node.classes().includes("vue-flow__node-catalog"))).toBe(true);
+  });
+
+  async function dropKind(wrapper: Wrapper, name: string) {
+    const dataTransfer = fakeDataTransfer();
+    dataTransfer.setData("application/x-scisynth-node", name);
+    await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX: 0, clientY: 0 });
+    await flushPromises();
+    const nodes = wrapper.findAll(".vue-flow__node");
+    return nodes[nodes.length - 1]!;
+  }
+
+  /** The data held by the last node dropped on the canvas. */
+  function lastNodeData(wrapper: Wrapper) {
+    const nodes = wrapper.findAllComponents(CatalogNode);
+    return (nodes[nodes.length - 1]!.props() as { data: CatalogNodeData }).data;
+  }
+
+  function handles(node: DOMWrapper<Element>, side: "target" | "source") {
+    return node
+      .findAll(`.vue-flow__handle.${side}`)
+      .map((handle) => [
+        handle.attributes("data-handleid"),
+        handle.element.parentElement!.textContent!.trim(),
+      ]);
+  }
+
+  function inputValue(wrapper: DOMWrapper<Element>) {
+    return (wrapper.element as HTMLInputElement | HTMLSelectElement).value;
+  }
+
+  async function enter(input: DOMWrapper<Element>, value: string) {
+    (input.element as HTMLInputElement).value = value;
+    await input.trigger("change");
+  }
+
+  it("draws a node's input and output ports from the catalogue", async () => {
+    const wrapper = await mountView();
+
+    const field = await dropKind(wrapper, "GaussianField");
+    expect(handles(field, "target")).toEqual([]);
+    expect(handles(field, "source")).toEqual([["field", "Field"]]);
+
+    const sampler = await dropKind(wrapper, "GridSampler");
+    expect(handles(sampler, "target")).toEqual([["latent", "Latent"]]);
+    expect(handles(sampler, "source")).toEqual([["observation", "Observation"]]);
+
+    const projection = await dropKind(wrapper, "Projection");
+    expect(handles(projection, "source")).toEqual([]);
+  });
+
+  it("starts a node's parameters at their defaults and keeps valid edits", async () => {
+    const wrapper = await mountView();
+    const node = await dropKind(wrapper, "GaussianNoise");
+
+    expect(node.findAll("label").map((label) => label.text())).toEqual(["Sigma", "Mean"]);
+    const sigma = node.find(`#${node.find("label").attributes("for")}`);
+    expect(inputValue(sigma)).toBe("1");
+
+    await enter(sigma, "0.5");
+    expect(lastNodeData(wrapper).params).toEqual({ sigma: 0.5, mean: 0 });
+
+    await enter(sigma, "-1");
+    expect(inputValue(sigma)).toBe("0.5");
+    expect(lastNodeData(wrapper).params.sigma).toBe(0.5);
+  });
+
+  it("lets optional parameters be blank and picks options from a list", async () => {
+    const wrapper = await mountView();
+
+    const quantize = await dropKind(wrapper, "Quantize");
+    const [levels, vmin] = quantize.findAll("input");
+    expect([levels, vmin].map((input) => input!.attributes("placeholder"))).toEqual([
+      undefined,
+      "Auto",
+    ]);
+    await enter(levels!, "");
+    expect(inputValue(levels!)).toBe("256");
+    await enter(vmin!, "2");
+    await enter(vmin!, "");
+    expect(lastNodeData(wrapper).params).toEqual({ levels: 256, vmin: null, vmax: null });
+
+    const field = await dropKind(wrapper, "InterpolatedField");
+    const select = field.find("select");
+    expect(inputValue(select)).toBe("nearest");
+    await select.setValue("grid-wrap");
+    expect(lastNodeData(wrapper).params).toEqual({ order: 1, mode: "grid-wrap" });
+  });
+
+  it("lets an input port take one edge unless it accepts several", async () => {
+    const wrapper = await mountView();
+
+    await dropKind(wrapper, "Sum");
+    await dropKind(wrapper, "PointSampler");
+    const inputs = wrapper.findAllComponents(Handle).filter((h) => h.props("type") === "target");
+    expect(inputs.map((handle) => handle.props("connectable"))).toEqual([true, "single"]);
+  });
+
+  it("draws connections 2px wide", async () => {
+    const wrapper = await mountView();
+
+    expect(wrapper.findComponent(VueFlow).props("defaultEdgeOptions")).toEqual({
+      style: { strokeWidth: 2 },
+    });
   });
 
   it("centres a dropped node on the mouse once its size is known", async () => {

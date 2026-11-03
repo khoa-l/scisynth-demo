@@ -2,12 +2,39 @@
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 
+import { useQuery } from "@tanstack/vue-query";
 import { Background } from "@vue-flow/background";
-import { VueFlow, useVueFlow } from "@vue-flow/core";
+import { VueFlow, useVueFlow, type ValidConnectionFunc } from "@vue-flow/core";
+import { markRaw } from "vue";
 
-import { NODE_KIND_MIME, findNodeKind } from "@/lib/node-kinds";
+import CatalogNode from "@/components/CatalogNode.vue";
+import {
+  NODE_KIND_MIME,
+  canConnect,
+  defaultParams,
+  findKind,
+  nodeCatalogQuery,
+  type CatalogNodeData,
+} from "@/lib/nodes/catalog";
 
-const { addNodes, onNodesInitialized, screenToFlowCoordinate, updateNode } = useVueFlow();
+const nodeTypes = { catalog: markRaw(CatalogNode) };
+const defaultEdgeOptions = { style: { strokeWidth: 2 } };
+
+const { data: catalog } = useQuery(nodeCatalogQuery);
+const { addEdges, addNodes, onConnect, onNodesInitialized, screenToFlowCoordinate, updateNode } =
+  useVueFlow();
+
+onConnect(addEdges);
+
+const isValidConnection: ValidConnectionFunc = (connection, { sourceNode, targetNode }) =>
+  !!catalog.value &&
+  connection.source !== connection.target &&
+  canConnect(catalog.value, {
+    sourceKind: (sourceNode.data as CatalogNodeData).kind,
+    sourcePort: connection.sourceHandle,
+    targetKind: (targetNode.data as CatalogNodeData).kind,
+    targetPort: connection.targetHandle,
+  });
 
 function onDragOver(event: DragEvent) {
   if (!event.dataTransfer?.types.includes(NODE_KIND_MIME)) return;
@@ -16,7 +43,8 @@ function onDragOver(event: DragEvent) {
 }
 
 function onDrop(event: DragEvent) {
-  const kind = findNodeKind(event.dataTransfer?.getData(NODE_KIND_MIME) ?? "");
+  const name = event.dataTransfer?.getData(NODE_KIND_MIME) ?? "";
+  const kind = catalog.value && findKind(catalog.value, name);
   if (!kind) return;
   event.preventDefault();
   const id = crypto.randomUUID();
@@ -31,9 +59,9 @@ function onDrop(event: DragEvent) {
   });
   addNodes({
     id,
-    type: kind.type,
+    type: "catalog",
     position: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
-    data: { label: kind.label, kind: kind.name },
+    data: { kind: kind.name, params: defaultParams(kind) } satisfies CatalogNodeData,
   });
 }
 </script>
@@ -42,6 +70,9 @@ function onDrop(event: DragEvent) {
   <VueFlow
     aria-label="Node graph"
     class="bg-muted inset-shadow-sm"
+    :node-types="nodeTypes"
+    :default-edge-options="defaultEdgeOptions"
+    :is-valid-connection="isValidConnection"
     @dragover="onDragOver"
     @drop="onDrop"
   >
