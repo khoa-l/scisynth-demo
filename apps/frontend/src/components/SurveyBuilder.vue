@@ -8,6 +8,7 @@ import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import SortableRow from "@/components/SortableRow.vue";
 import SurveyChartSettings from "@/components/SurveyChartSettings.vue";
+import SurveyLabelSettings from "@/components/SurveyLabelSettings.vue";
 import SurveyScale from "@/components/SurveyScale.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ import {
   surveyBlocks,
   surveyColumnClass,
   type ChartBlock,
+  type LabelBlock,
   type SurveyBlock,
 } from "@/lib/survey-blocks";
 
@@ -74,10 +76,8 @@ function withText(id: string, event: Event) {
   );
 }
 
-function withChart(id: string, changes: Partial<ChartBlock>) {
-  return blocks.value.map((block) =>
-    block.id === id && block.type === "chart" ? { ...block, ...changes } : block,
-  );
+function withChanges<Block extends ChartBlock | LabelBlock>(block: Block, changes: Partial<Block>) {
+  return blocks.value.map((other) => (other.id === block.id ? { ...block, ...changes } : other));
 }
 </script>
 
@@ -124,7 +124,7 @@ function withChart(id: string, changes: Partial<ChartBlock>) {
           <SurveyChartSettings
             :project-id="projectId"
             :block="block"
-            @update="save(withChart(block.id, $event))"
+            @update="save(withChanges(block, $event))"
           />
           <Input
             :default-value="block.text"
@@ -133,6 +133,21 @@ function withChart(id: string, changes: Partial<ChartBlock>) {
             @input="show(withText(block.id, $event))"
             @change="save(withText(block.id, $event))"
           />
+        </template>
+        <template v-else-if="block.type === 'label'">
+          <Input
+            :default-value="block.text"
+            aria-label="Instruction"
+            placeholder="Tell respondents what to label…"
+            @input="show(withText(block.id, $event))"
+            @change="save(withText(block.id, $event))"
+          />
+          <SurveyChartSettings
+            :project-id="projectId"
+            :block="block"
+            @update="save(withChanges(block, $event))"
+          />
+          <SurveyLabelSettings :block="block" @update="save(withChanges(block, $event))" />
         </template>
         <Textarea
           v-else

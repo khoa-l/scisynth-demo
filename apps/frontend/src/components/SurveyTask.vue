@@ -16,8 +16,11 @@ import type { ChartQuery } from "@/lib/survey-charts";
 import {
   surveyBlocks,
   surveyColumnClass,
+  type Answers,
   type ChartBlock,
   type ContentBlock,
+  type LabelBlock,
+  type LabelledPoints,
 } from "@/lib/survey-blocks";
 
 const props = defineProps<{
@@ -25,27 +28,41 @@ const props = defineProps<{
   content: { [key: string]: unknown };
   charts: ChartQuery;
   submitting?: boolean;
-  answered?: Record<string, number>;
+  answered?: Answers;
 }>();
 
-defineEmits<{ submit: [answers: Record<string, number>] }>();
+defineEmits<{ submit: [answers: Answers] }>();
 
-const answers = ref<Record<string, number>>({});
+const answers = ref<Answers>({});
+const shown = computed(() => props.answered ?? answers.value);
 
-function setAnswer(id: string, point: number | undefined) {
-  if (point === undefined) delete answers.value[id];
-  else answers.value[id] = point;
+function setAnswer(id: string, answer: number | LabelledPoints | undefined) {
+  if (answer === undefined || (typeof answer === "object" && !Object.keys(answer).length)) {
+    delete answers.value[id];
+  } else {
+    answers.value[id] = answer;
+  }
+}
+
+function scaleAnswer(id: string) {
+  const answer = shown.value[id];
+  return typeof answer === "number" ? answer : undefined;
+}
+
+function labelAnswer(id: string) {
+  const answer = shown.value[id];
+  return typeof answer === "object" ? answer : undefined;
 }
 
 const blocks = computed(() => surveyBlocks(props.content));
 
 const pages = computed(() => {
-  const pages: (ContentBlock | ChartBlock)[][][] = [[[]]];
+  const pages: (ContentBlock | ChartBlock | LabelBlock)[][][] = [[[]]];
   for (const block of blocks.value) {
     if (block.type === "end") break;
     if (block.type === "page") pages.push([[]]);
     else if (block.type === "separator") pages.at(-1)!.push([]);
-    else if (block.type === "chart" ? block.source : block.text) pages.at(-1)!.at(-1)!.push(block);
+    else if ("source" in block ? block.source : block.text) pages.at(-1)!.at(-1)!.push(block);
   }
   return pages.map((cards) => cards.filter((card) => card.length)).filter((cards) => cards.length);
 });
@@ -85,17 +102,20 @@ const hasFooter = computed(
               {{ block.text }}
             </p>
             <SurveyScale
-              :model-value="(answered ?? answers)[block.id]"
+              :model-value="scaleAnswer(block.id)"
               :disabled="!!answered"
               :aria-labelledby="`question-${block.id}`"
               @update:model-value="setAnswer(block.id, $event)"
             />
           </div>
           <SurveyChart
-            v-else-if="block.type === 'chart' && block.source"
+            v-else-if="(block.type === 'chart' || block.type === 'label') && block.source"
             :block="block"
             :source="block.source"
             :charts="charts"
+            :labelled="labelAnswer(block.id)"
+            :disabled="!!answered"
+            @label="setAnswer(block.id, $event)"
           />
           <p v-else class="text-sm wrap-anywhere whitespace-pre-line">{{ block.text }}</p>
         </template>

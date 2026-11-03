@@ -6,50 +6,17 @@ from sqlmodel import Session, select
 
 from app.models import SurveyChart
 from tests.helpers import sign_in, sign_up
-from tests.previews import (
-    composite,
-    decode,
-    field,
-    grid,
-    link,
-    preview,
-    sampled,
-    sampler,
-    stage,
+from tests.previews import decode, field, grid, sampler
+from tests.surveys import (
+    DROPPED,
+    SAMPLED,
+    TWO_CHANNELS,
+    create_dataset,
+    create_survey,
+    live,
+    placed,
+    publish,
 )
-
-
-def placed(*nodes: dict) -> list[dict]:
-    return [{**node, "position": {"x": 0, "y": 0}} for node in nodes]
-
-
-SAMPLED = {
-    "version": 1,
-    "nodes": placed(field("field"), sampler("grid", "GridSampler", shape=16)),
-    "edges": [sampled("grid")],
-}
-TWO_CHANNELS = {
-    "version": 1,
-    "nodes": placed(
-        field("a", seed=1),
-        field("b", seed=2),
-        composite("field", "Multichannel"),
-        sampler("grid", "GridSampler", shape=16),
-    ),
-    "edges": [
-        link("a", "field", "channels"),
-        link("b", "field", "channels"),
-        sampled("grid"),
-    ],
-}
-DROPPED = {
-    **TWO_CHANNELS,
-    "nodes": [
-        *TWO_CHANNELS["nodes"],
-        *placed(stage("drop", "RandomDropout", "grid", p=0.5)[0]),
-    ],
-    "edges": [*TWO_CHANNELS["edges"], stage("drop", "RandomDropout", "grid")[1]],
-}
 
 
 def chart(source: dict | None, appearance: str = "shown") -> dict:
@@ -60,39 +27,6 @@ def chart(source: dict | None, appearance: str = "shown") -> dict:
         "appearance": appearance,
         "source": source,
     }
-
-
-@pytest.fixture
-def project_url(client: TestClient) -> str:
-    sign_up(client, "ada@example.com")
-    project_id = client.post("/api/projects", json={"name": "Project"}).json()["id"]
-    return f"/api/projects/{project_id}"
-
-
-def create_dataset(client: TestClient, project_url: str, content: dict) -> str:
-    url = f"{project_url}/datasets"
-    dataset_id = client.post(url, json={"name": "Fields"}).json()["id"]
-    assert client.patch(f"{url}/{dataset_id}", json={"content": content}).is_success
-    return dataset_id
-
-
-def create_survey(client: TestClient, project_url: str, *blocks: dict) -> str:
-    url = f"{project_url}/surveys"
-    survey_id = client.post(url, json={"name": "Intake"}).json()["id"]
-    client.patch(f"{url}/{survey_id}", json={"content": {"blocks": list(blocks)}})
-    return f"{url}/{survey_id}"
-
-
-def publish(client: TestClient, survey_url: str) -> str:
-    response = client.post(f"{survey_url}/publish")
-    assert response.status_code == 200, response.json()
-    public_url = f"/api/public/surveys/{response.json()['public_id']}"
-    return f"{public_url}/versions/{client.get(public_url).json()['version_id']}"
-
-
-def live(client: TestClient, content: dict, node: str = "grid") -> dict:
-    nodes = [{k: v for k, v in n.items() if k != "position"} for n in content["nodes"]]
-    return preview(client, node, nodes, content["edges"])
 
 
 def test_publishing_freezes_a_chart_of_the_chosen_node(
@@ -134,6 +68,44 @@ def test_a_published_chart_keeps_its_data_when_the_dataset_changes(
     )
 
     assert client.get(f"{version_url}/charts/c1").json() == before
+
+
+def test_republishing_after_the_dataset_changes_freezes_the_new_data(
+    client: TestClient, project_url: str
+) -> None:
+    dataset_id = create_dataset(client, project_url, SAMPLED)
+    survey_url = create_survey(
+        client,
+        project_url,
+        chart({"dataset_id": dataset_id, "node_id": "grid", "channels": [0]}),
+    )
+    first_url = publish(client, survey_url)
+    smaller = placed(field("field"), sampler("grid", "GridSampler", shape=8))
+    client.patch(
+        f"{project_url}/datasets/{dataset_id}",
+        json={"content": {**SAMPLED, "nodes": smaller}},
+    )
+
+    second_url = publish(client, survey_url)
+
+    assert second_url != first_url
+    assert client.get(survey_url).json()["published_version"] == 2
+    assert grid(client.get(f"{second_url}/charts/c1").json()).shape == (8, 8)
+    assert grid(client.get(f"{first_url}/charts/c1").json()).shape == (16, 16)
+
+
+def test_republishing_unchanged_content_and_data_reuses_the_version(
+    client: TestClient, project_url: str
+) -> None:
+    dataset_id = create_dataset(client, project_url, SAMPLED)
+    survey_url = create_survey(
+        client,
+        project_url,
+        chart({"dataset_id": dataset_id, "node_id": "grid", "channels": [0]}),
+    )
+
+    assert publish(client, survey_url) == publish(client, survey_url)
+    assert len(client.get(f"{survey_url}/versions").json()) == 1
 
 
 def test_a_chart_keeps_only_its_chosen_channels(

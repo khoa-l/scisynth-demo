@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/native-select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import type { ChartBlock } from "@/lib/survey-blocks";
+import type { ChartBlock, LabelBlock } from "@/lib/survey-blocks";
 import { liveNodePreview } from "@/lib/survey-charts";
 
-const props = defineProps<{ projectId: string; block: ChartBlock }>();
+const props = defineProps<{ projectId: string; block: ChartBlock | LabelBlock }>();
 const emit = defineEmits<{
   update: [changes: Pick<ChartBlock, "source"> | Pick<ChartBlock, "appearance">];
 }>();

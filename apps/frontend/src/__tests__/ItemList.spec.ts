@@ -166,4 +166,16 @@ describe.each([
     expect(queryClient.getQueryData(queryKey())).toEqual([unpublished, FIRST]);
     expect(row().find(`[aria-label="Publish ${noun}"]`).exists()).toBe(true);
   });
+
+  it.runIf(publishable)("says on the publish button why publishing failed", async () => {
+    const reason = "A chart can't be shown: The chart's dataset isn't in this project";
+    respondTo({ POST: jsonResponse({ detail: reason }, 422) }, items);
+    const { wrapper } = await mountView();
+    const publish = () => wrapper.findAll("li")[0]!.find(`[aria-label="Publish ${noun}"]`);
+
+    await publish().trigger("click");
+    await flushPromises();
+
+    expect(publish().attributes("title")).toBe(reason);
+  });
 });

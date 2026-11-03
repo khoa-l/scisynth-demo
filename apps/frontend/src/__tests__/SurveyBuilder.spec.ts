@@ -75,6 +75,7 @@ describe("Survey builder", () => {
         "Text",
         "Number scale",
         "Chart",
+        "Labelling",
         "Separator",
         "New page",
         "End of survey",
@@ -98,7 +99,9 @@ describe("Survey builder", () => {
       const palette = sortableList("Survey blocks");
       expect(palette.group).toEqual({ name: "survey-blocks", pull: "clone", put: false });
       expect(palette.sort).toBe(false);
-      const [template, scale, chart, separator] = (palette.items as () => SurveyBlock[])();
+      const [template, scale, chart, labelling, separator] = (
+        palette.items as () => SurveyBlock[]
+      )();
       const first = palette.clone!(template!);
       const second = palette.clone!(template!);
       expect(first).toEqual({ id: expect.any(String), type: "text", text: "" });
@@ -112,6 +115,19 @@ describe("Survey builder", () => {
         appearance: "shown",
         source: null,
       });
+      const labelBlock = palette.clone!(labelling!);
+      expect(labelBlock).toEqual({
+        id: expect.any(String),
+        type: "label",
+        text: "",
+        appearance: "shown",
+        source: null,
+        labels: [{ id: "label-1", name: "Label 1", color: "#e11d48" }],
+        tools: ["point", "lasso", "brush"],
+      });
+      expect(labelBlock.type === "label" && labelBlock.labels).not.toBe(
+        labelling!.type === "label" && labelling!.labels,
+      );
     });
 
     it("drags a freshly drawn chip from the palette rather than a copy of the hovered one", async () => {

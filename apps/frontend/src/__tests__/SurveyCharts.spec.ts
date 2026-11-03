@@ -6,7 +6,7 @@ import type { PlotData } from "plotly.js";
 import Plotly from "plotly.js-cartesian-dist-min";
 
 import type { DatasetPublic } from "../client";
-import type { ChartBlock, ChartSource } from "../lib/survey-blocks";
+import type { ChartBlock, ChartSource, LabelBlock, SurveyBlock } from "../lib/survey-blocks";
 import ProjectSurveyResultsView from "../views/ProjectSurveyResultsView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
 import PublicSurveyView from "../views/PublicSurveyView.vue";
@@ -47,6 +47,19 @@ function chart(changes: Partial<ChartBlock> = {}): ChartBlock {
   return { id: "c1", type: "chart", text: "", appearance: "shown", source: SOURCE, ...changes };
 }
 
+function labelling(changes: Partial<LabelBlock> = {}): LabelBlock {
+  return {
+    id: "l1",
+    type: "label",
+    text: "",
+    appearance: "blank",
+    source: SOURCE,
+    labels: [{ id: "defect", name: "Defect", color: "#e11d48" }],
+    tools: ["point", "lasso", "brush"],
+    ...changes,
+  };
+}
+
 const react = vi.mocked(Plotly.react);
 
 afterEach(() => {
@@ -69,7 +82,7 @@ function answerAsTheServer(survey: object) {
   });
 }
 
-async function mountBuilder(block: ChartBlock) {
+async function mountBuilder(block: SurveyBlock) {
   answerAsTheServer({ ...SURVEY, content: { blocks: [block] } });
   const { wrapper } = await mountPage(ProjectSurveyView, {
     props: { projectId: PROJECT_ID, surveyId: SURVEY.id },
@@ -248,5 +261,86 @@ describe("Chart blocks", () => {
     );
     const plot = wrapper.find('[aria-label="Response"] [role="img"]');
     expect(drawn(plot.element)).toMatchObject({ z: FIRST });
+  });
+
+  describe("Labelling in the builder", () => {
+    function labelRows(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+      return row(wrapper).findAll('[aria-label="Labels"] li');
+    }
+
+    it("asks for an instruction, the chart and the labels", async () => {
+      const wrapper = await mountBuilder(labelling());
+
+      expect(row(wrapper).find("span").text()).toBe("Labelling");
+      expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
+      expect(row(wrapper).find("select").exists()).toBe(true);
+      const [only] = labelRows(wrapper);
+      expect((only!.find('input[type="color"]').element as HTMLInputElement).value).toBe("#e11d48");
+      expect(
+        (only!.find('input[aria-label="Name of Defect"]').element as HTMLInputElement).value,
+      ).toBe("Defect");
+      expect(only!.find('[aria-label="Remove Defect"]').attributes("disabled")).toBeDefined();
+    });
+
+    it("adds, renames, recolours and removes labels", async () => {
+      const wrapper = await mountBuilder(labelling());
+
+      const add = row(wrapper)
+        .findAll("button")
+        .find((button) => button.text() === "Add label")!;
+      await add.trigger("click");
+      await flushPromises();
+      const added = (await savedBlocks())[0].labels[1];
+      expect(added).toEqual({ id: expect.any(String), name: "Label 2", color: "#2563eb" });
+
+      const name = labelRows(wrapper)[1]!.find('input[aria-label="Name of Label 2"]');
+      await name.setValue("Clean");
+      await name.trigger("change");
+      await flushPromises();
+      expect((await savedBlocks())[0].labels[1].name).toBe("Clean");
+
+      const colour = labelRows(wrapper)[1]!.find('input[type="color"]');
+      await colour.setValue("#000000");
+      await colour.trigger("change");
+      await flushPromises();
+      expect((await savedBlocks())[0].labels[1].color).toBe("#000000");
+
+      await labelRows(wrapper)[0]!.find('[aria-label="Remove Defect"]').trigger("click");
+      await flushPromises();
+      expect((await savedBlocks())[0].labels).toEqual([
+        { id: added.id, name: "Clean", color: "#000000" },
+      ]);
+    });
+
+    it("keeps a label's name when it is cleared", async () => {
+      const wrapper = await mountBuilder(labelling());
+
+      const name = labelRows(wrapper)[0]!.find("input:not([type=color])");
+      await name.setValue("  ");
+      await name.trigger("change");
+      await flushPromises();
+
+      expect((name.element as HTMLInputElement).value).toBe("Defect");
+      expect(requests().some((r) => r.method === "PATCH")).toBe(false);
+    });
+
+    it("chooses the tools respondents get, but not none", async () => {
+      const wrapper = await mountBuilder(labelling({ tools: ["point"] }));
+      const tool = (name: string) =>
+        row(wrapper)
+          .findAll("button")
+          .find((button) => button.text() === name)!;
+
+      await tool("Lasso").trigger("click");
+      await flushPromises();
+      expect((await savedBlocks())[0].tools).toEqual(["point", "lasso"]);
+      const saves = requests().filter((r) => r.method === "PATCH").length;
+
+      await tool("Point").trigger("click");
+      await tool("Lasso").trigger("click");
+      await flushPromises();
+      expect((await savedBlocks())[0].tools).toEqual(["lasso"]);
+      expect(requests().filter((r) => r.method === "PATCH")).toHaveLength(saves + 1);
+    });
   });
 });

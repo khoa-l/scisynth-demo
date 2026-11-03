@@ -21,7 +21,7 @@ from app.schemas import (
     SurveyUpdate,
     SurveyVersionPublic,
 )
-from app.survey_charts import freeze_charts, get_chart
+from app.survey_charts import freeze_charts, frozen_charts, get_chart
 
 router = APIRouter(prefix="/projects/{project_id}/surveys", tags=["surveys"])
 
@@ -105,13 +105,18 @@ def publish_survey(
         .where(SurveyVersion.survey_id == survey.id)
         .order_by(col(SurveyVersion.number).desc())
     ).first()
-    if latest is None or latest.content != survey.content:
-        try:
-            charts = freeze_charts(survey.content, project_id, db)
-        except PREVIEW_ERRORS as exc:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, f"A chart can't be shown: {exc}"
-            ) from exc
+    try:
+        charts = freeze_charts(survey.content, project_id, db)
+    except PREVIEW_ERRORS as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"A chart can't be shown: {exc}"
+        ) from exc
+    previews = {block_id: chart.model_dump() for block_id, chart in charts.items()}
+    if (
+        latest is None
+        or latest.content != survey.content
+        or frozen_charts(latest.id, db) != previews
+    ):
         latest = SurveyVersion(
             survey_id=survey.id,
             number=latest.number + 1 if latest else 1,
@@ -120,10 +125,8 @@ def publish_survey(
         db.add(latest)
         db.flush()
         db.add_all(
-            SurveyChart(
-                version_id=latest.id, block_id=block_id, preview=chart.model_dump()
-            )
-            for block_id, chart in charts.items()
+            SurveyChart(version_id=latest.id, block_id=block_id, preview=preview)
+            for block_id, preview in previews.items()
         )
     survey.published_version = latest.number
     survey.public_id = survey.public_id or new_id()

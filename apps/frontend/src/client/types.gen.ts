@@ -422,7 +422,9 @@ export type SurveyResponseCreate = {
      * Data
      */
     data: {
-        [key: string]: number;
+        [key: string]: number | {
+            [key: string]: Array<number>;
+        };
     };
 };
 

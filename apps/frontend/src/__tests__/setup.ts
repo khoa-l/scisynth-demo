@@ -10,6 +10,7 @@ vi.mock("plotly.js-cartesian-dist-min", () => ({ default: { react: vi.fn(), purg
 beforeEach(() => {
   fetchMock.mockReset();
   client.setConfig({ baseUrl: "http://test", fetch: fetchMock });
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   vi.stubGlobal(
     "ResizeObserver",
     class {

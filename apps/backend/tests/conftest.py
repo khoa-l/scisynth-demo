@@ -37,3 +37,10 @@ def client(engine: Engine) -> Generator[TestClient]:
 def signed_in(client: TestClient) -> TestClient:
     sign_up(client, "ada@example.com")
     return client
+
+
+@pytest.fixture
+def project_url(client: TestClient) -> str:
+    sign_up(client, "ada@example.com")
+    project_id = client.post("/api/projects", json={"name": "Project"}).json()["id"]
+    return f"/api/projects/{project_id}"

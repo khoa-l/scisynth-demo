@@ -112,6 +112,27 @@ describe("Survey view", () => {
       expect(findButton(wrapper, "Unpublish")).toBeDefined();
     });
 
+    it("says why publishing failed, until it is tried again and works", async () => {
+      const wrapper = await mountView();
+      const reason = "A chart can't be shown: The chart's data has no channel 2";
+      fetchMock.mockResolvedValue(jsonResponse({ detail: reason }, 422));
+
+      await findButton(wrapper, "Publish")!.trigger("click");
+      await flushPromises();
+
+      const alert = wrapper.find('[role="alert"]');
+      expect(alert.text()).toBe(reason);
+      expect(alert.classes()).toContain("text-destructive");
+      expect(findButton(wrapper, "Publish")!.attributes("disabled")).toBeUndefined();
+
+      fetchMock.mockResolvedValue(jsonResponse(PUBLISHED));
+      await findButton(wrapper, "Publish")!.trigger("click");
+      await flushPromises();
+
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+      expect(findButton(wrapper, "Unpublish")).toBeDefined();
+    });
+
     it("only offers a Copy link button once the survey is published", async () => {
       expect(findButton(await mountView(), "Copy link")).toBeUndefined();
       expect(findButton(await mountView(PUBLISHED), "Copy link")).toBeDefined();
@@ -157,7 +178,10 @@ describe("Survey view", () => {
       await flushPromises();
 
       expect(methods()).toEqual(["GET", "PATCH"]);
-      expect(wrapper.find('[role="alert"]').text()).toContain("Couldn't save your changes.");
+      expect(wrapper.find('[aria-label="Survey builder"] [role="alert"]').text()).toContain(
+        "Couldn't save your changes.",
+      );
+      expect(wrapper.find('[role="alert"]').text()).toBe("Save your changes before publishing.");
     });
 
     it("shows a failed save, blocks publishing, and saves again on retry", async () => {

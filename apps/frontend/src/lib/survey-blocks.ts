@@ -24,6 +24,22 @@ export interface ChartBlock {
   source: ChartSource | null;
 }
 
+export interface SurveyLabel {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export const LABEL_TOOLS = ["point", "lasso", "brush"] as const;
+
+export type LabelTool = (typeof LABEL_TOOLS)[number];
+
+export interface LabelBlock extends Omit<ChartBlock, "type"> {
+  type: "label";
+  labels: SurveyLabel[];
+  tools: LabelTool[];
+}
+
 interface MarkerBlock<Type> {
   id: string;
   type: Type;
@@ -32,14 +48,22 @@ interface MarkerBlock<Type> {
 export type SurveyBlock =
   | ContentBlock
   | ChartBlock
+  | LabelBlock
   | MarkerBlock<"separator">
   | MarkerBlock<"page">
   | MarkerBlock<"end">;
+
+export type LabelledPoints = Record<string, number[]>;
+
+export type Answers = Record<string, number | LabelledPoints>;
+
+export const LABEL_COLORS = ["#e11d48", "#2563eb", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 
 export const blockLabels: Record<SurveyBlock["type"], string> = {
   text: "Text",
   scale: "Number scale",
   chart: "Chart",
+  label: "Labelling",
   separator: "Separator",
   page: "New page",
   end: "End of survey",
@@ -49,6 +73,15 @@ export const blockTemplates: SurveyBlock[] = [
   { id: "text", type: "text", text: "" },
   { id: "scale", type: "scale", text: "" },
   { id: "chart", type: "chart", text: "", appearance: "shown", source: null },
+  {
+    id: "label",
+    type: "label",
+    text: "",
+    appearance: "shown",
+    source: null,
+    labels: [{ id: "label-1", name: "Label 1", color: LABEL_COLORS[0]! }],
+    tools: [...LABEL_TOOLS],
+  },
   { id: "separator", type: "separator" },
   { id: "page", type: "page" },
   { id: "end", type: "end" },
@@ -57,7 +90,7 @@ export const blockTemplates: SurveyBlock[] = [
 export const SCALE_POINTS = [1, 2, 3, 4, 5];
 
 export function cloneBlock(block: SurveyBlock): SurveyBlock {
-  return { ...block, id: crypto.randomUUID() };
+  return { ...structuredClone(block), id: crypto.randomUUID() };
 }
 
 function isChartSource(value: unknown): value is ChartSource {
@@ -74,18 +107,57 @@ function isChartSource(value: unknown): value is ChartSource {
   );
 }
 
+function isLabel(value: unknown): value is SurveyLabel {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "color" in value &&
+    typeof value.color === "string"
+  );
+}
+
+function isLabelTool(value: unknown): value is LabelTool {
+  return LABEL_TOOLS.some((tool) => tool === value);
+}
+
 function isBlock(value: unknown): value is SurveyBlock {
   if (typeof value !== "object" || value === null) return false;
   if (!("id" in value) || typeof value.id !== "string" || !("type" in value)) return false;
   if (value.type === "separator" || value.type === "page" || value.type === "end") return true;
   if (!("text" in value) || typeof value.text !== "string") return false;
   if (value.type === "text" || value.type === "scale") return true;
+  if (
+    !("appearance" in value) ||
+    (value.appearance !== "shown" && value.appearance !== "blank") ||
+    !("source" in value) ||
+    (value.source !== null && !isChartSource(value.source))
+  ) {
+    return false;
+  }
+  if (value.type === "chart") return true;
   return (
-    value.type === "chart" &&
-    "appearance" in value &&
-    (value.appearance === "shown" || value.appearance === "blank") &&
-    "source" in value &&
-    (value.source === null || isChartSource(value.source))
+    value.type === "label" &&
+    "labels" in value &&
+    Array.isArray(value.labels) &&
+    value.labels.every(isLabel) &&
+    "tools" in value &&
+    Array.isArray(value.tools) &&
+    value.tools.every(isLabelTool)
+  );
+}
+
+export function isAnswer(value: unknown): value is number | LabelledPoints {
+  if (typeof value === "number") return true;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.values(value).every(
+      (indices) => Array.isArray(indices) && indices.every(Number.isInteger),
+    )
   );
 }
 

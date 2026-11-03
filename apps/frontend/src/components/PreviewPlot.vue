@@ -4,6 +4,7 @@ import type { Config, Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import type { NodePreview, TypedArray } from "@/client";
+import { decode } from "@/lib/labelling";
 
 const props = defineProps<{
   preview: NodePreview;
@@ -11,6 +12,8 @@ const props = defineProps<{
   detailed?: boolean;
   blank?: boolean;
 }>();
+
+const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
 
 const transparent = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)" };
 
@@ -26,9 +29,8 @@ const thumbnailLayout: Partial<Layout> = {
   ...transparent,
 };
 
-function paddedRange({ bdata }: TypedArray): [number, number] {
-  const bytes = Uint8Array.from(atob(bdata), (char) => char.charCodeAt(0));
-  const values = new Float32Array(bytes.buffer).filter(Number.isFinite);
+function paddedRange(array: TypedArray): [number, number] {
+  const values = decode(array).filter(Number.isFinite);
   const [min, max] = [Math.min(...values), Math.max(...values)];
   const pad = (max - min) * 0.05;
   return [min - pad, max + pad];
@@ -88,6 +90,7 @@ watch(
       : { staticPlot: true };
     const Plotly = await plotly;
     await Plotly.react(element, [trace as Data], layout, config);
+    emit("drawn", element);
   },
   { immediate: true },
 );

@@ -10,7 +10,7 @@ import {
 import SurveyTask from "@/components/SurveyTask.vue";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { surveyColumnClass } from "@/lib/survey-blocks";
+import { surveyColumnClass, type Answers } from "@/lib/survey-blocks";
 import { publishedCharts } from "@/lib/survey-charts";
 
 const props = defineProps<{ publicId: string }>();
@@ -33,7 +33,7 @@ const {
   isError: submitFailed,
 } = useMutation(publicSubmitResponseMutation());
 
-function submit(versionId: string, answers: Record<string, number>) {
+function submit(versionId: string, answers: Answers) {
   mutate({
     path: { public_id: props.publicId },
     body: { version_id: versionId, data: answers },
