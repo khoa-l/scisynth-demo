@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import { fromGraph, toGraph, type DatasetGraph } from "../lib/dataset-nodes/graph";
+import {
+  fromGraph,
+  latentPreviewRequest,
+  toGraph,
+  type DatasetGraph,
+} from "../lib/dataset-nodes/graph";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
 function savedNode(id: string, kind: string, params: DatasetGraph["nodes"][number]["params"]) {
@@ -132,5 +137,38 @@ describe("Dataset graph", () => {
     });
 
     expect(edges.map((edge) => edge.id)).toEqual(["e1", "e2"]);
+  });
+
+  it("builds a latent preview from the node and everything upstream of it", () => {
+    const graph: DatasetGraph = {
+      version: 1,
+      nodes: [
+        savedNode("a", "GaussianField", { seed: 1 }),
+        savedNode("b", "GaussianField", { seed: 2 }),
+        savedNode("sum", "Sum", {}),
+        savedNode("sampler", "GridSampler", { shape: 32 }),
+        savedNode("other", "GaussianField", { seed: 3 }),
+      ],
+      edges: [
+        savedEdge("e1", "a", "field", "sum", "terms"),
+        savedEdge("e2", "b", "field", "sum", "terms"),
+        savedEdge("e3", "sum", "field", "sampler", "latent"),
+      ],
+    };
+
+    expect(latentPreviewRequest(graph, "sum")).toEqual({
+      node: "sum",
+      nodes: [
+        { id: "a", kind: "GaussianField", params: { seed: 1 } },
+        { id: "b", kind: "GaussianField", params: { seed: 2 } },
+        { id: "sum", kind: "Sum", params: {} },
+      ],
+      edges: [graph.edges[0], graph.edges[1]],
+    });
+    expect(latentPreviewRequest(graph, "other")).toEqual({
+      node: "other",
+      nodes: [{ id: "other", kind: "GaussianField", params: { seed: 3 } }],
+      edges: [],
+    });
   });
 });

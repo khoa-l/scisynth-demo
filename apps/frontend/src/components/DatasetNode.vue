@@ -11,22 +11,33 @@ import {
   requiredConnections,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
+import { latentPreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
 import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
-const THUMBNAIL_KINDS = new Set(["GaussianField"]);
+const PREVIEWABLE_GENERATORS = new Set(["GaussianField"]);
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
-const { updateNodeData } = useVueFlow();
+const { edges, nodes, updateNodeData } = useVueFlow();
 const incoming = useNodeConnections({ handleType: "target" });
 
 function connectionCount(port: PortDef) {
   return incoming.value.filter((connection) => connection.targetHandle === port.id).length;
 }
+
+const showsThumbnail = computed(() => {
+  if (!kind.value) return false;
+  if (kind.value.group !== "composite") return PREVIEWABLE_GENERATORS.has(kind.value.name);
+  return kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port));
+});
+
+const previewRequest = computed(() =>
+  latentPreviewRequest(toGraph(nodes.value, edges.value), props.id),
+);
 
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
@@ -40,9 +51,9 @@ function setParam(name: string, value: ParamValue) {
     :class="{ 'ring-2 ring-ring/50': selected }"
   >
     <DatasetNodeThumbnail
-      v-if="THUMBNAIL_KINDS.has(kind.name)"
-      :kind="data.kind"
-      :params="data.params"
+      v-if="showsThumbnail"
+      :label="kind.name"
+      :request="previewRequest"
       class="absolute -inset-x-px bottom-full mb-2"
     />
     <div

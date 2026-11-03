@@ -7,11 +7,18 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
-    NonNegativeInt,
     StringConstraints,
 )
 
-from app.dataset_graph import DatasetGraph, ParamValue, Ref
+from app.dataset_graph import (
+    MAX_EDGES,
+    MAX_NODES,
+    DatasetGraph,
+    GraphEdge,
+    NodeSpec,
+    ParamValue,
+    Ref,
+)
 
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
 
@@ -129,12 +136,17 @@ class SurveyResponseReceipt(BaseModel):
 class PreviewRequest(BaseModel):
     kind: Ref
     params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
-    seed: NonNegativeInt = 0
 
 
 class PlotFigure(BaseModel):
     data: list[dict[str, Any]]
     layout: dict[str, Any]
+
+
+class LatentPreviewRequest(BaseModel):
+    node: Ref
+    nodes: list[NodeSpec] = Field(max_length=MAX_NODES)
+    edges: list[GraphEdge] = Field(default_factory=list, max_length=MAX_EDGES)
 
 
 class TypedArray(BaseModel):

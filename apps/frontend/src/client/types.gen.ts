@@ -184,6 +184,24 @@ export type LatentPreview = {
 };
 
 /**
+ * LatentPreviewRequest
+ */
+export type LatentPreviewRequest = {
+    /**
+     * Node
+     */
+    node: string;
+    /**
+     * Nodes
+     */
+    nodes: Array<NodeSpec>;
+    /**
+     * Edges
+     */
+    edges?: Array<GraphEdge>;
+};
+
+/**
  * LoginRequest
  */
 export type LoginRequest = {
@@ -195,6 +213,26 @@ export type LoginRequest = {
      * Password
      */
     password: string;
+};
+
+/**
+ * NodeSpec
+ */
+export type NodeSpec = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Params
+     */
+    params?: {
+        [key: string]: number | number | string | null;
+    };
 };
 
 /**
@@ -243,10 +281,6 @@ export type PreviewRequest = {
     params?: {
         [key: string]: number | number | string | null;
     };
-    /**
-     * Seed
-     */
-    seed?: number;
 };
 
 /**
@@ -1307,7 +1341,7 @@ export type PreviewsPreviewStageResponses = {
 export type PreviewsPreviewStageResponse = PreviewsPreviewStageResponses[keyof PreviewsPreviewStageResponses];
 
 export type PreviewsPreviewLatentData = {
-    body: PreviewRequest;
+    body: LatentPreviewRequest;
     path?: never;
     query?: never;
     url: '/api/previews/latents';

@@ -4,16 +4,12 @@ import { refDebounced } from "@vueuse/core";
 import type { Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, useTemplateRef, watch } from "vue";
 
-import { previewsPreviewLatent } from "@/client";
-import type { ParamValues } from "@/lib/dataset-nodes/types";
+import { previewsPreviewLatent, type LatentPreviewRequest } from "@/client";
 
-const props = defineProps<{ kind: string; params: ParamValues }>();
+const props = defineProps<{ label: string; request: LatentPreviewRequest }>();
 
 const request = refDebounced(
-  computed(() => {
-    const { seed, ...params } = props.params;
-    return { kind: props.kind, params, seed: seed as number | undefined };
-  }),
+  computed(() => props.request),
   300,
 );
 
@@ -63,7 +59,7 @@ onBeforeUnmount(async () => {
     v-if="preview && !isError"
     ref="plot"
     role="img"
-    :aria-label="`Preview of ${kind}`"
+    :aria-label="`Preview of ${label}`"
     class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
   />
 </template>

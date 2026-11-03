@@ -544,6 +544,14 @@ describe("Dataset view", () => {
       y: [0, 1],
       z: { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" },
     };
+    const FIELD_PARAMS = {
+      length_scale: 0.1,
+      amplitude: 1,
+      mean: 0,
+      resolution: 128,
+      order: 1,
+      seed: 0,
+    };
 
     afterEach(() => {
       vi.useRealTimers();
@@ -566,6 +574,24 @@ describe("Dataset view", () => {
       return node.find('[role="img"]');
     }
 
+    async function connect(
+      wrapper: Wrapper,
+      source: DOMWrapper<Element>,
+      target: DOMWrapper<Element>,
+      targetHandle: string,
+    ) {
+      const flow = wrapper.findComponent(VueFlow).vm as unknown as {
+        emits: { connect: (connection: Connection) => void };
+      };
+      flow.emits.connect({
+        source: source.attributes("data-id")!,
+        sourceHandle: "field",
+        target: target.attributes("data-id")!,
+        targetHandle,
+      });
+      await flushPromises();
+    }
+
     it("draws a static heatmap of a Gaussian field above its node", async () => {
       const wrapper = await mountView();
       answerPreviews(() => jsonResponse(PREVIEW));
@@ -574,14 +600,13 @@ describe("Dataset view", () => {
       await flushPromises();
 
       expect(await previews()[0]!.json()).toEqual({
-        kind: "GaussianField",
-        params: { length_scale: 0.1, amplitude: 1, mean: 0, resolution: 128, order: 1 },
-        seed: 0,
+        node: field.attributes("data-id"),
+        nodes: [{ id: field.attributes("data-id"), kind: "GaussianField", params: FIELD_PARAMS }],
+        edges: [],
       });
       expect(thumbnail(field).attributes("aria-label")).toBe("Preview of GaussianField");
-      expect(thumbnail(field).classes()).toEqual(
-        expect.arrayContaining(["absolute", "-inset-x-px", "bottom-full", "aspect-square"]),
-      );
+      expect(thumbnail(field).classes()).toEqual(expect.arrayContaining(["aspect-square"]));
+      expect(thumbnail(field).element.parentElement!.classList).toContain("relative");
       expect(plotly.react).toHaveBeenCalledWith(
         thumbnail(field).element,
         [{ type: "heatmap", ...PREVIEW, colorscale: "Viridis", showscale: false }],
@@ -596,32 +621,67 @@ describe("Dataset view", () => {
       );
     });
 
-    it("only draws thumbnails for latents it can preview", async () => {
+    it("previews a composite once enough terms are connected", async () => {
       const wrapper = await mountView();
       answerPreviews(() => jsonResponse(PREVIEW));
-
       const sum = await dropKind(wrapper, "Sum");
-      await flushPromises();
+      const first = await dropKind(wrapper, "GaussianField");
+      const second = await dropKind(wrapper, "GaussianField");
+      const requested = () => Promise.all(previews().map((r) => r.clone().json()));
 
       expect(thumbnail(sum).exists()).toBe(false);
-      expect(previews()).toHaveLength(0);
+      await connect(wrapper, first, sum, "terms");
+      expect(thumbnail(sum).exists()).toBe(false);
+      expect((await requested()).some((body) => body.node === sum.attributes("data-id"))).toBe(
+        false,
+      );
+
+      await connect(wrapper, second, sum, "terms");
+      await flushPromises();
+
+      expect(thumbnail(sum).attributes("aria-label")).toBe("Preview of Sum");
+      const body = (await requested()).find((b) => b.node === sum.attributes("data-id"))!;
+      expect(body.nodes.map((n: { kind: string }) => n.kind).sort()).toEqual([
+        "GaussianField",
+        "GaussianField",
+        "Sum",
+      ]);
+      expect(body.edges).toHaveLength(2);
+      expect(body.nodes.every((n: object) => !("position" in n))).toBe(true);
     });
 
-    it("redraws the thumbnail when a parameter changes", async () => {
+    it("previews a Multichannel from a single channel", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+      const channels = await dropKind(wrapper, "Multichannel");
+      expect(thumbnail(channels).exists()).toBe(false);
+
+      await connect(wrapper, await dropKind(wrapper, "GaussianField"), channels, "channels");
+      await flushPromises();
+
+      expect(thumbnail(channels).exists()).toBe(true);
+    });
+
+    it("sends only the nodes upstream of the preview", async () => {
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       const wrapper = await mountView();
       answerPreviews(() => jsonResponse(PREVIEW));
       const field = await dropKind(wrapper, "GaussianField");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+      const before = previews().length;
 
-      await enter(field.find("input"), "0.3");
+      const gain = await dropKind(wrapper, "Gain");
+      await enter(gain.find("input"), "3");
       await vi.advanceTimersByTimeAsync(300);
       await flushPromises();
 
-      expect(previews()).toHaveLength(2);
-      expect((await previews()[1]!.json()).params.length_scale).toBe(0.3);
+      expect(previews()).toHaveLength(before);
+      const body = await previews()[0]!.json();
+      expect(body.nodes.map((n: { id: string }) => n.id)).toEqual([field.attributes("data-id")]);
     });
 
-    it("draws the realization for the node's seed", async () => {
+    it("redraws the thumbnail when a parameter or the seed changes", async () => {
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       const wrapper = await mountView();
       answerPreviews(() => jsonResponse(PREVIEW));
@@ -630,13 +690,16 @@ describe("Dataset view", () => {
       expect(labels[labels.length - 1]!.text()).toBe("Seed");
       const seed = field.find(`#${labels[labels.length - 1]!.attributes("for")}`);
 
+      await enter(field.find("input"), "0.3");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
       await enter(seed, "5");
       await vi.advanceTimersByTimeAsync(300);
       await flushPromises();
 
-      const request = await previews()[1]!.json();
-      expect(request.seed).toBe(5);
-      expect(request.params).not.toHaveProperty("seed");
+      const [, scale, seeded] = await Promise.all(previews().map((r) => r.clone().json()));
+      expect(scale.nodes[0].params.length_scale).toBe(0.3);
+      expect(seeded.nodes[0].params.seed).toBe(5);
     });
 
     it("leaves the thumbnail out when the field can't be previewed", async () => {
@@ -647,6 +710,17 @@ describe("Dataset view", () => {
       await flushPromises();
 
       expect(thumbnail(field).exists()).toBe(false);
+    });
+
+    it("only draws thumbnails for latents it can preview", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+
+      const analytic = await dropKind(wrapper, "AnalyticField");
+      await flushPromises();
+
+      expect(thumbnail(analytic).exists()).toBe(false);
+      expect(previews()).toHaveLength(0);
     });
   });
 });

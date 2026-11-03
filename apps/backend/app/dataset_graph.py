@@ -20,10 +20,13 @@ class Position(_Strict):
     y: FiniteFloat
 
 
-class GraphNode(_Strict):
+class NodeSpec(_Strict):
     id: Ref
     kind: Ref
     params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
+
+
+class GraphNode(NodeSpec):
     position: Position
 
 

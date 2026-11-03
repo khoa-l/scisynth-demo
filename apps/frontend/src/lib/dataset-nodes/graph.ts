@@ -1,6 +1,6 @@
 import type { Edge, Node, XYPosition } from "@vue-flow/core";
 
-import type { DatasetGraphOutput } from "@/client";
+import type { DatasetGraphOutput, LatentPreviewRequest } from "@/client";
 
 import { canConnect, findKind, type DatasetNodeData } from "./catalog";
 import { isValidParam } from "./params";
@@ -70,4 +70,24 @@ function loadParams(kind: NodeKindDef, saved: ParamValues): ParamValues {
       return [name, isValidParam(def, value) ? value : def.default];
     }),
   );
+}
+
+export function latentPreviewRequest(graph: DatasetGraph, nodeId: string): LatentPreviewRequest {
+  const upstream = new Set([nodeId]);
+  const queue = [nodeId];
+  for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
+    for (const edge of graph.edges) {
+      if (edge.target === id && !upstream.has(edge.source)) {
+        upstream.add(edge.source);
+        queue.push(edge.source);
+      }
+    }
+  }
+  return {
+    node: nodeId,
+    nodes: graph.nodes
+      .filter((node) => upstream.has(node.id))
+      .map(({ id, kind, params }) => ({ id, kind, params })),
+    edges: graph.edges.filter((edge) => upstream.has(edge.target)),
+  };
 }
