@@ -4,13 +4,15 @@ import { computed } from "vue";
 
 import { projectsGetProjectOptions } from "@/client/@tanstack/vue-query.gen";
 
-const props = defineProps<{ projectId: string; itemName?: string }>();
+const props = defineProps<{ projectId: string; itemName?: string; pageName?: string }>();
 
 const {
   data: project,
   isPending,
   isError,
 } = useQuery(computed(() => projectsGetProjectOptions({ path: { project_id: props.projectId } })));
+
+const trail = computed(() => [props.itemName, props.pageName].filter(Boolean).join(" / "));
 </script>
 
 <template>
@@ -21,7 +23,7 @@ const {
   <div v-else class="flex h-full flex-col">
     <h1 class="text-2xl font-medium tracking-tight">
       {{ project.name }}
-      <span v-if="itemName" class="text-muted-foreground">/ {{ itemName }}</span>
+      <span v-if="itemName" class="text-muted-foreground">/ {{ trail }}</span>
     </h1>
     <slot />
   </div>

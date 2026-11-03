@@ -33,7 +33,7 @@ describe.each([
     noun: "survey",
     backLabel: "Surveys",
     backPath: `/project/${PROJECT_ID}/survey`,
-    actions: ["Publish"],
+    actions: ["Publish", "Results"],
   },
 ])("$name view page", ({ view, props, item, url, noun, backLabel, backPath, actions }) => {
   async function mountView(response = jsonResponse(item)) {

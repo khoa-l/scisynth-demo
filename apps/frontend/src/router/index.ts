@@ -72,6 +72,16 @@ export const routes: RouteRecordRaw[] = [
         }),
         meta: { projectSection: "surveys" },
       },
+      {
+        path: "project/:projectId/survey/:surveyId/results",
+        name: "project-survey-results",
+        component: () => import("@/views/ProjectSurveyResultsView.vue"),
+        props: (route) => ({
+          ...projectIdProp(route),
+          surveyId: String(route.params.surveyId),
+        }),
+        meta: { projectSection: "surveys" },
+      },
     ],
   },
   {

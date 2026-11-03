@@ -62,6 +62,14 @@ describe("Survey view", () => {
     });
   });
 
+  it("links to the survey's results", async () => {
+    const wrapper = await mountView();
+
+    const results = wrapper.findAll("a").find((link) => link.text() === "Results")!;
+    expect(results.attributes("href")).toBe(`/project/${PROJECT_ID}/survey/${SURVEY.id}/results`);
+    expect(results.find("svg[data-icon=inline-start]").exists()).toBe(true);
+  });
+
   describe("publishing", () => {
     function holdSaves() {
       let release!: (status?: number) => void;

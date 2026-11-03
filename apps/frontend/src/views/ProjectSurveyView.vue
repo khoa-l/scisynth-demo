@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Link } from "@lucide/vue";
+import { ChartBar, Link } from "@lucide/vue";
 import { DnDProvider } from "@vue-dnd-kit/core";
 import { useQuery } from "@tanstack/vue-query";
 import { useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 
 import { surveysGetSurveyOptions } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
@@ -53,7 +53,7 @@ async function copyLink(link: string) {
     noun="survey"
     :item-name="survey?.name"
     :is-error="isError"
-    back-to="project-surveys"
+    :back-to="{ name: 'project-surveys', params: { projectId } }"
     back-label="Surveys"
   >
     <template #actions>
@@ -68,6 +68,12 @@ async function copyLink(link: string) {
       >
         <Link data-icon="inline-start" />
         {{ copied ? "Copied" : "Copy link" }}
+      </Button>
+      <Button variant="outline" size="lg" as-child class="h-10 px-4">
+        <RouterLink :to="{ name: 'project-survey-results', params: { projectId, surveyId } }">
+          <ChartBar data-icon="inline-start" />
+          Results
+        </RouterLink>
       </Button>
     </template>
     <template #left>

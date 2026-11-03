@@ -26,6 +26,13 @@ describe("routes", () => {
     );
   });
 
+  it("opens a survey's results under the Surveys section", () => {
+    const results = router.resolve(`/project/${PROJECT_ID}/survey/pZtIo1NJJ5C48xzJcDG3F/results`);
+    expect(results.name).toBe("project-survey-results");
+    expect(results.params.surveyId).toBe("pZtIo1NJJ5C48xzJcDG3F");
+    expect(results.meta.projectSection).toBe("surveys");
+  });
+
   it("requires signing in for the app but not for a published survey", () => {
     const requiresAuth = (path: string) =>
       router.resolve(path).matched.some((record) => record.meta.requiresAuth);

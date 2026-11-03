@@ -25,7 +25,7 @@ const { data: dataset, isError } = useQuery(
     noun="dataset"
     :item-name="dataset?.name"
     :is-error="isError"
-    back-to="project-datasets"
+    :back-to="{ name: 'project-datasets', params: { projectId } }"
     back-label="Datasets"
     columns="grid-cols-[2fr_1fr]"
   >
