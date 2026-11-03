@@ -180,7 +180,10 @@ export type LatentPreview = {
      * Y
      */
     y: Array<number>;
-    z: TypedArray;
+    /**
+     * Channels
+     */
+    channels: Array<TypedArray>;
 };
 
 /**

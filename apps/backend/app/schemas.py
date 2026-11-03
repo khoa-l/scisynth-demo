@@ -158,4 +158,4 @@ class TypedArray(BaseModel):
 class LatentPreview(BaseModel):
     x: list[float]
     y: list[float]
-    z: TypedArray
+    channels: list[TypedArray]

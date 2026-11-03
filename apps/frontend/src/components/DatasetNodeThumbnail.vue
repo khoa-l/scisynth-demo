@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from "@lucide/vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { refDebounced } from "@vueuse/core";
 import type { Data, Layout } from "plotly.js";
-import { computed, onBeforeUnmount, useTemplateRef, watch } from "vue";
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import { previewsPreviewLatent, type LatentPreviewRequest } from "@/client";
 
@@ -34,14 +35,28 @@ const layout: Partial<Layout> = {
   plot_bgcolor: "rgba(0,0,0,0)",
 };
 
+const channel = ref(0);
+const channelCount = computed(() => preview.value?.channels.length ?? 0);
+watch(channelCount, (count) => {
+  channel.value = Math.min(channel.value, Math.max(count - 1, 0));
+});
+
 const plot = useTemplateRef<HTMLDivElement>("plot");
 const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
 
 watch(
-  [preview, plot],
-  async ([value, element]) => {
-    if (!value || !element) return;
-    const trace = { type: "heatmap", ...value, colorscale: "Viridis", showscale: false };
+  [preview, plot, channel],
+  async ([value, element, index]) => {
+    const z = value?.channels[index];
+    if (!value || !element || !z) return;
+    const trace = {
+      type: "heatmap",
+      x: value.x,
+      y: value.y,
+      z,
+      colorscale: "Viridis",
+      showscale: false,
+    };
     const Plotly = await plotly;
     await Plotly.react(element, [trace as Data], layout, { staticPlot: true });
   },
@@ -55,11 +70,38 @@ onBeforeUnmount(async () => {
 </script>
 
 <template>
-  <div
-    v-if="preview && !isError"
-    ref="plot"
-    role="img"
-    :aria-label="`Preview of ${label}`"
-    class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
-  />
+  <div v-if="preview && !isError" class="flex flex-col gap-1">
+    <div
+      v-if="channelCount > 1"
+      class="nodrag flex h-8 overflow-hidden rounded-lg border border-input bg-background text-sm shadow-sm"
+    >
+      <button
+        type="button"
+        aria-label="Previous channel"
+        :disabled="channel === 0"
+        class="flex w-5 items-center justify-center border-r border-input hover:bg-muted disabled:cursor-not-allowed disabled:opacity-20"
+        @click="channel--"
+      >
+        <ChevronLeft class="size-3" />
+      </button>
+      <span aria-live="polite" class="flex flex-1 items-center justify-center">
+        Channel {{ channel + 1 }}
+      </span>
+      <button
+        type="button"
+        aria-label="Next channel"
+        :disabled="channel === channelCount - 1"
+        class="flex w-5 items-center justify-center border-l border-input hover:bg-muted disabled:cursor-not-allowed disabled:opacity-20"
+        @click="channel++"
+      >
+        <ChevronRight class="size-3" />
+      </button>
+    </div>
+    <div
+      ref="plot"
+      role="img"
+      :aria-label="`Preview of ${label}`"
+      class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
+    />
+  </div>
 </template>

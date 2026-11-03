@@ -89,8 +89,8 @@ def link(source: str, target: str, port: str = "terms") -> dict:
     }
 
 
-def grid(preview: dict) -> np.ndarray:
-    z = preview["z"]
+def grid(preview: dict, channel: int = 0) -> np.ndarray:
+    z = preview["channels"][channel]
     assert z["dtype"] == "f4"
     shape = tuple(int(n) for n in z["shape"].split(","))
     return np.frombuffer(base64.b64decode(z["bdata"]), np.float32).reshape(shape)
@@ -108,6 +108,7 @@ def preview(
 def test_previews_a_field_as_a_heatmap_grid(signed_in: TestClient) -> None:
     result = preview(signed_in, "a", [field("a")])
 
+    assert len(result["channels"]) == 1
     assert grid(result).shape == (64, 64)
     assert len(result["x"]) == len(result["y"]) == 64
     assert [result["x"][0], result["x"][-1]] == [0, 1]
@@ -136,7 +137,10 @@ def test_previews_composites_from_their_connected_terms(signed_in: TestClient) -
     assert np.allclose(combined("Product"), one * two, atol=1e-5)
     channels = [a, b, composite("m", "Multichannel")]
     edges = [link("a", "m", "channels"), link("b", "m", "channels")]
-    assert np.allclose(grid(preview(signed_in, "m", channels, edges)), one)
+    stacked = preview(signed_in, "m", channels, edges)
+    assert len(stacked["channels"]) == 2
+    assert np.allclose(grid(stacked, 0), one)
+    assert np.allclose(grid(stacked, 1), two)
 
 
 def test_previews_composites_only_with_enough_terms(signed_in: TestClient) -> None:

@@ -21,8 +21,18 @@ import {
 const plotly = vi.hoisted(() => ({ react: vi.fn(), purge: vi.fn() }));
 vi.mock("plotly.js-cartesian-dist-min", () => ({ default: plotly }));
 
+const NO_PREVIEW = { x: [], y: [], channels: [] };
+
+function answerWith(dataset: DatasetPublic) {
+  fetchMock.mockImplementation(async (input) =>
+    new URL((input as Request).url).pathname === "/api/previews/latents"
+      ? jsonResponse(NO_PREVIEW)
+      : jsonResponse(dataset),
+  );
+}
+
 async function mountView(dataset: DatasetPublic = DATASET) {
-  fetchMock.mockImplementation(async () => jsonResponse(dataset));
+  answerWith(dataset);
   const { wrapper } = await mountPage(ProjectDatasetView, {
     props: { projectId: PROJECT_ID, datasetId: DATASET.id },
   });
@@ -454,7 +464,7 @@ describe("Dataset view", () => {
 
     it("draws loaded connections 2px wide when a dataset is opened again", async () => {
       const queryClient = testQueryClient();
-      fetchMock.mockImplementation(async () => jsonResponse(SAVED));
+      answerWith(SAVED);
       const open = () =>
         mountPage(ProjectDatasetView, {
           props: { projectId: PROJECT_ID, datasetId: DATASET.id },
@@ -529,7 +539,7 @@ describe("Dataset view", () => {
       const alert = wrapper.find('.vue-flow [role="alert"]');
       expect(alert.text()).toContain("Couldn't save your changes.");
 
-      fetchMock.mockImplementation(async () => jsonResponse(DATASET));
+      answerWith(DATASET);
       await alert.find("button").trigger("click");
       await flushPromises();
 
@@ -539,11 +549,9 @@ describe("Dataset view", () => {
   });
 
   describe("latent thumbnail", () => {
-    const PREVIEW = {
-      x: [0, 1],
-      y: [0, 1],
-      z: { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" },
-    };
+    const CHANNEL = { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" };
+    const SECOND_CHANNEL = { ...CHANNEL, bdata: "AACAQAAAoEAAAMBAAADgQA==" };
+    const PREVIEW = { x: [0, 1], y: [0, 1], channels: [CHANNEL] };
     const FIELD_PARAMS = {
       length_scale: 0.1,
       amplitude: 1,
@@ -606,10 +614,22 @@ describe("Dataset view", () => {
       });
       expect(thumbnail(field).attributes("aria-label")).toBe("Preview of GaussianField");
       expect(thumbnail(field).classes()).toEqual(expect.arrayContaining(["aspect-square"]));
-      expect(thumbnail(field).element.parentElement!.classList).toContain("relative");
+      expect([...thumbnail(field).element.parentElement!.classList]).toEqual(
+        expect.arrayContaining(["absolute", "-inset-x-px", "bottom-full"]),
+      );
+      expect(field.find('[aria-label="Next channel"]').exists()).toBe(false);
       expect(plotly.react).toHaveBeenCalledWith(
         thumbnail(field).element,
-        [{ type: "heatmap", ...PREVIEW, colorscale: "Viridis", showscale: false }],
+        [
+          {
+            type: "heatmap",
+            x: [0, 1],
+            y: [0, 1],
+            z: CHANNEL,
+            colorscale: "Viridis",
+            showscale: false,
+          },
+        ],
         {
           margin: { t: 0, r: 0, b: 0, l: 0 },
           xaxis: { visible: false },
@@ -648,6 +668,30 @@ describe("Dataset view", () => {
       ]);
       expect(body.edges).toHaveLength(2);
       expect(body.nodes.every((n: object) => !("position" in n))).toBe(true);
+    });
+
+    it("steps through a Multichannel's channels with the arrows above its preview", async () => {
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse({ ...PREVIEW, channels: [CHANNEL, SECOND_CHANNEL] }));
+      const channels = await dropKind(wrapper, "Multichannel");
+      await connect(wrapper, await dropKind(wrapper, "GaussianField"), channels, "channels");
+      await connect(wrapper, await dropKind(wrapper, "GaussianField"), channels, "channels");
+      await flushPromises();
+      const previous = channels.find('[aria-label="Previous channel"]');
+      const next = channels.find('[aria-label="Next channel"]');
+      const shownChannel = () => plotly.react.mock.lastCall![1][0].z;
+
+      expect(previous.element.parentElement!.textContent!.trim()).toBe("Channel 1");
+      expect(previous.attributes("disabled")).toBeDefined();
+      expect(shownChannel()).toEqual(CHANNEL);
+
+      await next.trigger("click");
+      await flushPromises();
+
+      expect(previous.element.parentElement!.textContent!.trim()).toBe("Channel 2");
+      expect(next.attributes("disabled")).toBeDefined();
+      expect(previous.attributes("disabled")).toBeUndefined();
+      expect(shownChannel()).toEqual(SECOND_CHANNEL);
     });
 
     it("previews a Multichannel from a single channel", async () => {

@@ -79,13 +79,19 @@ def preview_latent(body: LatentPreviewRequest, user: CurrentUser) -> LatentPrevi
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
     x, y = observation.coords.values()
-    z = np.ascontiguousarray(observation.values[..., 0].T, dtype=np.float32)
     return LatentPreview(
         x=x.tolist(),
         y=y.tolist(),
-        z=TypedArray(
-            dtype="f4",
-            bdata=base64.b64encode(z.tobytes()).decode(),
-            shape=", ".join(map(str, z.shape)),
-        ),
+        channels=[
+            heatmap(observation.values[..., i]) for i in range(observation.n_channels)
+        ],
+    )
+
+
+def heatmap(values: np.ndarray) -> TypedArray:
+    z = np.ascontiguousarray(values.T, dtype=np.float32)
+    return TypedArray(
+        dtype="f4",
+        bdata=base64.b64encode(z.tobytes()).decode(),
+        shape=", ".join(map(str, z.shape)),
     )
