@@ -2,6 +2,9 @@ export const SURVEY_BLOCK_GROUP = "survey-blocks";
 
 export const TASK_BLOCK = "survey-task-block";
 
+/** Width shared by the builder, the preview and the published survey. */
+export const surveyColumnClass = "mx-auto w-full max-w-2xl";
+
 interface TextBlock {
   id: string;
   type: "text";

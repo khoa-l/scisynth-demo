@@ -81,14 +81,9 @@ async function copyLink(link: string) {
       <div
         role="group"
         aria-label="Survey preview"
-        class="h-full overflow-y-auto bg-muted p-6 inset-shadow-sm"
+        class="h-full overflow-y-auto bg-muted p-4 inset-shadow-sm"
       >
-        <SurveyTask
-          v-if="survey"
-          :name="survey.name"
-          :content="survey.content"
-          class="mx-auto max-w-lg"
-        />
+        <SurveyTask v-if="survey" :name="survey.name" :content="survey.content" />
       </div>
     </template>
   </ProjectItemPage>

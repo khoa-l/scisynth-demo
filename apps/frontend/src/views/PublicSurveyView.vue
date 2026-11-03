@@ -20,11 +20,11 @@ const {
 </script>
 
 <template>
-  <main class="flex min-h-svh items-center justify-center p-4">
+  <main class="flex min-h-svh items-start justify-center bg-muted p-4 sm:py-12">
     <p v-if="isPending" class="text-sm text-muted-foreground">Loading survey…</p>
     <p v-else-if="isError || !survey" class="text-sm text-muted-foreground">
       This survey isn't available.
     </p>
-    <SurveyTask v-else :name="survey.name" :content="survey.content" class="w-full max-w-lg" />
+    <SurveyTask v-else :name="survey.name" :content="survey.content" />
   </main>
 </template>

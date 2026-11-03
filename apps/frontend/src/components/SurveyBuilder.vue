@@ -13,6 +13,7 @@ import {
   TASK_BLOCK,
   blockLabels,
   surveyBlocks,
+  surveyColumnClass,
   type SurveyBlock,
 } from "@/lib/survey-blocks";
 
@@ -75,7 +76,7 @@ function withText(id: string, event: Event) {
     >
       Drag a block here to build the task.
     </p>
-    <ol ref="list" class="flex flex-col gap-2">
+    <ol ref="list" class="flex flex-col gap-2" :class="surveyColumnClass">
       <SortableRow
         v-for="block in items"
         :key="block.id"

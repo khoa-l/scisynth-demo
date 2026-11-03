@@ -85,7 +85,12 @@ describe("Survey view", () => {
     const builder = wrapper.find('[aria-label="Survey builder"]');
     const preview = wrapper.find('[aria-label="Survey preview"]');
     for (const panel of [builder, preview]) {
-      expect(panel.classes()).toEqual(expect.arrayContaining(["bg-muted", "inset-shadow-sm"]));
+      expect(panel.classes()).toEqual(
+        expect.arrayContaining(["bg-muted", "inset-shadow-sm", "p-4"]),
+      );
+    }
+    for (const column of [builder.find("ol"), preview.find('[data-slot="card"]')]) {
+      expect(column.classes()).toEqual(expect.arrayContaining(["mx-auto", "w-full", "max-w-2xl"]));
     }
     const hint = builder.find("p");
     expect(hint.text()).toBe("Drag a block here to build the task.");
@@ -320,6 +325,14 @@ describe("Survey view", () => {
 
     expect(preview(wrapper).find('[data-slot="card-title"]').text()).toBe("Intake form");
     expect(preview(wrapper).text()).toContain("This survey has no questions yet.");
+  });
+
+  it("treats a survey of only blank text blocks as empty", async () => {
+    const blank: SurveyBlock = { id: "b3", type: "text", text: "" };
+    const wrapper = await mountView({ ...SURVEY, content: { blocks: [blank] } });
+
+    expect(preview(wrapper).text()).toContain("This survey has no questions yet.");
+    expect(preview(wrapper).find('[data-slot="card-content"]').exists()).toBe(false);
   });
 
   it("previews the task's text blocks in order, skipping empty ones", async () => {
