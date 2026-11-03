@@ -1,10 +1,3 @@
-"""The node graph a dataset is built from, as the editor saves it.
-
-The backend checks the graph's structure only. Node kinds and their parameters are
-defined by the frontend's catalogue for now, so they are stored as given; once the
-catalogue is derived from scisynth, they can be checked against its registry here.
-"""
-
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
@@ -17,7 +10,6 @@ ParamValue = int | FiniteFloat | Annotated[str, Field(max_length=200)] | None
 
 
 class _Strict(BaseModel):
-    # Defaults make fields optional in requests; responses always include them.
     model_config = ConfigDict(
         extra="forbid", json_schema_serialization_defaults_required=True
     )
@@ -44,8 +36,6 @@ class GraphEdge(_Strict):
 
 
 class DatasetGraph(_Strict):
-    """Nodes and the edges between their ports. ``{}`` reads as an empty graph."""
-
     version: Literal[1] = 1
     nodes: list[GraphNode] = Field(default_factory=list, max_length=MAX_NODES)
     edges: list[GraphEdge] = Field(default_factory=list, max_length=MAX_EDGES)

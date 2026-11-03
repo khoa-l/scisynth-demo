@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/vue-query";
 
 import { canConnect, defaultParams, findKind, nodeCatalogQuery } from "../lib/nodes/catalog";
 import { localCatalog } from "../lib/nodes/local-catalog";
+import { isValidParam } from "../lib/nodes/params";
 
 describe("Node catalogue", () => {
   it("is what the catalogue query loads", async () => {
@@ -20,21 +21,7 @@ describe("Node catalogue", () => {
   it("has defaults that satisfy each parameter's own rules", () => {
     for (const kind of localCatalog.kinds) {
       for (const [name, def] of Object.entries(kind.params)) {
-        const where = `${kind.name}.${name}`;
-        if (def.type === "enum") {
-          expect(
-            def.options.map((o) => o.value),
-            where,
-          ).toContain(def.default);
-          continue;
-        }
-        if (def.default === null) {
-          expect(def.optional, where).toBe(true);
-          continue;
-        }
-        if (def.type === "integer") expect(Number.isInteger(def.default), where).toBe(true);
-        expect(def.default, where).toBeGreaterThanOrEqual(def.min ?? -Infinity);
-        expect(def.default, where).toBeLessThanOrEqual(def.max ?? Infinity);
+        expect(isValidParam(def, def.default), `${kind.name}.${name}`).toBe(true);
       }
     }
   });
@@ -60,6 +47,16 @@ describe("Node catalogue", () => {
     expect(link("GaussianField", "field", "GaussianNoise", "observation")).toBe(false);
     expect(link("GridSampler", "observation", "Sum", "terms")).toBe(false);
     expect(link("GaussianField", "nope", "Sum", "terms")).toBe(false);
-    expect(link("Unknown", "field", "Sum", "terms")).toBe(false);
+  });
+
+  it("allows links to kinds it doesn't know, since it can't check them", () => {
+    expect(
+      canConnect(localCatalog, {
+        sourceKind: "RemovedStage",
+        sourcePort: "out",
+        targetKind: "Sum",
+        targetPort: "terms",
+      }),
+    ).toBe(true);
   });
 });

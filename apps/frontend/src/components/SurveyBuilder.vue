@@ -28,8 +28,6 @@ const props = defineProps<{ projectId: string; survey: SurveyPublic }>();
 const queryClient = useQueryClient();
 const blocks = computed(() => surveyBlocks(props.survey.content));
 
-// The cache already holds the edit (see `show`), so a successful save has nothing to store;
-// writing the response back could overwrite newer edits made while it was in flight.
 const { mutate } = useMutation(() => ({
   ...surveysUpdateSurveyMutation(),
   mutationKey: surveySaveKey(props.survey.id),

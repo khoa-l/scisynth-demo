@@ -1,16 +1,8 @@
 import type { IntegerParam, NodeCatalog, NodeKindDef, NumberParam, PortDef } from "./types";
 
-/*
- * A hand-written stand-in for the catalogue the backend will derive from scisynth.
- * Kind names are scisynth class names and parameter names are its dataclass fields.
- * Parameters the UI can't edit yet (domain, callables, arrays, estimators, max_cells,
- * Drift.axis) are left out; every parameter is a fixed value for now, not a distribution.
- */
-
 const field: PortDef = { id: "field", label: "Field", type: "field" };
 const observation: PortDef = { id: "observation", label: "Observation", type: "observation" };
 const latent: PortDef = { id: "latent", label: "Latent", type: "field" };
-/** An input that takes any number of fields. */
 const fields = (id: string, label: string): PortDef => ({
   id,
   label,

@@ -26,8 +26,6 @@ function store(survey: SurveyPublic) {
   storeSurvey(queryClient, props.projectId, survey);
 }
 
-// Sharing the survey's scope queues a publish behind any save still in flight. The server
-// publishes what it has stored, so if that save failed, publishing would drop the edit.
 const publish = useMutation(() => ({
   scope: surveyMutationScope(props.survey.id),
   mutationFn: async (options: Options<SurveysPublishSurveyData>) => {

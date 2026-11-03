@@ -2,6 +2,7 @@
 import { useId } from "vue";
 
 import { Input } from "@/components/ui/input";
+import { parseParam } from "@/lib/nodes/params";
 import type {
   IntegerParam,
   NumberParam,
@@ -15,19 +16,9 @@ const emit = defineEmits<{ update: [name: string, value: ParamValue] }>();
 
 const uid = useId();
 
-function parse(def: NumberParam | IntegerParam, raw: string): ParamValue | undefined {
-  if (raw.trim() === "") return def.optional ? null : undefined;
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return undefined;
-  if (def.type === "integer" && !Number.isInteger(value)) return undefined;
-  if (value < (def.min ?? -Infinity) || value > (def.max ?? Infinity)) return undefined;
-  return value;
-}
-
-/** Commits a valid number; otherwise puts the last valid value back in the box. */
 function commitNumber(name: string, def: NumberParam | IntegerParam, event: Event) {
   const input = event.target as HTMLInputElement;
-  const value = parse(def, input.value);
+  const value = parseParam(def, input.value);
   if (value === undefined) input.value = String(props.values[name] ?? "");
   else emit("update", name, value);
 }

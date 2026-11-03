@@ -18,7 +18,6 @@ export function storeSurvey(queryClient: QueryClient, projectId: string, survey:
   );
 }
 
-/** Saves and (un)publishes of one survey share a scope, so they run one at a time, in order. */
 export function surveyMutationScope(surveyId: string) {
   return { id: `survey:${surveyId}` };
 }

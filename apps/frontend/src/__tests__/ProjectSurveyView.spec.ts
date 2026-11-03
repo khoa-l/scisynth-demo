@@ -379,7 +379,6 @@ describe("Survey view", () => {
     ).toEqual(["Goodbye", "Hello"]);
   });
 
-  /** Holds every PATCH until `release` is called, then answers it with `status`. */
   function holdSaves() {
     let release!: (status?: number) => void;
     const gate = new Promise<number>((resolve) => (release = (status = 200) => resolve(status)));

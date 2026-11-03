@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vite-plus/test";
 
-import { Handle, VueFlow } from "@vue-flow/core";
+import { Handle, VueFlow, type Connection, type GraphEdge } from "@vue-flow/core";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import CatalogNode from "../components/CatalogNode.vue";
@@ -126,7 +126,6 @@ describe("Dataset view", () => {
     return nodes[nodes.length - 1]!;
   }
 
-  /** The data held by the last node dropped on the canvas. */
   function lastNodeData(wrapper: Wrapper) {
     const nodes = wrapper.findAllComponents(CatalogNode);
     return (nodes[nodes.length - 1]!.props() as { data: CatalogNodeData }).data;
@@ -210,6 +209,30 @@ describe("Dataset view", () => {
     await dropKind(wrapper, "PointSampler");
     const inputs = wrapper.findAllComponents(Handle).filter((h) => h.props("type") === "target");
     expect(inputs.map((handle) => handle.props("connectable"))).toEqual([true, "single"]);
+  });
+
+  it("gives each new connection its own short id, and ignores repeats", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    const flow = wrapper.findComponent(VueFlow).vm as unknown as {
+      emits: { connect: (connection: Connection) => void };
+      edges: GraphEdge[];
+    };
+    const connection = {
+      source: field.attributes("data-id")!,
+      sourceHandle: "field",
+      target: sampler.attributes("data-id")!,
+      targetHandle: "latent",
+    };
+
+    flow.emits.connect(connection);
+    flow.emits.connect(connection);
+    await flushPromises();
+
+    expect(flow.edges).toHaveLength(1);
+    expect(flow.edges[0]!.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(flow.edges[0]).toMatchObject(connection);
   });
 
   it("draws connections 2px wide", async () => {

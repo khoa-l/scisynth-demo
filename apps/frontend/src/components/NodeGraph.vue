@@ -4,7 +4,7 @@ import "@vue-flow/core/dist/theme-default.css";
 
 import { useQuery } from "@tanstack/vue-query";
 import { Background } from "@vue-flow/background";
-import { VueFlow, useVueFlow, type ValidConnectionFunc } from "@vue-flow/core";
+import { VueFlow, connectionExists, useVueFlow, type ValidConnectionFunc } from "@vue-flow/core";
 import { markRaw } from "vue";
 
 import CatalogNode from "@/components/CatalogNode.vue";
@@ -16,15 +16,27 @@ import {
   nodeCatalogQuery,
   type CatalogNodeData,
 } from "@/lib/nodes/catalog";
+import { CATALOG_NODE, flowNode } from "@/lib/nodes/graph";
 
-const nodeTypes = { catalog: markRaw(CatalogNode) };
+const nodeTypes = { [CATALOG_NODE]: markRaw(CatalogNode) };
 const defaultEdgeOptions = { style: { strokeWidth: 2 } };
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
-const { addEdges, addNodes, onConnect, onNodesInitialized, screenToFlowCoordinate, updateNode } =
-  useVueFlow();
+const {
+  addEdges,
+  addNodes,
+  edges,
+  onConnect,
+  onNodesInitialized,
+  screenToFlowCoordinate,
+  updateNode,
+} = useVueFlow();
 
-onConnect(addEdges);
+onConnect((connection) => {
+  if (!connectionExists(connection, edges.value)) {
+    addEdges({ ...connection, id: crypto.randomUUID() });
+  }
+});
 
 const isValidConnection: ValidConnectionFunc = (connection, { sourceNode, targetNode }) =>
   !!catalog.value &&
@@ -57,12 +69,12 @@ function onDrop(event: DragEvent) {
       },
     }));
   });
-  addNodes({
-    id,
-    type: "catalog",
-    position: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
-    data: { kind: kind.name, params: defaultParams(kind) } satisfies CatalogNodeData,
-  });
+  addNodes(
+    flowNode(id, screenToFlowCoordinate({ x: event.clientX, y: event.clientY }), {
+      kind: kind.name,
+      params: defaultParams(kind),
+    }),
+  );
 }
 </script>
 

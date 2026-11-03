@@ -5,17 +5,12 @@ import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 
 export const NODE_KIND_MIME = "application/x-scisynth-node";
 
-/**
- * The only way the app reads the node catalogue. To serve it from the backend, fetch
- * it here (e.g. `GET /api/node-kinds`); nothing else needs to change.
- */
 export const nodeCatalogQuery = queryOptions({
   queryKey: ["node-catalog"],
   queryFn: async (): Promise<NodeCatalog> => localCatalog,
   staleTime: Infinity,
 });
 
-/** What a node on the canvas holds: its kind's name and its parameter values. */
 export interface CatalogNodeData {
   kind: string;
   params: ParamValues;
@@ -36,9 +31,11 @@ interface Link {
   targetPort?: string | null;
 }
 
-/** Whether an output port of one kind can feed an input port of another. */
 export function canConnect(catalog: NodeCatalog, link: Link): boolean {
-  const source = findKind(catalog, link.sourceKind)?.outputs.find((p) => p.id === link.sourcePort);
-  const target = findKind(catalog, link.targetKind)?.inputs.find((p) => p.id === link.targetPort);
+  const sourceKind = findKind(catalog, link.sourceKind);
+  const targetKind = findKind(catalog, link.targetKind);
+  if (!sourceKind || !targetKind) return true;
+  const source = sourceKind.outputs.find((p) => p.id === link.sourcePort);
+  const target = targetKind.inputs.find((p) => p.id === link.targetPort);
   return !!source && !!target && source.type === target.type;
 }
