@@ -4,7 +4,7 @@ import { Handle, VueFlow, type Connection, type GraphEdge } from "@vue-flow/core
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import type { DatasetPublic } from "../client";
-import CatalogNode from "../components/CatalogNode.vue";
+import DatasetNode from "../components/DatasetNode.vue";
 import type { CatalogNodeData } from "../lib/nodes/catalog";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import {
@@ -129,7 +129,7 @@ describe("Dataset view", () => {
   }
 
   function lastNodeData(wrapper: Wrapper) {
-    const nodes = wrapper.findAllComponents(CatalogNode);
+    const nodes = wrapper.findAllComponents(DatasetNode);
     return (nodes[nodes.length - 1]!.props() as { data: CatalogNodeData }).data;
   }
 

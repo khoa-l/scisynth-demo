@@ -10,7 +10,7 @@ from pydantic import (
     StringConstraints,
 )
 
-from app.graph import DatasetGraph
+from app.dataset_graph import DatasetGraph
 
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
 

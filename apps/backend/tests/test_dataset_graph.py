@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlmodel import Session
 
-from app.graph import MAX_NODES
+from app.dataset_graph import MAX_NODES
 from app.models import Dataset
 from tests.helpers import sign_up
 

@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
 import { datasetsGetDatasetOptions } from "@/client/@tanstack/vue-query.gen";
-import NodeCatalog from "@/components/NodeCatalog.vue";
-import NodeGraph from "@/components/NodeGraph.vue";
+import DatasetNodePalette from "@/components/DatasetNodePalette.vue";
+import DatasetBuilder from "@/components/DatasetBuilder.vue";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 
 const props = defineProps<{ projectId: string; datasetId: string }>();
@@ -30,10 +30,15 @@ const { data: dataset, isError } = useQuery(
     <template #left>
       <div class="flex h-full flex-col">
         <div class="min-h-0 flex-3">
-          <NodeGraph v-if="dataset" :key="dataset.id" :project-id="projectId" :dataset="dataset" />
+          <DatasetBuilder
+            v-if="dataset"
+            :key="dataset.id"
+            :project-id="projectId"
+            :dataset="dataset"
+          />
         </div>
         <div role="group" aria-label="Node details" class="min-h-0 flex-1">
-          <NodeCatalog />
+          <DatasetNodePalette />
         </div>
       </div>
     </template>

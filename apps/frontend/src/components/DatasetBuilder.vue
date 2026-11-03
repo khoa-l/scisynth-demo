@@ -19,7 +19,7 @@ import {
   datasetsGetDatasetQueryKey,
   datasetsUpdateDatasetMutation,
 } from "@/client/@tanstack/vue-query.gen";
-import CatalogNode from "@/components/CatalogNode.vue";
+import DatasetNode from "@/components/DatasetNode.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import {
   NODE_KIND_MIME,
@@ -34,7 +34,7 @@ import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
-const nodeTypes = { [CATALOG_NODE]: markRaw(CatalogNode) };
+const nodeTypes = { [CATALOG_NODE]: markRaw(DatasetNode) };
 const defaultEdgeOptions = { style: { strokeWidth: 2 } };
 
 const queryClient = useQueryClient();

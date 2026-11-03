@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { computed } from "vue";
 
-import ParamForm from "@/components/ParamForm.vue";
+import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import { findKind, nodeCatalogQuery, type CatalogNodeData } from "@/lib/nodes/catalog";
 import type { ParamValue } from "@/lib/nodes/types";
 
@@ -46,7 +46,7 @@ function setParam(name: string, value: ParamValue) {
         {{ port.label }}
       </div>
     </div>
-    <ParamForm
+    <DatasetNodeParams
       v-if="Object.keys(kind.params).length"
       :params="kind.params"
       :values="data.params"
