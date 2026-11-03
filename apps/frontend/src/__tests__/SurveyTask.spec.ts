@@ -194,6 +194,40 @@ describe("Survey task", () => {
       expect(action(wrapper).attributes("disabled")).toBeDefined();
     });
 
+    it("shows a submitted response on every page at once, without a way to change it", () => {
+      const clear: SurveyBlock = { id: "q1", type: "scale", text: "How clear was it?" };
+      const hard: SurveyBlock = { id: "q2", type: "scale", text: "How hard was it?" };
+      const wrapper = mount(SurveyTask, {
+        props: {
+          name: "Intake form",
+          content: {
+            blocks: [hello, page("p1"), clear, { id: "s1", type: "separator" }, hard, end],
+          },
+          answered: { q1: 4, q2: 2 },
+        },
+      });
+
+      const cards = wrapper.findAll('[data-slot="card"]');
+      expect(cards.map((card) => card.text())).toEqual([
+        "Intake formHello",
+        "How clear was it?12345",
+        "How hard was it?12345",
+      ]);
+      const points = wrapper.findAll('[data-slot="toggle-group-item"]');
+      const pressed = points.filter((point) => point.attributes("aria-pressed") === "true");
+      expect(pressed.map((point) => point.text())).toEqual(["4", "2"]);
+      expect(points.every((point) => point.attributes("disabled") !== undefined)).toBe(true);
+      expect(wrapper.find('[data-slot="card-footer"]').exists()).toBe(false);
+    });
+
+    it("shows an empty submitted survey with its name", () => {
+      const wrapper = mount(SurveyTask, {
+        props: { name: "Intake form", content: {}, answered: {} },
+      });
+
+      expect(wrapper.text()).toBe("Intake formThis survey has no questions yet.");
+    });
+
     it("has no button for an empty survey, even with an end", () => {
       const wrapper = task([end]);
 

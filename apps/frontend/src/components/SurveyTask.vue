@@ -17,6 +17,7 @@ const props = defineProps<{
   name: string;
   content: { [key: string]: unknown };
   submitting?: boolean;
+  answered?: Record<string, number>;
 }>();
 
 defineEmits<{ submit: [answers: Record<string, number>] }>();
@@ -51,11 +52,14 @@ watch(
   },
 );
 
-const cards = computed(() => pages.value[page.value] ?? [[]]);
+const cards = computed(() => {
+  const shown = props.answered ? pages.value.flat() : pages.value[page.value];
+  return shown?.length ? shown : [[]];
+});
 const isEmpty = computed(() => !pages.value.length);
 const isLastPage = computed(() => page.value >= pages.value.length - 1);
 const hasFooter = computed(
-  () => !isEmpty.value && (page.value > 0 || !isLastPage.value || ends.value),
+  () => !props.answered && !isEmpty.value && (page.value > 0 || !isLastPage.value || ends.value),
 );
 </script>
 
@@ -73,7 +77,8 @@ const hasFooter = computed(
               {{ block.text }}
             </p>
             <SurveyScale
-              :model-value="answers[block.id]"
+              :model-value="(answered ?? answers)[block.id]"
+              :disabled="!!answered"
               :aria-labelledby="`question-${block.id}`"
               @update:model-value="setAnswer(block.id, $event)"
             />
