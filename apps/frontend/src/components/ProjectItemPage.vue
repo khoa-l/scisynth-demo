@@ -5,13 +5,14 @@ import { RouterLink } from "vue-router";
 import ProjectPage from "@/components/ProjectPage.vue";
 import { Button } from "@/components/ui/button";
 
-defineProps<{
+const { columns = "grid-cols-2" } = defineProps<{
   projectId: string;
   noun: string;
   itemName: string | undefined;
   isError: boolean;
   backTo: string;
   backLabel: string;
+  columns?: string;
 }>();
 </script>
 
@@ -27,7 +28,7 @@ defineProps<{
       <slot name="actions" />
     </div>
     <p v-if="isError" class="mt-6 text-sm text-destructive">This {{ noun }} couldn't be found.</p>
-    <div v-else class="mt-6 grid min-h-0 flex-1 grid-cols-2 gap-4">
+    <div v-else :class="['mt-6 grid min-h-0 flex-1 gap-4', columns]">
       <section aria-label="Left canvas" class="overflow-hidden rounded-lg border">
         <slot name="left" />
       </section>

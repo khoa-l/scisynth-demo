@@ -14,6 +14,7 @@ export const nodeCatalogQuery = queryOptions({
 export interface DatasetNodeData {
   kind: string;
   params: ParamValues;
+  previewHidden?: boolean;
 }
 
 export function findKind(catalog: NodeCatalog, name: string): NodeKindDef | undefined {

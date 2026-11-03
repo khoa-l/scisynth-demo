@@ -41,6 +41,7 @@ function itemLink(item: Item) {
       <ToggleGroup
         type="single"
         variant="outline"
+        orientation="horizontal"
         :model-value="view"
         @update:model-value="setView"
       >

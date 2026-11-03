@@ -26,6 +26,7 @@ describe("Survey view", () => {
       expect.arrayContaining(["absolute", "inset-0", "flex", "items-center", "justify-center"]),
     );
     const [left, right] = wrapper.findAll("section");
+    expect(left!.element.parentElement!.classList).toContain("grid-cols-2");
     expect(left!.element.contains(builder.element)).toBe(true);
     expect(right!.element.contains(preview.element)).toBe(true);
 

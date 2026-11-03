@@ -9,7 +9,7 @@ import { DATASET, fetchMock, jsonResponse, requests } from "./helpers";
 
 const CHANNEL = { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" };
 const SECOND_CHANNEL = { ...CHANNEL, bdata: "AACAQAAAoEAAAMBAAADgQA==" };
-const PREVIEW = { layout: "grid", x: AXIS, y: AXIS, channels: [CHANNEL] };
+const PREVIEW = { layout: "grid", axes: ["x", "y"], x: AXIS, y: AXIS, channels: [CHANNEL] };
 const FIELD_PARAMS = {
   length_scale: 0.1,
   amplitude: 1,
@@ -42,7 +42,7 @@ function thumbnail(node: DOMWrapper<Element>) {
   return node.find('[role="img"]');
 }
 
-describe("Dataset node thumbnail", () => {
+describe("Dataset node preview", () => {
   it("draws a static heatmap of a Gaussian field above its node", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse(PREVIEW));
@@ -82,6 +82,23 @@ describe("Dataset node thumbnail", () => {
       },
       { staticPlot: true },
     );
+  });
+
+  it("draws the viewed node in full, with axes and a colour scale", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const field = await dropKind(wrapper, "GaussianField");
+    await field.find('[aria-label="View preview"]').trigger("click");
+    await flushPromises();
+
+    const chart = wrapper.find('[aria-label="Viewed node"] [role="img"]').element;
+    const [, [trace], layout, config] = react.mock.calls.find(([element]) => element === chart)!;
+    expect(trace).toMatchObject({ type: "heatmap", z: CHANNEL, showscale: true });
+    expect(layout).toMatchObject({
+      xaxis: { title: { text: "x" } },
+      yaxis: { title: { text: "y" }, scaleanchor: "x" },
+    });
+    expect(config).toEqual({ displaylogo: false, responsive: true });
   });
 
   it("previews a composite once enough terms are connected", async () => {
@@ -189,7 +206,13 @@ describe("Dataset node thumbnail", () => {
     const wrapper = await mountView();
     const points = { ...AXIS, bdata: "AAAAAAAAAD8AAIA/", shape: "3" };
     answerPreviews(() =>
-      jsonResponse({ layout: "points", x: points, y: points, channels: [points] }),
+      jsonResponse({
+        layout: "points",
+        axes: ["x", "y"],
+        x: points,
+        y: points,
+        channels: [points],
+      }),
     );
     const sampler = await dropKind(wrapper, "PointSampler");
     await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
@@ -202,7 +225,7 @@ describe("Dataset node thumbnail", () => {
         mode: "markers",
         x: points,
         y: points,
-        marker: { color: points, colorscale: "Viridis", size: 3 },
+        marker: { color: points, colorscale: "Viridis", size: 3, showscale: false },
       },
     ]);
   });

@@ -34,6 +34,7 @@ const int = (
 const bound = (label: string) => num(label, null, { optional: true });
 
 const splineOrder = int("Spline order", 1, { min: 0, max: 5 });
+const seed = int("Seed", 0, { min: 0 });
 
 function stage(group: string) {
   return (name: string, label: string, params: NodeKindDef["params"] = {}): NodeKindDef => ({
@@ -71,7 +72,7 @@ export const localCatalog: NodeCatalog = {
         mean: num("Mean", 0),
         resolution: int("Resolution", 128, { min: 1 }),
         order: splineOrder,
-        seed: int("Seed", 0, { min: 0 }),
+        seed,
       },
     },
     {
@@ -149,13 +150,17 @@ export const localCatalog: NodeCatalog = {
       group: "sampler",
       inputs: [latent],
       outputs: [observation],
-      params: { n: int("Points", 1000, { min: 1 }) },
+      params: { n: int("Points", 1000, { min: 1 }), seed },
     },
     defect("GaussianNoise", "Gaussian noise", {
       sigma: num("Sigma", 1, { min: 0 }),
       mean: num("Mean", 0),
+      seed,
     }),
-    defect("PoissonNoise", "Poisson noise", { scale: num("Count scale", 1, { min: 0 }) }),
+    defect("PoissonNoise", "Poisson noise", {
+      scale: num("Count scale", 1, { min: 0 }),
+      seed,
+    }),
     defect("Quantize", "Quantize", {
       levels: int("Levels", 256, { min: 2 }),
       vmin: bound("Min"),
@@ -169,9 +174,10 @@ export const localCatalog: NodeCatalog = {
     defect("CoordinateShift", "Coordinate shift", { shift: num("Shift", 0) }),
     defect("RandomDropout", "Random dropout", {
       p: num("Probability", 0.1, { min: 0, max: 1, step: 0.01 }),
+      seed,
     }),
-    defect("PositionJitter", "Position jitter", { sigma: num("Sigma", 0, { min: 0 }) }),
-    defect("RandomInsertion", "Random insertion", { n: int("Points", 10, { min: 0 }) }),
+    defect("PositionJitter", "Position jitter", { sigma: num("Sigma", 0, { min: 0 }), seed }),
+    defect("RandomInsertion", "Random insertion", { n: int("Points", 10, { min: 0 }), seed }),
     transform("Downsample", "Downsample", { factor: int("Factor", 2, { min: 1 }) }),
     {
       name: "Projection",

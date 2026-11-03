@@ -54,6 +54,14 @@ def inputs(body: NodePreviewRequest, node_id: str) -> list[str]:
     return [edge.source for edge in body.edges if edge.target == node_id]
 
 
+def split_seed(node: NodeSpec) -> tuple[dict, int]:
+    params = dict(node.params)
+    seed = params.pop("seed", 0)
+    if not isinstance(seed, int) or seed < 0:
+        raise ValueError("seed must be a whole number of at least 0")
+    return params, seed
+
+
 def build_latent(
     body: NodePreviewRequest, node_id: str, path: tuple[str, ...]
 ) -> FieldLatent:
@@ -65,10 +73,7 @@ def build_latent(
     ]
     if node.kind in COMPOSITES:
         return COMPOSITES[node.kind](*terms)
-    params = dict(node.params)
-    seed = params.pop("seed", 0)
-    if not isinstance(seed, int) or seed < 0:
-        raise ValueError("seed must be a whole number of at least 0")
+    params, seed = split_seed(node)
     domain = Domain.from_extents([(0.0, 1.0), (0.0, 1.0)])
     generator = LatentGenerator.from_dict(
         {
@@ -79,8 +84,8 @@ def build_latent(
     return cast(FieldLatent, generator.realize(seed))
 
 
-def build_sampler(node: NodeSpec) -> Sampler:
-    sampler = Sampler.from_dict({"type": node.kind, "params": node.params})
+def build_sampler(kind: str, params: dict) -> Sampler:
+    sampler = Sampler.from_dict({"type": kind, "params": params})
     if isinstance(sampler, GridSampler):
         sampler.max_cells = SAMPLE_MAX_CELLS
     if (
@@ -111,12 +116,13 @@ def build_observation(
     source = only_input(body, node)
     if issubclass(component, Sampler):
         latent = build_latent(body, source, (*path, node_id))
-        return build_sampler(node).run(latent, seed=0)
+        params, seed = split_seed(node)
+        return build_sampler(node.kind, params).run(latent, seed=seed)
     if issubclass(component, Stage):
         before = build_observation(body, source, (*path, node_id))
-        return Stage.from_dict({"type": node.kind, "params": node.params}).run(
-            before, seed=0
-        )
+        params, seed = split_seed(node)
+        stage = Stage.from_dict({"type": node.kind, "params": params})
+        return stage.run(before, seed=seed)
     raise TypeError(f"{node.kind} doesn't produce an observation")
 
 
@@ -147,6 +153,7 @@ def preview_node(body: NodePreviewRequest, user: CurrentUser) -> NodePreview:
         channels = [typed_array(values[:, i]) for i in range(observation.n_channels)]
     return NodePreview(
         layout=observation.layout,
+        axes=list(observation.coords),
         x=typed_array(x),
         y=typed_array(y),
         channels=channels,

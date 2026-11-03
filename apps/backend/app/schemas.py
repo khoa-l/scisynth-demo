@@ -157,6 +157,7 @@ class TypedArray(BaseModel):
 
 class NodePreview(BaseModel):
     layout: Literal["grid", "points"]
+    axes: list[str]
     x: TypedArray
     y: TypedArray
     channels: list[TypedArray]

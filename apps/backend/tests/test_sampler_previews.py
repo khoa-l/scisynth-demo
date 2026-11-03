@@ -80,3 +80,13 @@ def test_samples_every_channel_of_a_multichannel(
 
     assert len(result["channels"]) == 2
     assert not np.array_equal(grid(result, 0), grid(result, 1))
+
+
+def test_a_point_sampler_follows_its_seed(signed_in: TestClient) -> None:
+    def xs(**params: object) -> np.ndarray:
+        nodes = [field("field"), sampler("s", "PointSampler", n=100, **params)]
+        return decode(preview(signed_in, "s", nodes, [sampled("s")])["x"])
+
+    assert np.array_equal(xs(), xs(seed=0))
+    assert np.array_equal(xs(seed=3), xs(seed=3))
+    assert not np.array_equal(xs(seed=1), xs(seed=2))

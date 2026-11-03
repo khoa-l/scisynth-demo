@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vite-plus/test";
 
 import { Handle } from "@vue-flow/core";
-import type { DOMWrapper } from "@vue/test-utils";
+import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
-import { connect, dropKind, mountView, paletteItem } from "./dataset-view";
+import { connect, dropKind, mountView, paletteItem, type Wrapper } from "./dataset-view";
 
 function handles(node: DOMWrapper<Element>, side: "target" | "source") {
   return node
@@ -60,5 +60,122 @@ describe("Dataset node", () => {
     expect(shortfall().text()).toBe("1/2");
     await connect(wrapper, second, sum, "terms");
     expect(shortfall().exists()).toBe(false);
+  });
+
+  describe("preview controls", () => {
+    function controls(node: DOMWrapper<Element>) {
+      return node.find('[aria-label="Preview controls"]');
+    }
+
+    function view(node: DOMWrapper<Element>) {
+      return node.find('[aria-label="View preview"]');
+    }
+
+    function hide(node: DOMWrapper<Element>) {
+      return node.find('[aria-label="Hide preview"]');
+    }
+
+    function icon(button: DOMWrapper<Element>) {
+      return button
+        .find("svg")
+        .classes()
+        .find((name) => name.startsWith("lucide-"));
+    }
+
+    function viewed(wrapper: Wrapper) {
+      return wrapper.find('[role="region"][aria-label="Viewed node"]');
+    }
+
+    async function press(button: DOMWrapper<Element>) {
+      await button.trigger("click");
+      await flushPromises();
+    }
+
+    it("shows a joined set of controls under every node that has a preview", async () => {
+      const wrapper = await mountView();
+      const field = await dropKind(wrapper, "GaussianField");
+      const gain = await dropKind(wrapper, "Gain");
+
+      expect(controls(field).attributes("data-slot")).toBe("toggle-group");
+      expect(controls(field).attributes("data-spacing")).toBe("0");
+      expect(controls(field).attributes("data-orientation")).toBe("horizontal");
+      expect(controls(field).classes()).toEqual(
+        expect.arrayContaining(["nodrag", "absolute", "top-full"]),
+      );
+      expect([view(field), hide(field)].map((b) => b.attributes("aria-pressed"))).toEqual([
+        "false",
+        "false",
+      ]);
+      expect(controls(gain).exists()).toBe(false);
+    });
+
+    it("switches each icon with its toggle", async () => {
+      const wrapper = await mountView();
+      const field = await dropKind(wrapper, "GaussianField");
+      expect([icon(view(field)), icon(hide(field))]).toEqual(["lucide-eye-off", "lucide-image"]);
+
+      await press(view(field));
+      await press(hide(field));
+
+      expect([icon(view(field)), icon(hide(field))]).toEqual(["lucide-eye", "lucide-image-off"]);
+    });
+
+    it("shows the viewed node's preview in the panel until it's switched off", async () => {
+      const wrapper = await mountView();
+      const field = await dropKind(wrapper, "GaussianField");
+      expect(viewed(wrapper).find('[role="img"]').exists()).toBe(false);
+
+      await press(view(field));
+      expect(view(field).attributes("aria-pressed")).toBe("true");
+      expect(viewed(wrapper).find('[role="img"]').attributes("aria-label")).toBe(
+        "Preview of Gaussian field",
+      );
+
+      await press(view(field));
+      expect(viewed(wrapper).find('[role="img"]').exists()).toBe(false);
+      expect(controls(field).exists()).toBe(true);
+      expect(field.classes()).not.toContain("selected");
+    });
+
+    it("hides a node's preview without stopping it being viewed", async () => {
+      const wrapper = await mountView();
+      const field = await dropKind(wrapper, "GaussianField");
+      await press(view(field));
+      expect(field.find('[role="img"]').exists()).toBe(true);
+
+      await press(hide(field));
+
+      expect(hide(field).attributes("aria-pressed")).toBe("true");
+      expect(view(field).attributes("aria-pressed")).toBe("true");
+      expect(field.find('[role="img"]').exists()).toBe(false);
+      expect(viewed(wrapper).find('[role="img"]').exists()).toBe(true);
+      await press(hide(field));
+      expect(field.find('[role="img"]').exists()).toBe(true);
+    });
+
+    it("views one node at a time", async () => {
+      const wrapper = await mountView();
+      const first = await dropKind(wrapper, "GaussianField");
+      const second = await dropKind(wrapper, "GaussianField");
+      await press(view(first));
+
+      await press(view(second));
+
+      expect(viewed(wrapper).findAll('[role="img"]')).toHaveLength(1);
+      expect(view(first).attributes("aria-pressed")).toBe("false");
+      expect(view(second).attributes("aria-pressed")).toBe("true");
+    });
+
+    it("leaves another node viewed when hiding a preview", async () => {
+      const wrapper = await mountView();
+      const first = await dropKind(wrapper, "GaussianField");
+      const second = await dropKind(wrapper, "GaussianField");
+      await press(view(first));
+
+      await press(hide(second));
+
+      expect(view(first).attributes("aria-pressed")).toBe("true");
+      expect(viewed(wrapper).find('[role="img"]').exists()).toBe(true);
+    });
   });
 });

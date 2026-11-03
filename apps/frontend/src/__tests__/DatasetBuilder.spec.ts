@@ -138,9 +138,22 @@ describe("Dataset builder", () => {
             kind: "GaussianField",
             params: { length_scale: 0.2, amplitude: 1, mean: 0, resolution: 64, order: 1 },
             position: { x: 0, y: 0 },
+            preview_hidden: false,
           },
-          { id: "sampler", kind: "GridSampler", params: { shape: 32 }, position: { x: 300, y: 0 } },
-          { id: "old", kind: "RemovedStage", params: { strength: 3 }, position: { x: 600, y: 0 } },
+          {
+            id: "sampler",
+            kind: "GridSampler",
+            params: { shape: 32 },
+            position: { x: 300, y: 0 },
+            preview_hidden: false,
+          },
+          {
+            id: "old",
+            kind: "RemovedStage",
+            params: { strength: 3 },
+            position: { x: 600, y: 0 },
+            preview_hidden: false,
+          },
         ],
         edges: [
           {

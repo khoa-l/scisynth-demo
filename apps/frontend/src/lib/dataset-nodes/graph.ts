@@ -24,6 +24,7 @@ export function toGraph(nodes: FlowNode[], edges: Edge[]): DatasetGraph {
       kind: data.kind,
       params: data.params,
       position: { x, y },
+      preview_hidden: data.previewHidden ?? false,
     })),
     edges: edges.flatMap(({ id, source, sourceHandle, target, targetHandle }) =>
       sourceHandle && targetHandle
@@ -40,9 +41,13 @@ export function fromGraph(
   const kindOf = new Map(graph.nodes.map((node) => [node.id, node.kind]));
 
   return {
-    nodes: graph.nodes.map(({ id, kind, params, position: { x, y } }) => {
+    nodes: graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
       const def = findKind(catalog, kind);
-      return flowNode(id, { x, y }, { kind, params: def ? loadParams(def, params) : params });
+      return flowNode(
+        id,
+        { x, y },
+        { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
+      );
     }),
     edges: graph.edges
       .filter((edge) =>

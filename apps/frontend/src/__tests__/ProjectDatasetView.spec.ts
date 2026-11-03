@@ -3,6 +3,14 @@ import { describe, it, expect } from "vite-plus/test";
 import { details, mountView } from "./dataset-view";
 
 describe("Dataset view", () => {
+  it("gives the node graph two thirds of the page and the panel one third", async () => {
+    const wrapper = await mountView();
+
+    const grid = wrapper.find("section").element.parentElement!;
+    expect(grid.classList).toContain("grid-cols-[2fr_1fr]");
+    expect(grid.classList).not.toContain("grid-cols-2");
+  });
+
   it("shows a grey Vue Flow grid above the node category tabs and a white panel split two thirds to one", async () => {
     const wrapper = await mountView();
 

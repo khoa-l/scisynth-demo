@@ -67,3 +67,26 @@ def test_rejects_a_loop_of_defects(signed_in: TestClient) -> None:
 
     assert response.status_code == 422
     assert "form a loop" in response.json()["detail"]
+
+
+def test_a_random_defect_follows_its_seed(signed_in: TestClient) -> None:
+    nodes, edges = grid_sampled()
+
+    def noisy(**params: object) -> np.ndarray:
+        noise, link_noise = stage("noise", "GaussianNoise", "grid", **params)
+        return grid(preview(signed_in, "noise", [*nodes, noise], [*edges, link_noise]))
+
+    assert np.array_equal(noisy(sigma=1), noisy(sigma=1, seed=0))
+    assert np.array_equal(noisy(sigma=1, seed=4), noisy(sigma=1, seed=4))
+    assert not np.array_equal(noisy(sigma=1, seed=1), noisy(sigma=1, seed=2))
+
+
+def test_rejects_a_negative_defect_seed(signed_in: TestClient) -> None:
+    nodes, edges = grid_sampled()
+    noise, link_noise = stage("noise", "GaussianNoise", "grid", seed=-1)
+    body = {"node": "noise", "nodes": [*nodes, noise], "edges": [*edges, link_noise]}
+
+    response = signed_in.post(NODES, json=body)
+
+    assert response.status_code == 422
+    assert "seed must be" in response.json()["detail"]

@@ -13,7 +13,7 @@ import {
 } from "./helpers";
 
 export const AXIS = { dtype: "f4", bdata: "AAAAAAAAgD8=", shape: "2" };
-const NO_PREVIEW = { layout: "grid", x: AXIS, y: AXIS, channels: [] };
+const NO_PREVIEW = { layout: "grid", axes: ["x", "y"], x: AXIS, y: AXIS, channels: [] };
 
 export function answerWith(dataset: DatasetPublic) {
   fetchMock.mockImplementation(async (input) =>

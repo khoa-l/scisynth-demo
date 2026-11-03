@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { Eye, EyeOff, ImageIcon, ImageOff } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
-import { computed } from "vue";
+import { computed, inject, ref } from "vue";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
-import DatasetNodeThumbnail from "@/components/DatasetNodeThumbnail.vue";
+import DatasetNodePreview from "@/components/DatasetNodePreview.vue";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   findKind,
   nodeCatalogQuery,
@@ -14,6 +16,7 @@ import {
 import { nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
 import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
+import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
@@ -30,7 +33,7 @@ function connectionCount(port: PortDef) {
   return incoming.value.filter((connection) => connection.targetHandle === port.id).length;
 }
 
-const showsThumbnail = computed(() => {
+const hasPreview = computed(() => {
   if (!kind.value) return false;
   if (PREVIEWED_FROM_INPUTS.has(kind.value.group)) {
     return kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port));
@@ -41,6 +44,24 @@ const showsThumbnail = computed(() => {
 const previewRequest = computed(() =>
   nodePreviewRequest(toGraph(nodes.value, edges.value), props.id),
 );
+
+const viewed = inject(VIEWED_NODE, ref(null));
+const isViewed = computed(() => viewed.value === props.id);
+
+const pressed = computed(() => [
+  ...(isViewed.value ? ["viewed"] : []),
+  ...(props.data.previewHidden ? ["hidden"] : []),
+]);
+
+function setPressed(values: string[]) {
+  if (values.includes("viewed") !== isViewed.value) {
+    viewed.value = isViewed.value ? null : props.id;
+  }
+  const previewHidden = values.includes("hidden");
+  if (previewHidden !== !!props.data.previewHidden) {
+    updateNodeData<DatasetNodeData>(props.id, { previewHidden });
+  }
+}
 
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
@@ -53,12 +74,40 @@ function setParam(name: string, value: ParamValue) {
     class="relative w-64 rounded-lg border bg-background text-sm shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
   >
-    <DatasetNodeThumbnail
-      v-if="showsThumbnail"
+    <DatasetNodePreview
+      v-if="hasPreview && !data.previewHidden"
       :label="kind.label"
       :request="previewRequest"
       class="absolute -inset-x-px bottom-full mb-2"
     />
+    <Teleport v-if="hasPreview && isViewed" :to="`#${VIEWED_PREVIEW_ID}`">
+      <DatasetNodePreview
+        detailed
+        :label="kind.label"
+        :request="previewRequest"
+        class="w-[min(100cqw,100cqh_-_2.25rem)]"
+      />
+    </Teleport>
+    <ToggleGroup
+      v-if="hasPreview"
+      type="multiple"
+      variant="outline"
+      orientation="horizontal"
+      aria-label="Preview controls"
+      :model-value="pressed"
+      class="nodrag absolute top-full left-1/2 mt-2 -translate-x-1/2 bg-background shadow-sm"
+      @update:model-value="setPressed"
+      @click.stop
+    >
+      <ToggleGroupItem value="viewed" aria-label="View preview">
+        <Eye v-if="isViewed" />
+        <EyeOff v-else />
+      </ToggleGroupItem>
+      <ToggleGroupItem value="hidden" aria-label="Hide preview">
+        <ImageOff v-if="data.previewHidden" />
+        <ImageIcon v-else />
+      </ToggleGroupItem>
+    </ToggleGroup>
     <div
       data-slot="node-title"
       class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"

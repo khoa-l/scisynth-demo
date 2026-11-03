@@ -6,6 +6,7 @@ import { datasetsGetDatasetOptions } from "@/client/@tanstack/vue-query.gen";
 import DatasetNodePalette from "@/components/DatasetNodePalette.vue";
 import DatasetBuilder from "@/components/DatasetBuilder.vue";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
+import { VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 
 const props = defineProps<{ projectId: string; datasetId: string }>();
 
@@ -26,6 +27,7 @@ const { data: dataset, isError } = useQuery(
     :is-error="isError"
     back-to="project-datasets"
     back-label="Datasets"
+    columns="grid-cols-[2fr_1fr]"
   >
     <template #left>
       <div class="flex h-full flex-col">
@@ -44,7 +46,12 @@ const { data: dataset, isError } = useQuery(
     </template>
     <template #right>
       <div class="grid h-full grid-rows-[2fr_1fr] divide-y bg-background">
-        <div />
+        <div
+          :id="VIEWED_PREVIEW_ID"
+          role="region"
+          aria-label="Viewed node"
+          class="flex min-h-0 items-center justify-center p-4 @container-size"
+        />
         <div />
       </div>
     </template>

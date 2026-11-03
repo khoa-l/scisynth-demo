@@ -10,7 +10,13 @@ EMPTY = {"version": 1, "nodes": [], "edges": []}
 
 
 def node(node_id: str, kind: str = "GaussianNoise", **params: Any) -> dict:
-    return {"id": node_id, "kind": kind, "params": params, "position": {"x": 0, "y": 0}}
+    return {
+        "id": node_id,
+        "kind": kind,
+        "params": params,
+        "position": {"x": 0, "y": 0},
+        "preview_hidden": False,
+    }
 
 
 def edge(edge_id: str, source: str, target: str) -> dict:
@@ -66,6 +72,25 @@ def test_keeps_parameter_types_including_blank_values(
     params = client.get(dataset_url).json()["content"]["nodes"][1]["params"]
     assert params == {"levels": 256, "vmin": None, "vmax": 0.5}
     assert isinstance(params["levels"], int)
+
+
+def test_remembers_which_node_previews_are_hidden(
+    client: TestClient, dataset_url: str
+) -> None:
+    hidden = {**node("a"), "preview_hidden": True}
+    client.patch(dataset_url, json={"content": {**EMPTY, "nodes": [hidden]}})
+
+    assert client.get(dataset_url).json()["content"]["nodes"][0]["preview_hidden"]
+
+
+def test_shows_previews_of_nodes_saved_before_they_could_be_hidden(
+    client: TestClient, dataset_url: str
+) -> None:
+    saved = {k: v for k, v in node("a").items() if k != "preview_hidden"}
+    client.patch(dataset_url, json={"content": {**EMPTY, "nodes": [saved]}})
+
+    loaded = client.get(dataset_url).json()["content"]["nodes"][0]
+    assert loaded["preview_hidden"] is False
 
 
 def test_renaming_keeps_the_graph(client: TestClient, dataset_url: str) -> None:

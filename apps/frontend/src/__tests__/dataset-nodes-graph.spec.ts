@@ -9,7 +9,7 @@ import {
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
 function savedNode(id: string, kind: string, params: DatasetGraph["nodes"][number]["params"]) {
-  return { id, kind, params, position: { x: 10, y: 20 } };
+  return { id, kind, params, position: { x: 10, y: 20 }, preview_hidden: false };
 }
 
 function savedEdge(
@@ -71,7 +71,15 @@ describe("Dataset graph", () => {
 
     expect(toGraph(nodes, edges)).toEqual({
       version: 1,
-      nodes: [{ id: "a", kind: "Gain", params: { factor: 2 }, position: { x: 1, y: 2 } }],
+      nodes: [
+        {
+          id: "a",
+          kind: "Gain",
+          params: { factor: 2 },
+          position: { x: 1, y: 2 },
+          preview_hidden: false,
+        },
+      ],
       edges: [savedEdge("e", "a", "observation", "b", "observation")],
     });
   });
@@ -83,7 +91,7 @@ describe("Dataset graph", () => {
       id: "sampler",
       type: "dataset-node",
       position: { x: 10, y: 20 },
-      data: { kind: "GridSampler", params: { shape: 32 } },
+      data: { kind: "GridSampler", params: { shape: 32 }, previewHidden: false },
     });
     expect(edges[0]).toEqual({
       id: "e1",
@@ -97,6 +105,14 @@ describe("Dataset graph", () => {
   it("saves back exactly what it loaded", () => {
     const { nodes, edges } = load(GRAPH);
     expect(toGraph(nodes, edges)).toEqual(GRAPH);
+  });
+
+  it("remembers which nodes have their preview hidden", () => {
+    const hidden = { ...GRAPH, nodes: [{ ...GRAPH.nodes[0]!, preview_hidden: true }] };
+    const { nodes, edges } = load({ ...hidden, edges: [] });
+
+    expect(nodes[0]!.data.previewHidden).toBe(true);
+    expect(toGraph(nodes, edges).nodes[0]!.preview_hidden).toBe(true);
   });
 
   it("matches saved parameters to the kind's current ones", () => {
@@ -122,7 +138,11 @@ describe("Dataset graph", () => {
       edges: [savedEdge("e", "sampler", "observation", "old", "in"), ...GRAPH.edges],
     });
 
-    expect(nodes[0]!.data).toEqual({ kind: "RemovedStage", params: { strength: 3 } });
+    expect(nodes[0]!.data).toEqual({
+      kind: "RemovedStage",
+      params: { strength: 3 },
+      previewHidden: false,
+    });
     expect(edges.map((edge) => edge.id)).toEqual(["e", "e1", "e2"]);
   });
 

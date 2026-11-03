@@ -125,6 +125,10 @@ export type GraphNodeInput = {
         [key: string]: number | number | string | null;
     };
     position: Position;
+    /**
+     * Preview Hidden
+     */
+    preview_hidden?: boolean;
 };
 
 /**
@@ -146,6 +150,10 @@ export type GraphNodeOutput = {
         [key: string]: number | number | string | null;
     };
     position: Position;
+    /**
+     * Preview Hidden
+     */
+    preview_hidden: boolean;
 };
 
 /**
@@ -190,6 +198,10 @@ export type NodePreview = {
      * Layout
      */
     layout: 'grid' | 'points';
+    /**
+     * Axes
+     */
+    axes: Array<string>;
     x: TypedArray;
     y: TypedArray;
     /**

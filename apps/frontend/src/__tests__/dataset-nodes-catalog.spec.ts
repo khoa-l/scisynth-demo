@@ -20,6 +20,20 @@ describe("Node catalog", () => {
     }
   });
 
+  it("gives a seed to every kind that draws random numbers", () => {
+    const seeded = localCatalog.kinds.filter((kind) => "seed" in kind.params).map((k) => k.name);
+
+    expect(seeded).toEqual([
+      "GaussianField",
+      "PointSampler",
+      "GaussianNoise",
+      "PoissonNoise",
+      "RandomDropout",
+      "PositionJitter",
+      "RandomInsertion",
+    ]);
+  });
+
   it("only connects an output to an input of the same type", () => {
     const link = (sourceKind: string, sourcePort: string, targetKind: string, targetPort: string) =>
       canConnect(localCatalog, { sourceKind, sourcePort, targetKind, targetPort });

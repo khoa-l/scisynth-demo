@@ -2,13 +2,13 @@
 import { ChevronLeft, ChevronRight, CircleAlert } from "@lucide/vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { refDebounced } from "@vueuse/core";
-import type { Data, Layout } from "plotly.js";
+import type { Config, Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import { previewsPreviewNode, type NodePreviewRequest } from "@/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const props = defineProps<{ label: string; request: NodePreviewRequest }>();
+const props = defineProps<{ label: string; request: NodePreviewRequest; detailed?: boolean }>();
 
 const request = refDebounced(
   computed(() => props.request),
@@ -28,13 +28,24 @@ const { data: preview, error } = useQuery(
   })),
 );
 
-const layout: Partial<Layout> = {
+const transparent = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)" };
+
+const thumbnailLayout: Partial<Layout> = {
   margin: { t: 0, r: 0, b: 0, l: 0 },
   xaxis: { visible: false },
   yaxis: { visible: false },
-  paper_bgcolor: "rgba(0,0,0,0)",
-  plot_bgcolor: "rgba(0,0,0,0)",
+  ...transparent,
 };
+
+function detailedLayout([x, y]: string[], font: string): Partial<Layout> {
+  return {
+    margin: { t: 8, r: 8, b: 40, l: 48 },
+    xaxis: { title: { text: x }, constrain: "domain" },
+    yaxis: { title: { text: y }, scaleanchor: "x", constrain: "domain" },
+    font: { family: font },
+    ...transparent,
+  };
+}
 
 const errorMessage = computed(() => {
   const detail = (error.value as { detail?: unknown } | null)?.detail;
@@ -55,18 +66,25 @@ watch(
   async ([value, element, index]) => {
     const z = value?.channels[index];
     if (!value || !element || !z) return;
+    const showscale = props.detailed;
     const trace =
       value.layout === "grid"
-        ? { type: "heatmap", x: value.x, y: value.y, z, colorscale: "Viridis", showscale: false }
+        ? { type: "heatmap", x: value.x, y: value.y, z, colorscale: "Viridis", showscale }
         : {
             type: "scatter",
             mode: "markers",
             x: value.x,
             y: value.y,
-            marker: { color: z, colorscale: "Viridis", size: 3 },
+            marker: { color: z, colorscale: "Viridis", size: 3, showscale },
           };
+    const layout = props.detailed
+      ? detailedLayout(value.axes, getComputedStyle(element).fontFamily)
+      : thumbnailLayout;
+    const config: Partial<Config> = props.detailed
+      ? { displaylogo: false, responsive: true }
+      : { staticPlot: true };
     const Plotly = await plotly;
-    await Plotly.react(element, [trace as Data], layout, { staticPlot: true });
+    await Plotly.react(element, [trace as Data], layout, config);
   },
   { immediate: true },
 );

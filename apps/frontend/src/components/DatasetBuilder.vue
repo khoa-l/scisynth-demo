@@ -12,7 +12,7 @@ import {
   type ValidConnectionFunc,
 } from "@vue-flow/core";
 import { useDebounceFn, useMounted, whenever } from "@vueuse/core";
-import { computed, markRaw, onBeforeUnmount, watch } from "vue";
+import { computed, markRaw, onBeforeUnmount, provide, ref, watch } from "vue";
 
 import type { DatasetPublic } from "@/client";
 import {
@@ -30,6 +30,7 @@ import {
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
 import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
+import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
@@ -37,6 +38,8 @@ const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
 const lineStyle = { strokeWidth: 2 };
 const defaultEdgeOptions = { style: lineStyle };
+
+provide(VIEWED_NODE, ref(null));
 
 const queryClient = useQueryClient();
 const { data: catalog } = useQuery(nodeCatalogQuery);

@@ -9,6 +9,7 @@ def test_previews_a_field_as_a_heatmap_grid(signed_in: TestClient) -> None:
     result = preview(signed_in, "a", [field("a")])
 
     assert result["layout"] == "grid"
+    assert result["axes"] == ["x", "y"]
     assert len(result["channels"]) == 1
     assert grid(result).shape == (64, 64)
     x, y = decode(result["x"]), decode(result["y"])

@@ -28,6 +28,7 @@ class NodeSpec(_Strict):
 
 class GraphNode(NodeSpec):
     position: Position
+    preview_hidden: bool = False
 
 
 class GraphEdge(_Strict):

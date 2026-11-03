@@ -26,12 +26,12 @@ describe("Dataset node parameters", () => {
     const wrapper = await mountView();
     const node = await dropKind(wrapper, "GaussianNoise");
 
-    expect(node.findAll("label").map((label) => label.text())).toEqual(["Sigma", "Mean"]);
+    expect(node.findAll("label").map((label) => label.text())).toEqual(["Sigma", "Mean", "Seed"]);
     const sigma = node.find(`#${node.find("label").attributes("for")}`);
     expect(inputValue(sigma)).toBe("1");
 
     await enter(sigma, "0.5");
-    expect(lastNodeData(wrapper).params).toEqual({ sigma: 0.5, mean: 0 });
+    expect(lastNodeData(wrapper).params).toEqual({ sigma: 0.5, mean: 0, seed: 0 });
 
     await enter(sigma, "-1");
     expect(inputValue(sigma)).toBe("0");

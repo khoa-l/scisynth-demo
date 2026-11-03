@@ -59,12 +59,10 @@ describe.each([
     expect(back.find("svg[data-icon=inline-start]").exists()).toBe(true);
     const toolbar = [...back.element.parentElement!.children].slice(1);
     expect(toolbar.map((element) => element.textContent?.trim())).toEqual(actions);
-    expect(
-      wrapper
-        .find(".grid-cols-2")
-        .findAll("section")
-        .map((s) => s.attributes("aria-label")),
-    ).toEqual(["Left canvas", "Right canvas"]);
+    expect(wrapper.findAll("section").map((s) => s.attributes("aria-label"))).toEqual([
+      "Left canvas",
+      "Right canvas",
+    ]);
   });
 
   it("says when the item can't be found", async () => {
