@@ -30,7 +30,7 @@ const { data: dataset, isError } = useQuery(
     <template #left>
       <div class="flex h-full flex-col">
         <div class="min-h-0 flex-3">
-          <NodeGraph />
+          <NodeGraph v-if="dataset" :key="dataset.id" :project-id="projectId" :dataset="dataset" />
         </div>
         <div role="group" aria-label="Node details" class="min-h-0 flex-1">
           <NodeCatalog />

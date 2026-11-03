@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vite-plus/test";
+import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 
 import { Handle, VueFlow, type Connection, type GraphEdge } from "@vue-flow/core";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
+import type { DatasetPublic } from "../client";
 import CatalogNode from "../components/CatalogNode.vue";
 import type { CatalogNodeData } from "../lib/nodes/catalog";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
@@ -13,10 +14,11 @@ import {
   fetchMock,
   jsonResponse,
   mountPage,
+  requests,
 } from "./helpers";
 
-async function mountView() {
-  fetchMock.mockResolvedValue(jsonResponse(DATASET));
+async function mountView(dataset: DatasetPublic = DATASET) {
+  fetchMock.mockImplementation(async () => jsonResponse(dataset));
   const { wrapper } = await mountPage(ProjectDatasetView, {
     props: { projectId: PROJECT_ID, datasetId: DATASET.id },
   });
@@ -285,5 +287,142 @@ describe("Dataset view", () => {
 
     expect(dataTransfer.dropEffect).toBe("none");
     expect(wrapper.findAll(".vue-flow__node")).toHaveLength(0);
+  });
+
+  describe("saving", () => {
+    const SAVED: DatasetPublic = {
+      ...DATASET,
+      content: {
+        version: 1,
+        nodes: [
+          {
+            id: "field",
+            kind: "GaussianField",
+            params: { length_scale: 0.2, amplitude: 1, mean: 0, resolution: 64, order: 1 },
+            position: { x: 0, y: 0 },
+          },
+          { id: "sampler", kind: "GridSampler", params: { shape: 32 }, position: { x: 300, y: 0 } },
+          { id: "old", kind: "RemovedStage", params: { strength: 3 }, position: { x: 600, y: 0 } },
+        ],
+        edges: [
+          {
+            id: "e1",
+            source: "field",
+            source_port: "field",
+            target: "sampler",
+            target_port: "latent",
+          },
+        ],
+      },
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function flow(wrapper: Wrapper) {
+      return wrapper.findComponent(VueFlow).vm as unknown as { edges: GraphEdge[] };
+    }
+
+    function patches() {
+      return requests().filter((request) => request.method === "PATCH");
+    }
+
+    async function wait(ms: number) {
+      await vi.advanceTimersByTimeAsync(ms);
+      await flushPromises();
+    }
+
+    it("loads the saved graph onto the canvas", async () => {
+      const wrapper = await mountView(SAVED);
+
+      const titles = wrapper.findAll('.vue-flow__node [data-slot="node-title"]');
+      expect(titles.map((title) => title.text())).toEqual([
+        "Gaussian field",
+        "Grid sampler",
+        "Unknown: RemovedStage",
+      ]);
+      expect(flow(wrapper).edges).toMatchObject([
+        {
+          id: "e1",
+          source: "field",
+          sourceHandle: "field",
+          target: "sampler",
+          targetHandle: "latent",
+        },
+      ]);
+      const gridSize = wrapper.findAll(".vue-flow__node")[1]!.find("input");
+      expect((gridSize.element as HTMLInputElement).value).toBe("32");
+    });
+
+    it("doesn't save a graph just because it was opened", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      await mountView(SAVED);
+
+      await wait(1000);
+      expect(patches()).toHaveLength(0);
+    });
+
+    it("saves once, shortly after the last of several quick changes", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+
+      await dropKind(wrapper, "GaussianField");
+      await dropKind(wrapper, "GridSampler");
+      await wait(499);
+      expect(patches()).toHaveLength(0);
+
+      await wait(1);
+      expect(patches()).toHaveLength(1);
+      const { content } = await patches()[0]!.json();
+      expect(content.nodes.map((node: { kind: string }) => node.kind)).toEqual([
+        "GaussianField",
+        "GridSampler",
+      ]);
+      expect(content.nodes.every((node: { id: string }) => node.id.length <= 64)).toBe(true);
+    });
+
+    it("saves again when a parameter changes", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView(SAVED);
+
+      await enter(wrapper.findAll(".vue-flow__node")[1]!.find("input"), "16");
+      await wait(500);
+
+      expect(patches()).toHaveLength(1);
+      const { content } = await patches()[0]!.json();
+      expect(content.nodes[1].params).toEqual({ shape: 16 });
+      expect(content.nodes[2]).toEqual(SAVED.content.nodes[2]);
+      expect(content.edges).toEqual(SAVED.content.edges);
+    });
+
+    it("saves a pending change straight away when the page is left", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+
+      await dropKind(wrapper, "Gain");
+      wrapper.unmount();
+      await flushPromises();
+
+      expect(patches()).toHaveLength(1);
+    });
+
+    it("shows a failed save and saves again on retry", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+      fetchMock.mockImplementation(async () => jsonResponse({ detail: "Server error" }, 500));
+
+      await dropKind(wrapper, "Gain");
+      await wait(500);
+      const alert = wrapper.find('.vue-flow [role="alert"]');
+      expect(alert.text()).toContain("Couldn't save your changes.");
+
+      fetchMock.mockImplementation(async () => jsonResponse(DATASET));
+      await alert.find("button").trigger("click");
+      await flushPromises();
+
+      expect(patches()).toHaveLength(2);
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    });
   });
 });

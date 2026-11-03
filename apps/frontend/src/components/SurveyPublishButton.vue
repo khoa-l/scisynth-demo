@@ -11,12 +11,8 @@ import {
 } from "@/client";
 import { surveysUnpublishSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import { Button } from "@/components/ui/button";
-import {
-  lastSaveFailed,
-  storeSurvey,
-  surveyMutationScope,
-  useSurveySaveFailed,
-} from "@/lib/survey-cache";
+import { lastSaveFailed, saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
+import { storeSurvey } from "@/lib/survey-cache";
 
 const props = defineProps<{ projectId: string; survey: SurveyPublic; iconOnly?: boolean }>();
 
@@ -27,9 +23,9 @@ function store(survey: SurveyPublic) {
 }
 
 const publish = useMutation(() => ({
-  scope: surveyMutationScope(props.survey.id),
+  scope: saveScope("survey", props.survey.id),
   mutationFn: async (options: Options<SurveysPublishSurveyData>) => {
-    if (lastSaveFailed(queryClient, options.path.survey_id)) {
+    if (lastSaveFailed(queryClient, saveKey("survey", options.path.survey_id))) {
       throw new Error("The survey has unsaved changes");
     }
     const { data } = await surveysPublishSurvey({ ...options, throwOnError: true });
@@ -39,11 +35,11 @@ const publish = useMutation(() => ({
 }));
 const unpublish = useMutation(() => ({
   ...surveysUnpublishSurveyMutation(),
-  scope: surveyMutationScope(props.survey.id),
+  scope: saveScope("survey", props.survey.id),
   onSuccess: store,
 }));
 
-const saveFailed = useSurveySaveFailed(() => props.survey.id);
+const saveFailed = useSaveFailed(() => saveKey("survey", props.survey.id));
 const published = computed(() => props.survey.published_version != null);
 const label = computed(() => (published.value ? "Unpublish" : "Publish"));
 const pending = computed(() => publish.isPending.value || unpublish.isPending.value);

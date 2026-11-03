@@ -54,4 +54,11 @@ function setParam(name: string, value: ParamValue) {
       @update="setParam"
     />
   </div>
+  <div
+    v-else-if="catalog"
+    class="w-64 rounded-lg border border-dashed bg-background text-sm text-muted-foreground shadow-sm"
+    :class="{ 'ring-2 ring-ring/50': selected }"
+  >
+    <div data-slot="node-title" class="px-3 py-2 font-medium">Unknown: {{ data.kind }}</div>
+  </div>
 </template>

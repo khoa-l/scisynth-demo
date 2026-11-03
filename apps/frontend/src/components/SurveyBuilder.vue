@@ -5,15 +5,11 @@ import { computed, useTemplateRef } from "vue";
 
 import type { SurveyPublic } from "@/client";
 import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
+import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import SortableRow from "@/components/SortableRow.vue";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  storeSurvey,
-  surveyMutationScope,
-  surveySaveKey,
-  useSurveySaveFailed,
-} from "@/lib/survey-cache";
+import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
+import { storeSurvey } from "@/lib/survey-cache";
 import {
   SURVEY_BLOCK_GROUP,
   TASK_BLOCK,
@@ -30,10 +26,10 @@ const blocks = computed(() => surveyBlocks(props.survey.content));
 
 const { mutate } = useMutation(() => ({
   ...surveysUpdateSurveyMutation(),
-  mutationKey: surveySaveKey(props.survey.id),
-  scope: surveyMutationScope(props.survey.id),
+  mutationKey: saveKey("survey", props.survey.id),
+  scope: saveScope("survey", props.survey.id),
 }));
-const saveFailed = useSurveySaveFailed(() => props.survey.id);
+const saveFailed = useSaveFailed(() => saveKey("survey", props.survey.id));
 
 function show(next: SurveyBlock[]) {
   const content = { ...props.survey.content, blocks: next };
@@ -84,15 +80,12 @@ function withText(id: string, event: Event) {
     >
       Drag a block here to build the task.
     </p>
-    <div
+    <SaveFailedAlert
       v-if="saveFailed"
-      role="alert"
-      class="mb-2 flex items-center justify-between gap-2 rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
+      class="mb-2"
       :class="surveyColumnClass"
-    >
-      <span>Couldn't save your changes.</span>
-      <Button variant="outline" size="sm" @click="save(blocks)">Try again</Button>
-    </div>
+      @retry="save(blocks)"
+    />
     <ol ref="list" class="flex flex-col gap-2" :class="surveyColumnClass">
       <SortableRow
         v-for="block in items"
