@@ -10,7 +10,7 @@ from pydantic import (
     StringConstraints,
 )
 
-from app.dataset_graph import DatasetGraph
+from app.dataset_graph import DatasetGraph, ParamValue, Ref
 
 Email = Annotated[EmailStr, AfterValidator(str.lower)]
 
@@ -123,3 +123,13 @@ class SurveyResponseReceipt(BaseModel):
 
     id: str
     submitted_at: datetime
+
+
+class StagePreviewRequest(BaseModel):
+    kind: Ref
+    params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
+
+
+class PlotFigure(BaseModel):
+    data: list[dict[str, Any]]
+    layout: dict[str, Any]

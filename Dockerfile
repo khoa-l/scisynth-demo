@@ -9,6 +9,8 @@ RUN cd apps/frontend && vp build
 
 FROM python:3.14-slim-trixie AS backend
 COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /uvx /bin/
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_DEV=1 \

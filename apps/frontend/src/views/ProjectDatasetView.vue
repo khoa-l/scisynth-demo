@@ -42,5 +42,11 @@ const { data: dataset, isError } = useQuery(
         </div>
       </div>
     </template>
+    <template #right>
+      <div class="grid h-full grid-rows-[2fr_1fr] divide-y bg-background">
+        <div />
+        <div />
+      </div>
+    </template>
   </ProjectItemPage>
 </template>

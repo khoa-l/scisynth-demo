@@ -16,8 +16,6 @@ export type DatasetCreate = {
 
 /**
  * DatasetGraph
- *
- * Nodes and the edges between their ports. ``{}`` reads as an empty graph.
  */
 export type DatasetGraphInput = {
     /**
@@ -36,8 +34,6 @@ export type DatasetGraphInput = {
 
 /**
  * DatasetGraph
- *
- * Nodes and the edges between their ports. ``{}`` reads as an empty graph.
  */
 export type DatasetGraphOutput = {
     /**
@@ -187,6 +183,24 @@ export type LoginRequest = {
 };
 
 /**
+ * PlotFigure
+ */
+export type PlotFigure = {
+    /**
+     * Data
+     */
+    data: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Layout
+     */
+    layout: {
+        [key: string]: unknown;
+    };
+};
+
+/**
  * Position
  */
 export type Position = {
@@ -270,6 +284,22 @@ export type RegisterRequest = {
      * Password
      */
     password: string;
+};
+
+/**
+ * StagePreviewRequest
+ */
+export type StagePreviewRequest = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Params
+     */
+    params?: {
+        [key: string]: number | number | string | null;
+    };
 };
 
 /**
@@ -1213,3 +1243,28 @@ export type PublicSubmitResponseResponses = {
 };
 
 export type PublicSubmitResponseResponse = PublicSubmitResponseResponses[keyof PublicSubmitResponseResponses];
+
+export type PreviewsPreviewStageData = {
+    body: StagePreviewRequest;
+    path?: never;
+    query?: never;
+    url: '/api/previews/stages';
+};
+
+export type PreviewsPreviewStageErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PreviewsPreviewStageError = PreviewsPreviewStageErrors[keyof PreviewsPreviewStageErrors];
+
+export type PreviewsPreviewStageResponses = {
+    /**
+     * Successful Response
+     */
+    200: PlotFigure;
+};
+
+export type PreviewsPreviewStageResponse = PreviewsPreviewStageResponses[keyof PreviewsPreviewStageResponses];

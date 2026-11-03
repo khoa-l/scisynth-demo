@@ -45,7 +45,7 @@ function paletteItem(wrapper: Wrapper, label: string) {
 }
 
 describe("Dataset view", () => {
-  it("shows a grey Vue Flow grid above the node category tabs and an empty right panel", async () => {
+  it("shows a grey Vue Flow grid above the node category tabs and a white panel split two thirds to one", async () => {
     const wrapper = await mountView();
 
     const [left, right] = wrapper.findAll("section");
@@ -57,7 +57,12 @@ describe("Dataset view", () => {
     expect(graphArea.classList).toContain("flex-3");
     expect(details(wrapper).classes()).toContain("flex-1");
     expect(graphArea.nextElementSibling).toBe(details(wrapper).element);
-    expect(right!.element.childElementCount).toBe(0);
+    const panel = right!.find(".divide-y");
+    expect(panel.classes()).toEqual(
+      expect.arrayContaining(["bg-background", "grid-rows-[2fr_1fr]"]),
+    );
+    expect(panel.element.childElementCount).toBe(2);
+    expect(panel.text()).toBe("");
   });
 
   it("has a folder tab for each node category, with Latent open first", async () => {

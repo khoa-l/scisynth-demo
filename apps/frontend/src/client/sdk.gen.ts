@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -354,6 +354,23 @@ export const publicGetPublished = <ThrowOnError extends boolean = false>(options
  */
 export const publicSubmitResponse = <ThrowOnError extends boolean = false>(options: Options<PublicSubmitResponseData, ThrowOnError>): RequestResult<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError> => (options.client ?? client).post<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError>({
     url: '/api/public/surveys/{public_id}/responses',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Preview Stage
+ */
+export const previewsPreviewStage = <ThrowOnError extends boolean = false>(options: Options<PreviewsPreviewStageData, ThrowOnError>): RequestResult<PreviewsPreviewStageResponses, PreviewsPreviewStageErrors, ThrowOnError> => (options.client ?? client).post<PreviewsPreviewStageResponses, PreviewsPreviewStageErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/previews/stages',
     ...options,
     headers: {
         'Content-Type': 'application/json',

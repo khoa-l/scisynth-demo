@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from app.frontend import SinglePageApp
-from app.routers import auth, datasets, health, projects, public, surveys
+from app.routers import auth, datasets, health, previews, projects, public, surveys
 
 
 def generate_unique_id(route: APIRoute) -> str:
@@ -19,6 +19,7 @@ app.include_router(projects.router, prefix="/api")
 app.include_router(datasets.router, prefix="/api")
 app.include_router(surveys.router, prefix="/api")
 app.include_router(public.router, prefix="/api")
+app.include_router(previews.router, prefix="/api")
 
 frontend_dir = os.environ.get("FRONTEND_DIR")
 if frontend_dir:

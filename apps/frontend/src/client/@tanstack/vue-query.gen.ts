@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -482,6 +482,23 @@ export const publicSubmitResponseMutation = (options?: Partial<Options<PublicSub
     const mutationOptions: UseMutationOptions<PublicSubmitResponseResponse, PublicSubmitResponseError, Options<PublicSubmitResponseData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await publicSubmitResponse({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Preview Stage
+ */
+export const previewsPreviewStageMutation = (options?: Partial<Options<PreviewsPreviewStageData>>): UseMutationOptions<PreviewsPreviewStageResponse, PreviewsPreviewStageError, Options<PreviewsPreviewStageData>> => {
+    const mutationOptions: UseMutationOptions<PreviewsPreviewStageResponse, PreviewsPreviewStageError, Options<PreviewsPreviewStageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewsPreviewStage({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
