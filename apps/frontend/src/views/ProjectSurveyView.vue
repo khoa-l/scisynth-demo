@@ -2,6 +2,7 @@
 import { Link } from "@lucide/vue";
 import { DnDProvider } from "@vue-dnd-kit/core";
 import { useQuery } from "@tanstack/vue-query";
+import { useTimeoutFn } from "@vueuse/core";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -35,10 +36,14 @@ const shareLink = computed(() => {
   return new URL(href, window.location.origin).href;
 });
 
+const { start: resetCopiedSoon } = useTimeoutFn(() => (copied.value = false), 1500, {
+  immediate: false,
+});
+
 async function copyLink(link: string) {
   await navigator.clipboard.writeText(link);
   copied.value = true;
-  setTimeout(() => (copied.value = false), 1500);
+  resetCopiedSoon();
 }
 </script>
 
