@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import APIKeyCookie
 from pwdlib import PasswordHash
-from sqlmodel import Session, select
+from sqlmodel import Session, col, delete, select
 
 from app.db import SessionDep
 from app.models import User, UserSession, utcnow
@@ -43,6 +43,7 @@ def authenticate(db: Session, email: str, password: str) -> User | None:
 
 def start_session(db: Session, response: Response, user: User) -> None:
     token = secrets.token_urlsafe(32)
+    db.exec(delete(UserSession).where(col(UserSession.expires_at) <= utcnow()))
     db.add(
         UserSession(
             token_hash=hash_token(token),

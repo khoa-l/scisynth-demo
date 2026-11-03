@@ -1,5 +1,10 @@
-from fastapi.testclient import TestClient
+from datetime import timedelta
 
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine
+from sqlmodel import Session, col, select
+
+from app.models import User, UserSession, utcnow
 from tests.helpers import is_nanoid
 
 CREDENTIALS = {"email": "Ada@Example.com", "password": "correct-horse"}
@@ -70,3 +75,27 @@ def test_logout_revokes_session(client: TestClient) -> None:
 
     client.cookies.set("session", token)
     assert client.get("/api/auth/me").status_code == 401
+
+
+def test_signing_in_clears_out_expired_sessions(
+    client: TestClient, engine: Engine
+) -> None:
+    register(client)
+    with Session(engine) as session:
+        user = session.exec(select(User)).one()
+        session.add(
+            UserSession(
+                token_hash="expired",
+                user_id=user.id,
+                expires_at=utcnow() - timedelta(seconds=1),
+            )
+        )
+        session.commit()
+    client.cookies.clear()
+
+    assert client.post("/api/auth/login", json=CREDENTIALS).status_code == 200
+
+    with Session(engine) as session:
+        token_hashes = session.exec(select(col(UserSession.token_hash))).all()
+    assert "expired" not in token_hashes
+    assert len(token_hashes) == 2
