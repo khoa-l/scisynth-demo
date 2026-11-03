@@ -71,6 +71,7 @@ export const localCatalog: NodeCatalog = {
         mean: num("Mean", 0),
         resolution: int("Resolution", 128, { min: 1 }),
         order: splineOrder,
+        seed: int("Seed", 0, { min: 0 }),
       },
     },
     {

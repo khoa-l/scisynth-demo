@@ -243,6 +243,10 @@ export type PreviewRequest = {
     params?: {
         [key: string]: number | number | string | null;
     };
+    /**
+     * Seed
+     */
+    seed?: number;
 };
 
 /**

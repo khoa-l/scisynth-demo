@@ -40,7 +40,9 @@ def preview_latent(body: PreviewRequest, user: CurrentUser) -> LatentPreview:
     try:
         params = {**body.params, "domain": domain, "max_cells": LATENT_MAX_CELLS}
         generator = LatentGenerator.from_dict({"type": body.kind, "params": params})
-        observation = GridSampler(LATENT_SHAPE).run(generator.realize(0), seed=0)
+        observation = GridSampler(LATENT_SHAPE).run(
+            generator.realize(body.seed), seed=0
+        )
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
     x, y = observation.coords.values()

@@ -7,6 +7,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    NonNegativeInt,
     StringConstraints,
 )
 
@@ -128,6 +129,7 @@ class SurveyResponseReceipt(BaseModel):
 class PreviewRequest(BaseModel):
     kind: Ref
     params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
+    seed: NonNegativeInt = 0
 
 
 class PlotFigure(BaseModel):

@@ -576,6 +576,7 @@ describe("Dataset view", () => {
       expect(await previews()[0]!.json()).toEqual({
         kind: "GaussianField",
         params: { length_scale: 0.1, amplitude: 1, mean: 0, resolution: 128, order: 1 },
+        seed: 0,
       });
       expect(thumbnail(field).attributes("aria-label")).toBe("Preview of GaussianField");
       expect(thumbnail(field).classes()).toEqual(
@@ -618,6 +619,24 @@ describe("Dataset view", () => {
 
       expect(previews()).toHaveLength(2);
       expect((await previews()[1]!.json()).params.length_scale).toBe(0.3);
+    });
+
+    it("draws the realization for the node's seed", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+      const field = await dropKind(wrapper, "GaussianField");
+      const labels = field.findAll("label");
+      expect(labels[labels.length - 1]!.text()).toBe("Seed");
+      const seed = field.find(`#${labels[labels.length - 1]!.attributes("for")}`);
+
+      await enter(seed, "5");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+
+      const request = await previews()[1]!.json();
+      expect(request.seed).toBe(5);
+      expect(request.params).not.toHaveProperty("seed");
     });
 
     it("leaves the thumbnail out when the field can't be previewed", async () => {

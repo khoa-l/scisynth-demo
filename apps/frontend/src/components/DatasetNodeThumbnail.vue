@@ -10,7 +10,10 @@ import type { ParamValues } from "@/lib/dataset-nodes/types";
 const props = defineProps<{ kind: string; params: ParamValues }>();
 
 const request = refDebounced(
-  computed(() => ({ kind: props.kind, params: props.params })),
+  computed(() => {
+    const { seed, ...params } = props.params;
+    return { kind: props.kind, params, seed: seed as number | undefined };
+  }),
   300,
 );
 

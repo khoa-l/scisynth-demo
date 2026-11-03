@@ -26,6 +26,7 @@ const GRAPH: DatasetGraph = {
       mean: 0,
       resolution: 64,
       order: 3,
+      seed: 7,
     }),
     savedNode("sampler", "GridSampler", { shape: 32 }),
     savedNode("quantize", "Quantize", { levels: 16, vmin: null, vmax: 1 }),

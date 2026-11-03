@@ -96,6 +96,20 @@ def test_latent_preview_follows_the_parameters_and_is_repeatable(
     assert np.allclose(values({**FIELD, "amplitude": 2}), 2 * values(FIELD))
 
 
+def test_latent_preview_realizes_the_given_seed(signed_in: TestClient) -> None:
+    def values(seed: int) -> np.ndarray:
+        body = {"kind": "GaussianField", "params": FIELD, "seed": seed}
+        return grid(signed_in.post(LATENTS, json=body).json())
+
+    assert np.array_equal(values(3), values(3))
+    assert not np.array_equal(values(3), values(4))
+
+
+def test_latent_preview_rejects_a_negative_seed(signed_in: TestClient) -> None:
+    body = {"kind": "GaussianField", "params": FIELD, "seed": -1}
+    assert signed_in.post(LATENTS, json=body).status_code == 422
+
+
 def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
     params = {**FIELD, "resolution": 4096, "max_cells": 10**12}
 
