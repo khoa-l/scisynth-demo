@@ -11,6 +11,7 @@ import SurveyTask from "@/components/SurveyTask.vue";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { surveyColumnClass } from "@/lib/survey-blocks";
+import { publishedCharts } from "@/lib/survey-charts";
 
 const props = defineProps<{ publicId: string }>();
 
@@ -56,6 +57,7 @@ function submit(versionId: string, answers: Record<string, number>) {
       <SurveyTask
         :name="survey.name"
         :content="survey.content"
+        :charts="publishedCharts(publicId, survey.version_id)"
         :submitting="isSubmitting"
         @submit="submit(survey.version_id, $event)"
       />

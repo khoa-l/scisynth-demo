@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, CircleAlert } from "@lucide/vue";
+import { CircleAlert } from "@lucide/vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { refDebounced } from "@vueuse/core";
-import type { Config, Data, Layout } from "plotly.js";
-import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
+import { computed } from "vue";
 
-import {
-  previewsPreviewNode,
-  type NodePreview,
-  type NodePreviewRequest,
-  type TypedArray,
-} from "@/client";
+import { previewsPreviewNode, type NodePreviewRequest } from "@/client";
+import PreviewPlot from "@/components/PreviewPlot.vue";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const props = defineProps<{ label: string; request: NodePreviewRequest; detailed?: boolean }>();
@@ -33,88 +28,9 @@ const { data: preview, error } = useQuery(
   })),
 );
 
-const transparent = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)" };
-
-const thumbnailLayout: Partial<Layout> = {
-  margin: { t: 0, r: 0, b: 0, l: 0 },
-  xaxis: { visible: false },
-  yaxis: { visible: false },
-  ...transparent,
-};
-
-function paddedRange({ bdata }: TypedArray): [number, number] {
-  const bytes = Uint8Array.from(atob(bdata), (char) => char.charCodeAt(0));
-  const values = new Float32Array(bytes.buffer).filter(Number.isFinite);
-  const [min, max] = [Math.min(...values), Math.max(...values)];
-  const pad = (max - min) * 0.05;
-  return [min - pad, max + pad];
-}
-
-function detailedLayout(preview: NodePreview, font: string): Partial<Layout> {
-  const [x, y] = preview.axes;
-  const [xRange, yRange] = [paddedRange(preview.x), paddedRange(preview.y)];
-  const scaleratio = (xRange[1] - xRange[0]) / (yRange[1] - yRange[0]) || 1;
-  const points = preview.layout === "points";
-  return {
-    margin: { t: 8, r: 8, b: 40, l: 48 },
-    xaxis: { title: { text: x }, constrain: "domain", range: points ? xRange : undefined },
-    yaxis: {
-      title: { text: y },
-      scaleanchor: "x",
-      scaleratio,
-      constrain: "domain",
-      range: points ? yRange : undefined,
-    },
-    font: { family: font },
-    ...transparent,
-  };
-}
-
 const errorMessage = computed(() => {
   const detail = (error.value as { detail?: unknown } | null)?.detail;
   return typeof detail === "string" ? detail : undefined;
-});
-
-const channel = ref(0);
-const channelCount = computed(() => preview.value?.channels.length ?? 0);
-watch(channelCount, (count) => {
-  channel.value = Math.min(channel.value, Math.max(count - 1, 0));
-});
-
-const plot = useTemplateRef<HTMLDivElement>("plot");
-const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
-
-watch(
-  [preview, plot, channel],
-  async ([value, element, index]) => {
-    const z = value?.channels[index];
-    if (!value || !element || !z) return;
-    const showscale = props.detailed;
-    const trace =
-      value.layout === "grid"
-        ? { type: "heatmap", x: value.x, y: value.y, z, colorscale: "Viridis", showscale }
-        : {
-            type: "scatter",
-            mode: "markers",
-            x: value.x,
-            y: value.y,
-            marker: { color: z, colorscale: "Viridis", size: 3, showscale },
-          };
-    const layout = props.detailed
-      ? detailedLayout(value, getComputedStyle(element).fontFamily)
-      : thumbnailLayout;
-    const config: Partial<Config> = props.detailed
-      ? { displaylogo: false, responsive: true }
-      : { staticPlot: true };
-    const Plotly = await plotly;
-    await Plotly.react(element, [trace as Data], layout, config);
-  },
-  { immediate: true },
-);
-
-onBeforeUnmount(async () => {
-  const element = plot.value;
-  if (element) (await plotly).purge(element);
 });
 </script>
 
@@ -124,38 +40,10 @@ onBeforeUnmount(async () => {
     <AlertTitle>Couldn't preview this node.</AlertTitle>
     <AlertDescription v-if="errorMessage">{{ errorMessage }}</AlertDescription>
   </Alert>
-  <div v-else-if="preview" class="flex flex-col gap-1">
-    <div
-      v-if="channelCount > 1"
-      class="nodrag flex h-8 overflow-hidden rounded-lg border border-input bg-background text-sm shadow-sm"
-    >
-      <button
-        type="button"
-        aria-label="Previous channel"
-        :disabled="channel === 0"
-        class="flex w-5 items-center justify-center border-r border-input hover:bg-muted disabled:cursor-not-allowed disabled:opacity-20"
-        @click="channel--"
-      >
-        <ChevronLeft class="size-3" />
-      </button>
-      <span aria-live="polite" class="flex flex-1 items-center justify-center">
-        Channel {{ channel + 1 }}
-      </span>
-      <button
-        type="button"
-        aria-label="Next channel"
-        :disabled="channel === channelCount - 1"
-        class="flex w-5 items-center justify-center border-l border-input hover:bg-muted disabled:cursor-not-allowed disabled:opacity-20"
-        @click="channel++"
-      >
-        <ChevronRight class="size-3" />
-      </button>
-    </div>
-    <div
-      ref="plot"
-      role="img"
-      :aria-label="`Preview of ${label}`"
-      class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
-    />
-  </div>
+  <PreviewPlot
+    v-else-if="preview"
+    :preview="preview"
+    :label="`Preview of ${label}`"
+    :detailed="detailed"
+  />
 </template>

@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, previewsPreviewNode, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, healthGetHealth, type Options, previewsPreviewNode, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicGetPublishedChart, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyChart, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedChartData, PublicGetPublishedChartError, PublicGetPublishedChartResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyChartData, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -439,6 +439,24 @@ export const surveysGetSurveyVersionsOptions = (options: Options<SurveysGetSurve
     queryKey: surveysGetSurveyVersionsQueryKey(options)
 });
 
+export const surveysGetSurveyChartQueryKey = (options: Options<SurveysGetSurveyChartData>) => createQueryKey('surveysGetSurveyChart', options);
+
+/**
+ * Get Survey Chart
+ */
+export const surveysGetSurveyChartOptions = (options: Options<SurveysGetSurveyChartData>) => queryOptions<SurveysGetSurveyChartResponse, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, ReturnType<typeof surveysGetSurveyChartQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysGetSurveyChart({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysGetSurveyChartQueryKey(options)
+});
+
 export const surveysGetSurveyResponsesQueryKey = (options: Options<SurveysGetSurveyResponsesData>) => createQueryKey('surveysGetSurveyResponses', options);
 
 /**
@@ -473,6 +491,24 @@ export const publicGetPublishedOptions = (options: Options<PublicGetPublishedDat
         return data;
     },
     queryKey: publicGetPublishedQueryKey(options)
+});
+
+export const publicGetPublishedChartQueryKey = (options: Options<PublicGetPublishedChartData>) => createQueryKey('publicGetPublishedChart', options);
+
+/**
+ * Get Published Chart
+ */
+export const publicGetPublishedChartOptions = (options: Options<PublicGetPublishedChartData>) => queryOptions<PublicGetPublishedChartResponse, PublicGetPublishedChartError, PublicGetPublishedChartResponse, ReturnType<typeof publicGetPublishedChartQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await publicGetPublishedChart({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: publicGetPublishedChartQueryKey(options)
 });
 
 /**

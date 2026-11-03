@@ -3,15 +3,25 @@ from sqlmodel import Session, col, select
 
 from app.auth import CurrentUser
 from app.db import SessionDep
-from app.models import Survey, SurveyResponse, SurveyVersion, User, new_id
+from app.models import (
+    Survey,
+    SurveyChart,
+    SurveyResponse,
+    SurveyVersion,
+    User,
+    new_id,
+)
+from app.routers.previews import PREVIEW_ERRORS
 from app.routers.projects import get_owned_project
 from app.schemas import (
+    NodePreview,
     SurveyCreate,
     SurveyPublic,
     SurveyResponsePublic,
     SurveyUpdate,
     SurveyVersionPublic,
 )
+from app.survey_charts import freeze_charts, get_chart
 
 router = APIRouter(prefix="/projects/{project_id}/surveys", tags=["surveys"])
 
@@ -96,12 +106,25 @@ def publish_survey(
         .order_by(col(SurveyVersion.number).desc())
     ).first()
     if latest is None or latest.content != survey.content:
+        try:
+            charts = freeze_charts(survey.content, project_id, db)
+        except PREVIEW_ERRORS as exc:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, f"A chart can't be shown: {exc}"
+            ) from exc
         latest = SurveyVersion(
             survey_id=survey.id,
             number=latest.number + 1 if latest else 1,
             content=survey.content,
         )
         db.add(latest)
+        db.flush()
+        db.add_all(
+            SurveyChart(
+                version_id=latest.id, block_id=block_id, preview=chart.model_dump()
+            )
+            for block_id, chart in charts.items()
+        )
     survey.published_version = latest.number
     survey.public_id = survey.public_id or new_id()
     db.add(survey)
@@ -133,6 +156,19 @@ def get_survey_versions(
         .order_by(col(SurveyVersion.number).desc())
     ).all()
     return [SurveyVersionPublic.model_validate(version) for version in versions]
+
+
+@router.get("/{survey_id}/versions/{version_id}/charts/{block_id}")
+def get_survey_chart(
+    project_id: str,
+    survey_id: str,
+    version_id: str,
+    block_id: str,
+    user: CurrentUser,
+    db: SessionDep,
+) -> NodePreview:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    return get_chart(survey.id, version_id, block_id, db)
 
 
 @router.get("/{survey_id}/responses")

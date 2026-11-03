@@ -10,6 +10,20 @@ export interface ContentBlock {
   text: string;
 }
 
+export interface ChartSource {
+  dataset_id: string;
+  node_id: string;
+  channels: number[];
+}
+
+export interface ChartBlock {
+  id: string;
+  type: "chart";
+  text: string;
+  appearance: "shown" | "blank";
+  source: ChartSource | null;
+}
+
 interface MarkerBlock<Type> {
   id: string;
   type: Type;
@@ -17,6 +31,7 @@ interface MarkerBlock<Type> {
 
 export type SurveyBlock =
   | ContentBlock
+  | ChartBlock
   | MarkerBlock<"separator">
   | MarkerBlock<"page">
   | MarkerBlock<"end">;
@@ -24,6 +39,7 @@ export type SurveyBlock =
 export const blockLabels: Record<SurveyBlock["type"], string> = {
   text: "Text",
   scale: "Number scale",
+  chart: "Chart",
   separator: "Separator",
   page: "New page",
   end: "End of survey",
@@ -32,6 +48,7 @@ export const blockLabels: Record<SurveyBlock["type"], string> = {
 export const blockTemplates: SurveyBlock[] = [
   { id: "text", type: "text", text: "" },
   { id: "scale", type: "scale", text: "" },
+  { id: "chart", type: "chart", text: "", appearance: "shown", source: null },
   { id: "separator", type: "separator" },
   { id: "page", type: "page" },
   { id: "end", type: "end" },
@@ -43,14 +60,32 @@ export function cloneBlock(block: SurveyBlock): SurveyBlock {
   return { ...block, id: crypto.randomUUID() };
 }
 
+function isChartSource(value: unknown): value is ChartSource {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "dataset_id" in value &&
+    typeof value.dataset_id === "string" &&
+    "node_id" in value &&
+    typeof value.node_id === "string" &&
+    "channels" in value &&
+    Array.isArray(value.channels) &&
+    value.channels.every(Number.isInteger)
+  );
+}
+
 function isBlock(value: unknown): value is SurveyBlock {
   if (typeof value !== "object" || value === null) return false;
   if (!("id" in value) || typeof value.id !== "string" || !("type" in value)) return false;
   if (value.type === "separator" || value.type === "page" || value.type === "end") return true;
+  if (!("text" in value) || typeof value.text !== "string") return false;
+  if (value.type === "text" || value.type === "scale") return true;
   return (
-    (value.type === "text" || value.type === "scale") &&
-    "text" in value &&
-    typeof value.text === "string"
+    value.type === "chart" &&
+    "appearance" in value &&
+    (value.appearance === "shown" || value.appearance === "blank") &&
+    "source" in value &&
+    (value.source === null || isChartSource(value.source))
   );
 }
 

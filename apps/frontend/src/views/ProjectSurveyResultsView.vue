@@ -9,6 +9,7 @@ import {
 } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyTask from "@/components/SurveyTask.vue";
+import { versionCharts } from "@/lib/survey-charts";
 
 const props = defineProps<{ projectId: string; surveyId: string }>();
 
@@ -93,6 +94,7 @@ function submittedAt(value: string) {
             v-if="survey && version"
             :name="survey.name"
             :content="version.content"
+            :charts="versionCharts(projectId, surveyId, version.id)"
             :answered="answered"
           />
         </div>

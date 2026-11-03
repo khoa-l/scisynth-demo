@@ -5,7 +5,13 @@ from sqlmodel import Session, select
 
 from app.db import SessionDep
 from app.models import Survey, SurveyResponse, SurveyVersion
-from app.schemas import PublishedSurvey, SurveyResponseCreate, SurveyResponseReceipt
+from app.schemas import (
+    NodePreview,
+    PublishedSurvey,
+    SurveyResponseCreate,
+    SurveyResponseReceipt,
+)
+from app.survey_charts import get_chart
 
 router = APIRouter(prefix="/public/surveys/{public_id}", tags=["public"])
 
@@ -42,6 +48,14 @@ def get_published(public_id: str, db: SessionDep) -> PublishedSurvey:
     return PublishedSurvey(
         name=survey.name, version_id=version.id, content=version.content
     )
+
+
+@router.get("/versions/{version_id}/charts/{block_id}")
+def get_published_chart(
+    public_id: str, version_id: str, block_id: str, db: SessionDep
+) -> NodePreview:
+    survey = get_published_survey(public_id, db)
+    return get_chart(survey.id, version_id, block_id, db)
 
 
 @router.post("/responses", status_code=status.HTTP_201_CREATED)

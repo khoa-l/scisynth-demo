@@ -164,26 +164,31 @@ def observe(body: NodePreviewRequest) -> Observation:
 def preview_node(body: NodePreviewRequest, user: CurrentUser) -> NodePreview:
     try:
         observation = observe(body)
-        if len(observation.coords) != 2:
-            raise ValueError("Only 2-D observations can be previewed")
+        return node_preview(observation, channel_values(observation))
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
-    x, y = observation.coords.values()
+
+
+def channel_values(observation: Observation) -> list[np.ndarray]:
     values = np.where(observation.valid, observation.values, np.nan)
     if observation.layout == "grid":
-        channels = [
-            typed_array(values[..., i].T) for i in range(observation.n_channels)
-        ]
-    else:
+        return [values[..., i].T for i in range(observation.n_channels)]
+    return [values[:, i] for i in range(observation.n_channels)]
+
+
+def node_preview(observation: Observation, channels: list[np.ndarray]) -> NodePreview:
+    if len(observation.coords) != 2:
+        raise ValueError("Only 2-D observations can be previewed")
+    x, y = observation.coords.values()
+    if observation.layout == "points":
         x = np.where(observation.mask, x, np.nan)
         y = np.where(observation.mask, y, np.nan)
-        channels = [typed_array(values[:, i]) for i in range(observation.n_channels)]
     return NodePreview(
         layout=observation.layout,
         axes=list(observation.coords),
         x=typed_array(x),
         y=typed_array(y),
-        channels=channels,
+        channels=[typed_array(values) for values in channels],
     )
 
 

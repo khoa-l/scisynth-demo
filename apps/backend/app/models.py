@@ -76,6 +76,19 @@ class SurveyVersion(SQLModel, table=True):
     published_at: datetime = Field(default_factory=utcnow)
 
 
+class SurveyChart(SQLModel, table=True):
+    __tablename__ = "survey_chart"
+
+    version_id: str = Field(
+        foreign_key="survey_version.id",
+        primary_key=True,
+        ondelete="CASCADE",
+        max_length=ID_LENGTH,
+    )
+    block_id: str = Field(primary_key=True, max_length=64)
+    preview: dict[str, Any] = json_column()
+
+
 class SurveyResponse(SQLModel, table=True):
     __tablename__ = "survey_response"
 

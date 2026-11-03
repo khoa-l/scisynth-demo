@@ -74,6 +74,7 @@ describe("Survey builder", () => {
       expect(blocks.map((block) => block.text())).toEqual([
         "Text",
         "Number scale",
+        "Chart",
         "Separator",
         "New page",
         "End of survey",
@@ -97,13 +98,20 @@ describe("Survey builder", () => {
       const palette = sortableList("Survey blocks");
       expect(palette.group).toEqual({ name: "survey-blocks", pull: "clone", put: false });
       expect(palette.sort).toBe(false);
-      const [template, scale, separator] = (palette.items as () => SurveyBlock[])();
+      const [template, scale, chart, separator] = (palette.items as () => SurveyBlock[])();
       const first = palette.clone!(template!);
       const second = palette.clone!(template!);
       expect(first).toEqual({ id: expect.any(String), type: "text", text: "" });
       expect(new Set([template!.id, first.id, second.id]).size).toBe(3);
       expect(palette.clone!(scale!)).toEqual({ id: expect.any(String), type: "scale", text: "" });
       expect(palette.clone!(separator!)).toEqual({ id: expect.any(String), type: "separator" });
+      expect(palette.clone!(chart!)).toEqual({
+        id: expect.any(String),
+        type: "chart",
+        text: "",
+        appearance: "shown",
+        source: null,
+      });
     });
 
     it("drags a freshly drawn chip from the palette rather than a copy of the hovered one", async () => {

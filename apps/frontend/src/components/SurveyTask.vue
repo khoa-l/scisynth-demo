@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import SurveyChart from "@/components/SurveyChart.vue";
 import SurveyScale from "@/components/SurveyScale.vue";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +12,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { surveyBlocks, surveyColumnClass, type ContentBlock } from "@/lib/survey-blocks";
+import type { ChartQuery } from "@/lib/survey-charts";
+import {
+  surveyBlocks,
+  surveyColumnClass,
+  type ChartBlock,
+  type ContentBlock,
+} from "@/lib/survey-blocks";
 
 const props = defineProps<{
   name: string;
   content: { [key: string]: unknown };
+  charts: ChartQuery;
   submitting?: boolean;
   answered?: Record<string, number>;
 }>();
@@ -32,12 +40,12 @@ function setAnswer(id: string, point: number | undefined) {
 const blocks = computed(() => surveyBlocks(props.content));
 
 const pages = computed(() => {
-  const pages: ContentBlock[][][] = [[[]]];
+  const pages: (ContentBlock | ChartBlock)[][][] = [[[]]];
   for (const block of blocks.value) {
     if (block.type === "end") break;
     if (block.type === "page") pages.push([[]]);
     else if (block.type === "separator") pages.at(-1)!.push([]);
-    else if (block.text) pages.at(-1)!.at(-1)!.push(block);
+    else if (block.type === "chart" ? block.source : block.text) pages.at(-1)!.at(-1)!.push(block);
   }
   return pages.map((cards) => cards.filter((card) => card.length)).filter((cards) => cards.length);
 });
@@ -83,6 +91,12 @@ const hasFooter = computed(
               @update:model-value="setAnswer(block.id, $event)"
             />
           </div>
+          <SurveyChart
+            v-else-if="block.type === 'chart' && block.source"
+            :block="block"
+            :source="block.source"
+            :charts="charts"
+          />
           <p v-else class="text-sm wrap-anywhere whitespace-pre-line">{{ block.text }}</p>
         </template>
       </CardContent>

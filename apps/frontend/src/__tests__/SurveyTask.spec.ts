@@ -5,12 +5,19 @@ import { h, nextTick, ref } from "vue";
 
 import SurveyTask from "../components/SurveyTask.vue";
 import type { SurveyBlock } from "../lib/survey-blocks";
+import type { ChartQuery } from "../lib/survey-charts";
 import { goodbye, hello } from "./survey-view";
 
 const blank: SurveyBlock = { id: "b3", type: "text", text: "" };
 
+const noCharts: ChartQuery = () => {
+  throw new Error("This survey has no charts");
+};
+
 function task(blocks?: SurveyBlock[]) {
-  return mount(SurveyTask, { props: { name: "Intake form", content: blocks ? { blocks } : {} } });
+  return mount(SurveyTask, {
+    props: { name: "Intake form", charts: noCharts, content: blocks ? { blocks } : {} },
+  });
 }
 
 describe("Survey task", () => {
@@ -146,7 +153,9 @@ describe("Survey task", () => {
 
     it("goes back to the last page when the page it was on is removed", async () => {
       const content = ref({ blocks: [hello, page("p1"), goodbye] });
-      const wrapper = mount(() => h(SurveyTask, { name: "Intake form", content: content.value }));
+      const wrapper = mount(() =>
+        h(SurveyTask, { name: "Intake form", charts: noCharts, content: content.value }),
+      );
       await action(wrapper).trigger("click");
 
       content.value = { blocks: [hello] };
@@ -187,7 +196,12 @@ describe("Survey task", () => {
 
     it("can't be submitted twice while sending", () => {
       const wrapper = mount(SurveyTask, {
-        props: { name: "Intake form", content: { blocks: [hello, end] }, submitting: true },
+        props: {
+          name: "Intake form",
+          charts: noCharts,
+          content: { blocks: [hello, end] },
+          submitting: true,
+        },
       });
 
       expect(action(wrapper).text()).toBe("Submitting…");
@@ -200,6 +214,7 @@ describe("Survey task", () => {
       const wrapper = mount(SurveyTask, {
         props: {
           name: "Intake form",
+          charts: noCharts,
           content: {
             blocks: [hello, page("p1"), clear, { id: "s1", type: "separator" }, hard, end],
           },
@@ -222,7 +237,7 @@ describe("Survey task", () => {
 
     it("shows an empty submitted survey with its name", () => {
       const wrapper = mount(SurveyTask, {
-        props: { name: "Intake form", content: {}, answered: {} },
+        props: { name: "Intake form", charts: noCharts, content: {}, answered: {} },
       });
 
       expect(wrapper.text()).toBe("Intake formThis survey has no questions yet.");

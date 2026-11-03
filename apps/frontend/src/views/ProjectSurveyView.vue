@@ -13,6 +13,7 @@ import SurveyDetails from "@/components/SurveyDetails.vue";
 import SurveyTask from "@/components/SurveyTask.vue";
 import SurveyPublishButton from "@/components/SurveyPublishButton.vue";
 import { Button } from "@/components/ui/button";
+import { liveCharts } from "@/lib/survey-charts";
 
 const props = defineProps<{ projectId: string; surveyId: string }>();
 
@@ -94,7 +95,12 @@ async function copyLink(link: string) {
         aria-label="Survey preview"
         class="h-full overflow-y-auto bg-muted p-4 inset-shadow-sm"
       >
-        <SurveyTask v-if="survey" :name="survey.name" :content="survey.content" />
+        <SurveyTask
+          v-if="survey"
+          :name="survey.name"
+          :content="survey.content"
+          :charts="liveCharts(projectId)"
+        />
       </div>
     </template>
   </ProjectItemPage>

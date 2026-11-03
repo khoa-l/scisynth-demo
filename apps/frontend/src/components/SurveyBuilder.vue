@@ -7,6 +7,7 @@ import type { SurveyPublic } from "@/client";
 import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import SortableRow from "@/components/SortableRow.vue";
+import SurveyChartSettings from "@/components/SurveyChartSettings.vue";
 import SurveyScale from "@/components/SurveyScale.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
   blockLabels,
   surveyBlocks,
   surveyColumnClass,
+  type ChartBlock,
   type SurveyBlock,
 } from "@/lib/survey-blocks";
 
@@ -71,6 +73,12 @@ function withText(id: string, event: Event) {
     block.id === id && "text" in block ? { ...block, text } : block,
   );
 }
+
+function withChart(id: string, changes: Partial<ChartBlock>) {
+  return blocks.value.map((block) =>
+    block.id === id && block.type === "chart" ? { ...block, ...changes } : block,
+  );
+}
 </script>
 
 <template>
@@ -111,6 +119,20 @@ function withText(id: string, event: Event) {
             @change="save(withText(block.id, $event))"
           />
           <SurveyScale disabled aria-label="Scale" />
+        </template>
+        <template v-else-if="block.type === 'chart'">
+          <SurveyChartSettings
+            :project-id="projectId"
+            :block="block"
+            @update="save(withChart(block.id, $event))"
+          />
+          <Input
+            :default-value="block.text"
+            aria-label="Caption"
+            placeholder="Add a caption…"
+            @input="show(withText(block.id, $event))"
+            @change="save(withText(block.id, $event))"
+          />
         </template>
         <Textarea
           v-else
