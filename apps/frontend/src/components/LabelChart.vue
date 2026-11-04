@@ -44,7 +44,7 @@ const labeled = defineModel<LabeledPoints>({ default: () => ({}) });
 
 const POINT_RADIUS = 16;
 const BRUSH_RADIUS = 12;
-const MARK_RADIUS = 4;
+const MARK_RADIUS = 3;
 
 type Navigation = "pan" | "zoom";
 type Tool = LabelTool | Navigation;
