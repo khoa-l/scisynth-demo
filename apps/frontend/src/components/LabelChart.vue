@@ -256,15 +256,17 @@ useResizeObserver(canvas, draw);
       </li>
     </ul>
     <div class="flex flex-wrap items-center gap-2">
-      <div v-if="!disabled && label" class="flex items-center gap-2 text-sm">
-        <span class="size-3 shrink-0 rounded-full" :style="{ background: label.color }" />
+      <template v-if="!disabled && label">
         <Select
           v-if="block.labels.length > 1"
           :model-value="label.id"
           @update:model-value="chooseLabel(String($event))"
         >
           <SelectTrigger aria-label="Label">
-            <SelectValue />
+            <SelectValue>
+              <span class="size-3 rounded-sm" :style="{ background: label.color }" />
+              {{ label.name }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem
@@ -272,12 +274,16 @@ useResizeObserver(canvas, draw);
               :key="surveyLabel.id"
               :value="surveyLabel.id"
             >
+              <span class="size-3 rounded-sm" :style="{ background: surveyLabel.color }" />
               {{ surveyLabel.name }}
             </SelectItem>
           </SelectContent>
         </Select>
-        <span v-else>{{ label.name }}</span>
-      </div>
+        <span v-else class="flex items-center gap-2 text-sm">
+          <span class="size-3 rounded-sm" :style="{ background: label.color }" />
+          {{ label.name }}
+        </span>
+      </template>
       <Toggle
         v-if="!disabled"
         :model-value="erasing"
