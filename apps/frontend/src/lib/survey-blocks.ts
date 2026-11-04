@@ -63,7 +63,7 @@ export const blockLabels: Record<SurveyBlock["type"], string> = {
   text: "Text",
   scale: "Number scale",
   chart: "Chart",
-  label: "Labelling",
+  label: "Labeling",
   separator: "Separator",
   page: "New page",
   end: "End of survey",

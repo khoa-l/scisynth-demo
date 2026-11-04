@@ -75,7 +75,7 @@ describe("Survey builder", () => {
         "Text",
         "Number scale",
         "Chart",
-        "Labelling",
+        "Labeling",
         "Separator",
         "New page",
         "End of survey",
@@ -91,7 +91,7 @@ describe("Survey builder", () => {
       const palette = sortableList("Survey blocks");
       expect(palette.group).toEqual({ name: "survey-blocks", pull: "clone", put: false });
       expect(palette.sort).toBe(false);
-      const [template, scale, chart, labelling, separator] = (
+      const [template, scale, chart, labeling, separator] = (
         palette.items as () => SurveyBlock[]
       )();
       const first = palette.clone!(template!);
@@ -107,7 +107,7 @@ describe("Survey builder", () => {
         appearance: "shown",
         source: null,
       });
-      const labelBlock = palette.clone!(labelling!);
+      const labelBlock = palette.clone!(labeling!);
       expect(labelBlock).toEqual({
         id: expect.any(String),
         type: "label",
@@ -118,7 +118,7 @@ describe("Survey builder", () => {
         tools: ["point", "lasso", "brush"],
       });
       expect(labelBlock.type === "label" && labelBlock.labels).not.toBe(
-        labelling!.type === "label" && labelling!.labels,
+        labeling!.type === "label" && labeling!.labels,
       );
     });
 

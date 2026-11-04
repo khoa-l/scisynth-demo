@@ -9,7 +9,7 @@ import {
   nearest,
   setLabel,
   type PlacedLocation,
-} from "../lib/labelling";
+} from "../lib/labeling";
 
 function typed(values: number[]): TypedArray {
   const bytes = new Uint8Array(new Float32Array(values).buffer);
@@ -18,7 +18,7 @@ function typed(values: number[]): TypedArray {
 
 const row: PlacedLocation[] = [0, 10, 20, 30].map((x, index) => ({ index, at: { x, y: 0 } }));
 
-describe("Labelling", () => {
+describe("Labeling", () => {
   it("finds a grid's cells row by row, leaving out the gaps", () => {
     const preview: NodePreview = {
       layout: "grid",

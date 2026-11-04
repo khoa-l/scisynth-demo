@@ -9,7 +9,7 @@ DEFECT = {"id": "defect", "name": "Defect", "color": "#e11d48"}
 CLEAN = {"id": "clean", "name": "Clean", "color": "#2563eb"}
 
 
-def labelling(source: dict | None, **changes: object) -> dict:
+def labeling(source: dict | None, **changes: object) -> dict:
     return {
         "id": "l1",
         "type": "label",
@@ -38,10 +38,10 @@ def submit(client: TestClient, version_url: str, data: dict):
     )
 
 
-def test_publishing_freezes_a_labelling_blocks_chart(
+def test_publishing_freezes_a_labeling_blocks_chart(
     client: TestClient, project_url: str, source: dict
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(source))
+    survey_url = create_survey(client, project_url, labeling(source))
 
     frozen = client.get(f"{publish(client, survey_url)}/charts/l1").json()
 
@@ -60,10 +60,10 @@ def test_publishing_freezes_a_labelling_blocks_chart(
         ({"tools": ["spray"]}, "'point', 'lasso' or 'brush'"),
     ],
 )
-def test_publishing_rejects_an_unfinished_labelling_block(
+def test_publishing_rejects_an_unfinished_labeling_block(
     client: TestClient, project_url: str, source: dict, changes: dict, message: str
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(source, **changes))
+    survey_url = create_survey(client, project_url, labeling(source, **changes))
 
     response = client.post(f"{survey_url}/publish")
 
@@ -74,7 +74,7 @@ def test_publishing_rejects_an_unfinished_labelling_block(
 def test_accepts_labelled_points_and_tidies_them(
     client: TestClient, project_url: str, source: dict
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(source), SCALE)
+    survey_url = create_survey(client, project_url, labeling(source), SCALE)
     version_url = publish(client, survey_url)
 
     response = submit(
@@ -88,10 +88,10 @@ def test_accepts_labelled_points_and_tidies_them(
     assert stored["data"] == {"l1": {"defect": [0, 3, 5], "clean": [4, 255]}, "q1": 4}
 
 
-def test_leaves_out_a_labelling_answer_with_nothing_labelled(
+def test_leaves_out_a_labeling_answer_with_nothing_labelled(
     client: TestClient, project_url: str, source: dict
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(source))
+    survey_url = create_survey(client, project_url, labeling(source))
     version_url = publish(client, survey_url)
 
     response = submit(client, version_url, {"l1": {"defect": [], "clean": []}})
@@ -111,14 +111,14 @@ def test_leaves_out_a_labelling_answer_with_nothing_labelled(
         ),
         ({"l1": {"defect": [-1]}}, "greater than or equal to 0"),
         ({"l1": {"defect": [True]}}, "valid integer"),
-        ({"l1": 3}, "l1 is answered by labelling points"),
+        ({"l1": 3}, "l1 is answered by labeling points"),
         ({"q1": {"defect": [0]}}, "q1 is answered with a number from 1 to 5"),
     ],
 )
 def test_rejects_labels_that_dont_fit_the_block(
     client: TestClient, project_url: str, source: dict, data: dict, message: str
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(source), SCALE)
+    survey_url = create_survey(client, project_url, labeling(source), SCALE)
     version_url = publish(client, survey_url)
 
     response = submit(client, version_url, data)
@@ -133,7 +133,7 @@ def test_rejects_labels_on_points_that_were_dropped(
 ) -> None:
     dataset_id = create_dataset(client, project_url, DROPPED)
     source = {"dataset_id": dataset_id, "node_id": "drop", "channels": [0, 1]}
-    survey_url = create_survey(client, project_url, labelling(source))
+    survey_url = create_survey(client, project_url, labeling(source))
     version_url = publish(client, survey_url)
     mask = grid(client.get(f"{version_url}/charts/l1").json()).ravel()
     dropped = int(np.flatnonzero(np.isnan(mask))[0])
@@ -146,10 +146,10 @@ def test_rejects_labels_on_points_that_were_dropped(
     assert "aren't on its chart" in response.json()["detail"]
 
 
-def test_a_labelling_block_without_data_takes_no_answer(
+def test_a_labeling_block_without_data_takes_no_answer(
     client: TestClient, project_url: str
 ) -> None:
-    survey_url = create_survey(client, project_url, labelling(None))
+    survey_url = create_survey(client, project_url, labeling(None))
     version_url = publish(client, survey_url)
 
     response = submit(client, version_url, {"l1": {"defect": [0]}})

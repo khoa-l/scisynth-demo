@@ -47,7 +47,7 @@ function chart(changes: Partial<ChartBlock> = {}): ChartBlock {
   return { id: "c1", type: "chart", text: "", appearance: "shown", source: SOURCE, ...changes };
 }
 
-function labelling(changes: Partial<LabelBlock> = {}): LabelBlock {
+function labeling(changes: Partial<LabelBlock> = {}): LabelBlock {
   return {
     id: "l1",
     type: "label",
@@ -269,15 +269,15 @@ describe("Chart blocks", () => {
     expect(drawn(plot.element)).toMatchObject({ z: FIRST });
   });
 
-  describe("Labelling in the builder", () => {
+  describe("Labeling in the builder", () => {
     function labelRows(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
       return row(wrapper).findAll('[aria-label="Labels"] li');
     }
 
     it("asks for an instruction, the chart and the labels", async () => {
-      const wrapper = await mountBuilder(labelling());
+      const wrapper = await mountBuilder(labeling());
 
-      expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labelling");
+      expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labeling");
       expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
       expect(row(wrapper).find('[data-slot="select-trigger"]').text()).toBe(
         "Raw reads / Grid sampler",
@@ -291,7 +291,7 @@ describe("Chart blocks", () => {
     });
 
     it("adds, renames, recolours and removes labels", async () => {
-      const wrapper = await mountBuilder(labelling());
+      const wrapper = await mountBuilder(labeling());
 
       const add = row(wrapper)
         .findAll("button")
@@ -321,7 +321,7 @@ describe("Chart blocks", () => {
     });
 
     it("keeps a label's name when it is cleared", async () => {
-      const wrapper = await mountBuilder(labelling());
+      const wrapper = await mountBuilder(labeling());
 
       const name = labelRows(wrapper)[0]!.find("input:not([type=color])");
       await name.setValue("  ");
@@ -333,7 +333,7 @@ describe("Chart blocks", () => {
     });
 
     it("chooses the tools respondents get, but not none", async () => {
-      const wrapper = await mountBuilder(labelling({ tools: ["point"] }));
+      const wrapper = await mountBuilder(labeling({ tools: ["point"] }));
       const tool = (name: string) =>
         row(wrapper)
           .findAll("button")

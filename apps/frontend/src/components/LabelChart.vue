@@ -29,7 +29,7 @@ import {
   setLabel,
   type Pixel,
   type PlacedLocation,
-} from "@/lib/labelling";
+} from "@/lib/labeling";
 import type { LabelBlock, LabelledPoints, LabelTool } from "@/lib/survey-blocks";
 
 const props = defineProps<{ preview: NodePreview; block: LabelBlock; disabled?: boolean }>();

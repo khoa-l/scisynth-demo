@@ -105,7 +105,7 @@ async function submitted(wrapper: VueWrapper) {
   return (await request("POST").json()).data;
 }
 
-describe("Labelling a chart", () => {
+describe("Labeling a chart", () => {
   it("asks the question above the chart, with a dropdown of labels, an eraser and the tools", async () => {
     const wrapper = await mountSurvey();
 
@@ -202,7 +202,7 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({ l1: { defect: [1] } });
   });
 
-  it("goes back to labelling when a label is picked while erasing", async () => {
+  it("goes back to labeling when a label is picked while erasing", async () => {
     const wrapper = await mountSurvey();
     await choose(wrapper, "Eraser");
 
@@ -223,7 +223,7 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({});
   });
 
-  it("hides the labels to show the points underneath, still labelling", async () => {
+  it("hides the labels to show the points underneath, still labeling", async () => {
     const fillRect = recordDrawing();
     const wrapper = await mountSurvey();
 
@@ -241,7 +241,7 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({ l1: { defect: [0, 1] } });
   });
 
-  it("moves and zooms the chart with plotly instead of labelling", async () => {
+  it("moves and zooms the chart with plotly instead of labeling", async () => {
     const relayout = vi.mocked(Plotly.relayout);
     const wrapper = await mountSurvey();
     const plot = wrapper.find('[role="img"]').element;
@@ -272,7 +272,7 @@ describe("Labelling a chart", () => {
     expect(await submitted(wrapper)).toEqual({});
   });
 
-  it("goes back to the last labelling tool when the eraser is picked while moving", async () => {
+  it("goes back to the last labeling tool when the eraser is picked while moving", async () => {
     const relayout = vi.mocked(Plotly.relayout);
     const wrapper = await mountSurvey();
     const pressed = (label: string) =>

@@ -50,12 +50,12 @@ def check_answers(
     db: Session,
 ) -> dict[str, Any]:
     scales = scale_questions(content)
-    labelling = {
+    labeling = {
         block.id: block
         for block in charted_blocks(content)
         if isinstance(block, LabelBlock) and block.source
     }
-    unknown = data.keys() - scales - labelling.keys()
+    unknown = data.keys() - scales - labeling.keys()
     if unknown:
         raise ValueError(f"Not a question in this survey: {', '.join(sorted(unknown))}")
     checked: dict[str, Any] = {}
@@ -65,9 +65,9 @@ def check_answers(
                 raise ValueError(f"{block_id} is answered with a number from 1 to 5")
             checked[block_id] = answer
         elif isinstance(answer, int):
-            raise ValueError(f"{block_id} is answered by labelling points")
+            raise ValueError(f"{block_id} is answered by labeling points")
         else:
-            labels = check_labels(labelling[block_id], answer, version_id, db)
+            labels = check_labels(labeling[block_id], answer, version_id, db)
             if labels:
                 checked[block_id] = labels
     return checked

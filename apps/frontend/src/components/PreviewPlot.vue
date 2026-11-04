@@ -4,7 +4,7 @@ import type { Config, Data, Layout } from "plotly.js";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import type { NodePreview, TypedArray } from "@/client";
-import { decode } from "@/lib/labelling";
+import { decode } from "@/lib/labeling";
 
 const props = defineProps<{
   preview: NodePreview;
