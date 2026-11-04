@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp } from "@lucide/vue";
 import { nextTick, useId } from "vue";
 
 import { Label } from "@/components/ui/label";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import {
   NumberField,
   NumberFieldContent,
@@ -11,6 +10,13 @@ import {
   NumberFieldIncrement,
   NumberFieldInput,
 } from "@/components/ui/number-field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   IntegerParam,
   NumberParam,
@@ -43,17 +49,20 @@ function restoreIfBlank(name: string, def: NumberParam | IntegerParam, event: Fo
   <div class="nodrag grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-x-2 gap-y-2">
     <template v-for="(def, name) in params" :key="name">
       <Label :for="`${uid}-${name}`" class="text-muted-foreground">{{ def.label }}</Label>
-      <NativeSelect
+      <Select
         v-if="def.type === 'enum'"
-        :id="`${uid}-${name}`"
-        :model-value="values[name]"
-        class="w-full"
+        :model-value="values[name] as string"
         @update:model-value="emit('update', name, String($event))"
       >
-        <NativeSelectOption v-for="option in def.options" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </NativeSelectOption>
-      </NativeSelect>
+        <SelectTrigger :id="`${uid}-${name}`" class="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="option in def.options" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <NumberField
         v-else
         :id="`${uid}-${name}`"

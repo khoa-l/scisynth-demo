@@ -71,10 +71,10 @@ describe("Labeling", () => {
   });
 
   it("labels points, replacing any label they had", () => {
-    const labelled = setLabel({ defect: [4, 1] }, "clean", [4]);
-    expect(labelled).toEqual({ defect: [1], clean: [4] });
+    const labeled = setLabel({ defect: [4, 1] }, "clean", [4]);
+    expect(labeled).toEqual({ defect: [1], clean: [4] });
 
-    expect(setLabel(labelled, "defect", [2, 4])).toEqual({ defect: [1, 2, 4] });
+    expect(setLabel(labeled, "defect", [2, 4])).toEqual({ defect: [1, 2, 4] });
   });
 
   it("erases every label from points, dropping labels left empty", () => {

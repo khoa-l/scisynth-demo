@@ -9,7 +9,7 @@ import {
 } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyTask from "@/components/SurveyTask.vue";
-import { isAnswer, type LabelledPoints } from "@/lib/survey-blocks";
+import { isAnswer, type LabeledPoints } from "@/lib/survey-blocks";
 import { versionCharts } from "@/lib/survey-charts";
 
 const props = defineProps<{ projectId: string; surveyId: string }>();
@@ -40,7 +40,7 @@ const version = computed(() =>
 const answered = computed(() =>
   Object.fromEntries(
     Object.entries(selected.value?.data ?? {}).filter(
-      (entry): entry is [string, number | LabelledPoints] => isAnswer(entry[1]),
+      (entry): entry is [string, number | LabeledPoints] => isAnswer(entry[1]),
     ),
   ),
 );

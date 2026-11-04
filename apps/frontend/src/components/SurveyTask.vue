@@ -20,7 +20,7 @@ import {
   type ChartBlock,
   type ContentBlock,
   type LabelBlock,
-  type LabelledPoints,
+  type LabeledPoints,
 } from "@/lib/survey-blocks";
 
 const props = defineProps<{
@@ -36,7 +36,7 @@ defineEmits<{ submit: [answers: Answers] }>();
 const answers = ref<Answers>({});
 const shown = computed(() => props.answered ?? answers.value);
 
-function setAnswer(id: string, answer: number | LabelledPoints | undefined) {
+function setAnswer(id: string, answer: number | LabeledPoints | undefined) {
   if (answer === undefined || (typeof answer === "object" && !Object.keys(answer).length)) {
     delete answers.value[id];
   } else {
@@ -113,7 +113,7 @@ const hasFooter = computed(
             :block="block"
             :source="block.source"
             :charts="charts"
-            :labelled="labelAnswer(block.id)"
+            :labeled="labelAnswer(block.id)"
             :disabled="!!answered"
             @label="setAnswer(block.id, $event)"
           />

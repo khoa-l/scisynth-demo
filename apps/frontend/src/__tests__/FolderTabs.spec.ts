@@ -20,7 +20,7 @@ function visiblePanel(wrapper: ReturnType<typeof mountTabs>) {
 }
 
 describe("FolderTabs", () => {
-  it("shows a labelled tab for each item, with the first one open", () => {
+  it("shows a labeled tab for each item, with the first one open", () => {
     const wrapper = mountTabs();
 
     const tablist = wrapper.find('[role="tablist"]');

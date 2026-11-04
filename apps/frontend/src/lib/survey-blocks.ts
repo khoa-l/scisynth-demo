@@ -53,9 +53,9 @@ export type SurveyBlock =
   | MarkerBlock<"page">
   | MarkerBlock<"end">;
 
-export type LabelledPoints = Record<string, number[]>;
+export type LabeledPoints = Record<string, number[]>;
 
-export type Answers = Record<string, number | LabelledPoints>;
+export type Answers = Record<string, number | LabeledPoints>;
 
 export const LABEL_COLORS = ["#e11d48", "#2563eb", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 
@@ -160,7 +160,7 @@ function isBlock(value: unknown): value is SurveyBlock {
   );
 }
 
-export function isAnswer(value: unknown): value is number | LabelledPoints {
+export function isAnswer(value: unknown): value is number | LabeledPoints {
   if (typeof value === "number") return true;
   return (
     typeof value === "object" &&

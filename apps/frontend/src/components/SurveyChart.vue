@@ -7,17 +7,17 @@ import LabelChart from "@/components/LabelChart.vue";
 import PreviewPlot from "@/components/PreviewPlot.vue";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import type { ChartQuery } from "@/lib/survey-charts";
-import type { ChartBlock, ChartSource, LabelBlock, LabelledPoints } from "@/lib/survey-blocks";
+import type { ChartBlock, ChartSource, LabelBlock, LabeledPoints } from "@/lib/survey-blocks";
 
 const props = defineProps<{
   block: ChartBlock | LabelBlock;
   source: ChartSource;
   charts: ChartQuery;
-  labelled?: LabelledPoints;
+  labeled?: LabeledPoints;
   disabled?: boolean;
 }>();
 
-defineEmits<{ label: [labelled: LabelledPoints] }>();
+defineEmits<{ label: [labeled: LabeledPoints] }>();
 
 const { data: preview, error } = useQuery(
   computed(() => ({ ...props.charts(props.block.id, props.source), retry: false })),
@@ -42,7 +42,7 @@ const { data: preview, error } = useQuery(
         v-if="block.type === 'label'"
         :preview="preview"
         :block="block"
-        :model-value="labelled"
+        :model-value="labeled"
         :disabled="disabled"
         @update:model-value="$emit('label', $event)"
       />

@@ -95,8 +95,13 @@ async function choose(wrapper: VueWrapper, name: string) {
   await button.trigger("click");
 }
 
-async function pickLabel(wrapper: VueWrapper, id: string) {
-  await wrapper.find('select[aria-label="Label"]').setValue(id);
+async function pickLabel(wrapper: VueWrapper, name: string) {
+  await wrapper.find('[aria-label="Label"]').trigger("keydown", { key: "Enter" });
+  await flushPromises();
+  [...document.querySelectorAll('[role="option"]')]
+    .find((option) => option.textContent?.trim() === name)!
+    .dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  await flushPromises();
 }
 
 async function submitted(wrapper: VueWrapper) {
@@ -110,9 +115,12 @@ describe("Labeling a chart", () => {
     const wrapper = await mountSurvey();
 
     expect(wrapper.find("figure p").text()).toBe("Paint the defects");
-    const select = wrapper.find('select[aria-label="Label"]');
-    expect(select.findAll("option").map((option) => option.text())).toEqual(["Defect", "Clean"]);
-    expect((select.element as HTMLSelectElement).value).toBe("defect");
+    const select = wrapper.find('[aria-label="Label"]');
+    expect(select.text()).toBe("Defect");
+    await select.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+    const options = [...document.querySelectorAll('[role="option"]')];
+    expect(options.map((option) => option.textContent?.trim())).toEqual(["Defect", "Clean"]);
     const eraser = wrapper.findAll("button").find((button) => button.text() === "Eraser")!;
     expect(eraser.attributes("aria-pressed")).toBe("false");
     const tools = wrapper.find('[aria-label="Tools"]').findAll("button");
@@ -129,7 +137,7 @@ describe("Labeling a chart", () => {
   it("names a single label instead of offering a dropdown", async () => {
     const wrapper = await mountSurvey({ ...BLOCK, labels: [BLOCK.labels[0]!] });
 
-    expect(wrapper.find("select").exists()).toBe(false);
+    expect(wrapper.find('[aria-label="Label"]').exists()).toBe(false);
     expect(wrapper.find("figure").text()).toContain("Defect");
     await drag(wrapper, [[0, 100]]);
 
@@ -155,7 +163,7 @@ describe("Labeling a chart", () => {
     const wrapper = await mountSurvey();
 
     await drag(wrapper, [[98, 3]]);
-    await pickLabel(wrapper, "clean");
+    await pickLabel(wrapper, "Clean");
     await drag(wrapper, [[97, 2]]);
     await drag(wrapper, [[2, 98]]);
 
@@ -193,7 +201,7 @@ describe("Labeling a chart", () => {
     const wrapper = await mountSurvey();
     await drag(wrapper, [[0, 100]]);
     await drag(wrapper, [[100, 100]]);
-    await pickLabel(wrapper, "clean");
+    await pickLabel(wrapper, "Clean");
     await drag(wrapper, [[0, 100]]);
 
     await choose(wrapper, "Eraser");
@@ -206,7 +214,7 @@ describe("Labeling a chart", () => {
     const wrapper = await mountSurvey();
     await choose(wrapper, "Eraser");
 
-    await pickLabel(wrapper, "clean");
+    await pickLabel(wrapper, "Clean");
     await drag(wrapper, [[0, 100]]);
 
     const eraser = wrapper.findAll("button").find((button) => button.text() === "Eraser")!;
@@ -214,7 +222,7 @@ describe("Labeling a chart", () => {
     expect(await submitted(wrapper)).toEqual({ l1: { clean: [0] } });
   });
 
-  it("leaves the answer out when nothing is labelled", async () => {
+  it("leaves the answer out when nothing is labeled", async () => {
     const wrapper = await mountSurvey();
     await drag(wrapper, [[0, 100]]);
     await choose(wrapper, "Eraser");

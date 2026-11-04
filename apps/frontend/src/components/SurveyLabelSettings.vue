@@ -62,7 +62,7 @@ function setTools(value: unknown) {
         <input
           type="color"
           :value="label.color"
-          :aria-label="`Colour of ${label.name}`"
+          :aria-label="`Color of ${label.name}`"
           class="size-8 shrink-0 cursor-pointer rounded-md border bg-background p-0.5"
           @change="recolor(label, $event)"
         />

@@ -80,7 +80,7 @@ describe("Dataset node preview", () => {
     );
   });
 
-  it("draws the viewed node in full, with axes and a colour scale", async () => {
+  it("draws the viewed node in full, with axes and a color scale", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse(PREVIEW));
     const field = await dropKind(wrapper, "GaussianField");
@@ -230,7 +230,7 @@ describe("Dataset node preview", () => {
     expect((trace as PlotData).z).toEqual(SECOND_CHANNEL);
   });
 
-  it("draws a point sampler's preview as a coloured scatter", async () => {
+  it("draws a point sampler's preview as a colored scatter", async () => {
     const wrapper = await mountView();
     const points = { ...AXIS, bdata: "AAAAAAAAAD8AAIA/", shape: "3" };
     answerPreviews(() =>

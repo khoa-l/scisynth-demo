@@ -1,5 +1,5 @@
 import type { NodePreview, TypedArray } from "@/client";
-import type { LabelledPoints } from "@/lib/survey-blocks";
+import type { LabeledPoints } from "@/lib/survey-blocks";
 
 export interface Location {
   index: number;
@@ -95,19 +95,19 @@ export function lassoed(points: PlacedLocation[], outline: Pixel[]): number[] {
 }
 
 export function setLabel(
-  labelled: LabelledPoints,
+  labeled: LabeledPoints,
   labelId: string,
   indices: number[],
-): LabelledPoints {
-  const others = eraseLabels(labelled, indices);
+): LabeledPoints {
+  const others = eraseLabels(labeled, indices);
   const merged = new Set([...(others[labelId] ?? []), ...indices]);
   return { ...others, [labelId]: [...merged].sort((a, b) => a - b) };
 }
 
-export function eraseLabels(labelled: LabelledPoints, indices: number[]): LabelledPoints {
+export function eraseLabels(labeled: LabeledPoints, indices: number[]): LabeledPoints {
   const erased = new Set(indices);
-  const kept: LabelledPoints = {};
-  for (const [labelId, labelIndices] of Object.entries(labelled)) {
+  const kept: LabeledPoints = {};
+  for (const [labelId, labelIndices] of Object.entries(labeled)) {
     const remaining = labelIndices.filter((index) => !erased.has(index));
     if (remaining.length) kept[labelId] = remaining;
   }

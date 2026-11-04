@@ -16,7 +16,13 @@ import type { NodePreview } from "@/client";
 import PreviewPlot from "@/components/PreviewPlot.vue";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -30,11 +36,11 @@ import {
   type Pixel,
   type PlacedLocation,
 } from "@/lib/labeling";
-import type { LabelBlock, LabelledPoints, LabelTool } from "@/lib/survey-blocks";
+import type { LabelBlock, LabeledPoints, LabelTool } from "@/lib/survey-blocks";
 
 const props = defineProps<{ preview: NodePreview; block: LabelBlock; disabled?: boolean }>();
 
-const labelled = defineModel<LabelledPoints>({ default: () => ({}) });
+const labeled = defineModel<LabeledPoints>({ default: () => ({}) });
 
 const POINT_RADIUS = 16;
 const BRUSH_RADIUS = 12;
@@ -155,8 +161,8 @@ async function resetView() {
 
 function apply(indices: number[]) {
   if (!indices.length) return;
-  if (erasing.value) labelled.value = eraseLabels(labelled.value, indices);
-  else if (label.value) labelled.value = setLabel(labelled.value, label.value.id, indices);
+  if (erasing.value) labeled.value = eraseLabels(labeled.value, indices);
+  else if (label.value) labeled.value = setLabel(labeled.value, label.value.id, indices);
 }
 
 function pixel(event: PointerEvent): Pixel {
@@ -200,7 +206,7 @@ function draw() {
     const cell = props.preview.layout === "grid" ? cellSize() : 0;
     for (const surveyLabel of props.block.labels) {
       context.fillStyle = surveyLabel.color;
-      for (const index of labelled.value[surveyLabel.id] ?? []) {
+      for (const index of labeled.value[surveyLabel.id] ?? []) {
         const at = positions.get(index);
         if (!at) continue;
         if (cell) {
@@ -232,7 +238,7 @@ function plotted(element: PlotElement) {
 }
 
 watch(navigation, setDragMode);
-watch([labelled, () => props.block.labels, stroke, labelsHidden], draw, { deep: true });
+watch([labeled, () => props.block.labels, stroke, labelsHidden], draw, { deep: true });
 useResizeObserver(canvas, draw);
 </script>
 
@@ -246,26 +252,30 @@ useResizeObserver(canvas, draw);
       >
         <span class="size-3 rounded-full" :style="{ background: surveyLabel.color }" />
         {{ surveyLabel.name }}
-        <span class="text-muted-foreground">{{ labelled[surveyLabel.id]?.length ?? 0 }}</span>
+        <span class="text-muted-foreground">{{ labeled[surveyLabel.id]?.length ?? 0 }}</span>
       </li>
     </ul>
     <div class="flex flex-wrap items-center gap-2">
       <div v-if="!disabled && label" class="flex items-center gap-2 text-sm">
         <span class="size-3 shrink-0 rounded-full" :style="{ background: label.color }" />
-        <NativeSelect
+        <Select
           v-if="block.labels.length > 1"
-          aria-label="Label"
           :model-value="label.id"
           @update:model-value="chooseLabel(String($event))"
         >
-          <NativeSelectOption
-            v-for="surveyLabel in block.labels"
-            :key="surveyLabel.id"
-            :value="surveyLabel.id"
-          >
-            {{ surveyLabel.name }}
-          </NativeSelectOption>
-        </NativeSelect>
+          <SelectTrigger aria-label="Label">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem
+              v-for="surveyLabel in block.labels"
+              :key="surveyLabel.id"
+              :value="surveyLabel.id"
+            >
+              {{ surveyLabel.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
         <span v-else>{{ label.name }}</span>
       </div>
       <Toggle

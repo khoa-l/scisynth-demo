@@ -24,7 +24,7 @@ describe("itemGradient", () => {
 });
 
 describe("itemTextColor", () => {
-  it("returns different colours for different ids", () => {
+  it("returns different colors for different ids", () => {
     expect(new Set(IDS.map(itemTextColor)).size).toBe(IDS.length);
   });
 });

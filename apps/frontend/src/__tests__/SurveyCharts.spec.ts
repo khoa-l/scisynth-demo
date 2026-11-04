@@ -290,7 +290,7 @@ describe("Chart blocks", () => {
       expect(only!.find('[aria-label="Remove Defect"]').attributes("disabled")).toBeDefined();
     });
 
-    it("adds, renames, recolours and removes labels", async () => {
+    it("adds, renames, recolors and removes labels", async () => {
       const wrapper = await mountBuilder(labeling());
 
       const add = row(wrapper)
@@ -307,9 +307,9 @@ describe("Chart blocks", () => {
       await flushPromises();
       expect((await savedBlocks())[0].labels[1].name).toBe("Clean");
 
-      const colour = labelRows(wrapper)[1]!.find('input[type="color"]');
-      await colour.setValue("#000000");
-      await colour.trigger("change");
+      const color = labelRows(wrapper)[1]!.find('input[type="color"]');
+      await color.setValue("#000000");
+      await color.trigger("change");
       await flushPromises();
       expect((await savedBlocks())[0].labels[1].color).toBe("#000000");
 
