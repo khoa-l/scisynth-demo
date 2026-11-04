@@ -253,7 +253,7 @@ describe("Dataset node preview", () => {
         mode: "markers",
         x: points,
         y: points,
-        marker: { color: points, colorscale: "Viridis", size: 3, showscale: false },
+        marker: { color: points, colorscale: "Viridis", size: 4, showscale: false },
       },
     ]);
   });

@@ -19,8 +19,8 @@ const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
 const transparent = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)" };
 
 const grey = [
-  [0, "#d4d4d4"],
-  [1, "#d4d4d4"],
+  [0, "#a3a3a3"],
+  [1, "#a3a3a3"],
 ];
 
 const thumbnailLayout: Partial<Layout> = {
@@ -81,7 +81,7 @@ watch(
             mode: "markers",
             x: value.x,
             y: value.y,
-            marker: { color: z, colorscale, size: 3, showscale },
+            marker: { color: z, colorscale, size: 4, showscale },
           };
     const layout: Partial<Layout> = {
       ...(props.detailed

@@ -94,6 +94,12 @@ function row(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
   return wrapper.find('[aria-label="Survey builder"] li');
 }
 
+async function openData(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+  await row(wrapper).find('[data-slot="select-trigger"]').trigger("keydown", { key: "Enter" });
+  await flushPromises();
+  return [...document.querySelectorAll<HTMLElement>('[role="option"]')];
+}
+
 async function savedBlocks() {
   const patches = requests().filter((r) => r.method === "PATCH");
   return (await patches[patches.length - 1]!.clone().json()).content.blocks;
@@ -109,21 +115,22 @@ describe("Chart blocks", () => {
     it("offers each dataset's nodes and saves the chosen one with its first channel", async () => {
       const wrapper = await mountBuilder(chart({ source: null }));
 
-      const select = row(wrapper).find("select");
-      expect(select.findAll("optgroup").map((group) => group.attributes("label"))).toEqual([
-        "Raw reads",
-      ]);
-      expect(select.findAll("option").map((option) => option.text())).toEqual([
-        "Choose a node from a dataset…",
+      const trigger = row(wrapper).find('[data-slot="select-trigger"]');
+      expect(trigger.text()).toBe("Choose a node from a dataset…");
+      const options = await openData(wrapper);
+      const groups = document.querySelectorAll('[data-slot="select-label"]');
+      expect([...groups].map((group) => group.textContent?.trim())).toEqual(["Raw reads"]);
+      expect(options.map((option) => option.textContent?.trim())).toEqual([
         "Gaussian field",
         "Grid sampler",
         "Gaussian field 2",
       ]);
 
-      await select.setValue(`${DATASET.id}/grid`);
+      options[1]!.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
       await flushPromises();
 
       expect((await savedBlocks())[0].source).toEqual(SOURCE);
+      expect(trigger.text()).toBe("Raw reads / Grid sampler");
     });
 
     it("lets the author pick the channels to show, but not none", async () => {
@@ -190,8 +197,8 @@ describe("Chart blocks", () => {
       const plot = preview(wrapper).find('[role="img"]');
       expect(drawn(plot.element)).toMatchObject({
         colorscale: [
-          [0, "#d4d4d4"],
-          [1, "#d4d4d4"],
+          [0, "#a3a3a3"],
+          [1, "#a3a3a3"],
         ],
         showscale: false,
       });
@@ -272,7 +279,9 @@ describe("Chart blocks", () => {
 
       expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labelling");
       expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
-      expect(row(wrapper).find("select").exists()).toBe(true);
+      expect(row(wrapper).find('[data-slot="select-trigger"]').text()).toBe(
+        "Raw reads / Grid sampler",
+      );
       const [only] = labelRows(wrapper);
       expect((only!.find('input[type="color"]').element as HTMLInputElement).value).toBe("#e11d48");
       expect(

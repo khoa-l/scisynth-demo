@@ -13,6 +13,7 @@ beforeEach(() => {
   fetchMock.mockReset();
   client.setConfig({ baseUrl: "http://test", fetch: fetchMock });
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+  Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal(
     "ResizeObserver",
     class {

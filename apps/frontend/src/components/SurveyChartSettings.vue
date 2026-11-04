@@ -6,10 +6,15 @@ import type { DatasetPublic } from "@/client";
 import { datasetsGetDatasetsOptions } from "@/client/@tanstack/vue-query.gen";
 import { Label } from "@/components/ui/label";
 import {
-  NativeSelect,
-  NativeSelectOptGroup,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
 import type { ChartBlock, LabelBlock } from "@/lib/survey-blocks";
@@ -40,7 +45,7 @@ const { data: preview } = useQuery(
 
 const channelCount = computed(() => preview.value?.channels.length ?? 0);
 const chosen = computed(() =>
-  props.block.source ? `${props.block.source.dataset_id}/${props.block.source.node_id}` : "",
+  props.block.source ? `${props.block.source.dataset_id}/${props.block.source.node_id}` : undefined,
 );
 
 function nodeOptions(dataset: DatasetPublic) {
@@ -52,6 +57,20 @@ function nodeOptions(dataset: DatasetPublic) {
     return { value: `${dataset.id}/${node.id}`, label: count > 1 ? `${label} ${count}` : label };
   });
 }
+
+const groups = computed(() =>
+  (datasets.value ?? [])
+    .map((dataset) => ({ dataset, options: nodeOptions(dataset) }))
+    .filter((group) => group.options.length),
+);
+
+const chosenOption = computed(() => {
+  for (const { dataset, options } of groups.value) {
+    const option = options.find((candidate) => candidate.value === chosen.value);
+    if (option) return { dataset: dataset.name, node: option.label };
+  }
+  return undefined;
+});
 
 function choose(value: string) {
   const [datasetId, nodeId] = value.split("/");
@@ -75,23 +94,31 @@ function setAppearance(value: unknown) {
   <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
     <Label :for="`${uid}-data`" class="text-muted-foreground">Data</Label>
     <div class="flex items-center gap-2">
-      <NativeSelect
-        :id="`${uid}-data`"
-        :model-value="chosen"
-        class="w-full min-w-0 flex-1"
-        @update:model-value="choose(String($event))"
-      >
-        <NativeSelectOption value="" disabled>Choose a node from a dataset…</NativeSelectOption>
-        <NativeSelectOptGroup v-for="dataset in datasets" :key="dataset.id" :label="dataset.name">
-          <NativeSelectOption
-            v-for="option in nodeOptions(dataset)"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </NativeSelectOption>
-        </NativeSelectOptGroup>
-      </NativeSelect>
+      <Select :model-value="chosen" @update:model-value="choose(String($event))">
+        <SelectTrigger :id="`${uid}-data`" class="w-full min-w-0 flex-1">
+          <SelectValue>
+            <template v-if="chosenOption">
+              <span class="text-muted-foreground">{{ chosenOption.dataset }} /</span>
+              {{ chosenOption.node }}
+            </template>
+            <template v-else>Choose a node from a dataset…</template>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <template v-for="(group, index) in groups" :key="group.dataset.id">
+            <SelectSeparator v-if="index" />
+            <SelectGroup>
+              <SelectLabel>{{ group.dataset.name }}</SelectLabel>
+              <SelectItem v-for="option in group.options" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </SelectItem>
+            </SelectGroup>
+          </template>
+          <p v-if="!groups.length" class="px-1.5 py-1 text-sm text-muted-foreground">
+            No datasets with nodes yet.
+          </p>
+        </SelectContent>
+      </Select>
       <ToggleGroup
         type="single"
         variant="outline"
