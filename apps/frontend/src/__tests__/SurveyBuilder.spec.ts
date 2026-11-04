@@ -135,7 +135,7 @@ describe("Survey builder", () => {
       } as never);
 
       expect(chip.text()).toBe("Text");
-      expect(chip.attributes("style")).toBeUndefined();
+      expect(chip.attributes("style")).toContain("linear-gradient");
     });
   });
 
