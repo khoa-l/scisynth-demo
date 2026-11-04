@@ -112,7 +112,7 @@ function withChanges<Block extends ChartBlock | LabelBlock>(block: Block, change
         >
           {{ blockLabels[block.type] }}
         </div>
-        <div class="flex flex-col gap-1.5 p-3">
+        <div class="flex flex-col gap-3 p-3">
           <Separator v-if="block.type === 'separator'" />
           <div v-else-if="block.type === 'page'" class="flex justify-between">
             <Button disabled size="sm" variant="outline">Back</Button>

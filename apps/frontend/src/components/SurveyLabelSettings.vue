@@ -55,7 +55,8 @@ function setTools(value: unknown) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 border-t pt-3">
+    <span class="text-sm text-muted-foreground">Labels</span>
     <ul aria-label="Labels" class="flex flex-col gap-2">
       <li v-for="label in block.labels" :key="label.id" class="flex items-center gap-2">
         <input

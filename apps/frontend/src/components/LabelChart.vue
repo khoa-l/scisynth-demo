@@ -93,6 +93,14 @@ const paintTool = computed(
 const tool = computed<Tool | undefined>(() => navigation.value ?? paintTool.value);
 const navigating = computed(() => navigation.value !== null);
 const spots = computed(() => locations(props.preview));
+const brushCursor = computed(() => {
+  if (tool.value !== "brush") return undefined;
+  const color = erasing.value ? "#737373" : (label.value?.color ?? "#737373");
+  const size = BRUSH_RADIUS * 2 + 2;
+  const center = size / 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${center}" cy="${center}" r="${BRUSH_RADIUS}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${center} ${center}, crosshair`;
+});
 
 function placed(): PlacedLocation[] {
   const layout = plot.value?._fullLayout;
@@ -321,6 +329,7 @@ useResizeObserver(canvas, draw);
         ref="canvas"
         class="absolute inset-x-0 bottom-0 aspect-square w-full touch-none"
         :class="disabled || navigating ? 'pointer-events-none' : 'cursor-crosshair'"
+        :style="{ cursor: brushCursor }"
         @pointerdown="start"
         @pointermove="move"
         @pointerup="finish"

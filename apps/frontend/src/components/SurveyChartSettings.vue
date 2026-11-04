@@ -91,7 +91,7 @@ function setAppearance(value: unknown) {
 </script>
 
 <template>
-  <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+  <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-3">
     <Label :for="`${uid}-data`" class="text-muted-foreground">Data</Label>
     <div class="flex items-center gap-2">
       <Select :model-value="chosen" @update:model-value="choose(String($event))">
