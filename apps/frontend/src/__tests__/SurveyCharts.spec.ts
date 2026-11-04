@@ -270,7 +270,7 @@ describe("Chart blocks", () => {
     it("asks for an instruction, the chart and the labels", async () => {
       const wrapper = await mountBuilder(labelling());
 
-      expect(row(wrapper).find("span").text()).toBe("Labelling");
+      expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labelling");
       expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
       expect(row(wrapper).find("select").exists()).toBe(true);
       const [only] = labelRows(wrapper);

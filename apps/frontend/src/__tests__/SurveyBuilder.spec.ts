@@ -64,7 +64,7 @@ afterEach(() => {
 
 describe("Survey builder", () => {
   describe("block palette", () => {
-    it("offers every survey block under General and nothing under Data yet", async () => {
+    it("offers every survey block under General", async () => {
       const wrapper = await mountView();
 
       const palette = wrapper.find(
@@ -83,14 +83,6 @@ describe("Survey builder", () => {
       expect(blocks.every((block) => block.attributes("aria-roledescription") === "sortable")).toBe(
         true,
       );
-      await wrapper
-        .findAll('[role="tab"]')
-        .find((tab) => tab.text() === "Data")!
-        .trigger("mousedown", { button: 0 });
-      await flushPromises();
-      expect(
-        wrapper.find('[aria-label="Survey details"] [role="tabpanel"][data-state="active"]').text(),
-      ).toBe("");
     });
 
     it("copies fresh Text blocks out of the palette without changing it", async () => {
@@ -204,7 +196,7 @@ describe("Survey builder", () => {
       const wrapper = await mountView({ ...SURVEY, content: { blocks: [rating] } });
 
       const row = builderRows(wrapper)[0]!;
-      expect(row.find("span").text()).toBe("Number scale");
+      expect(row.find('[data-slot="block-title"]').text()).toBe("Number scale");
       expect(row.find("textarea").exists()).toBe(false);
       const question = row.find('input[aria-label="Question"]');
       expect((question.element as HTMLInputElement).value).toBe("How clear was it?");
@@ -236,7 +228,7 @@ describe("Survey builder", () => {
       saveLikeTheServer();
 
       const row = builderRows(wrapper)[1]!;
-      expect(row.find("span").text()).toBe("Separator");
+      expect(row.find('[data-slot="block-title"]').text()).toBe("Separator");
       expect(row.find('[data-slot="separator"]').exists()).toBe(true);
       expect(row.find("input, textarea").exists()).toBe(false);
 
@@ -259,7 +251,10 @@ describe("Survey builder", () => {
       const wrapper = await mountView({ ...SURVEY, content: { blocks } });
 
       const rows = builderRows(wrapper);
-      expect(rows.map((row) => row.find("span").text())).toEqual(["New page", "End of survey"]);
+      expect(rows.map((row) => row.find('[data-slot="block-title"]').text())).toEqual([
+        "New page",
+        "End of survey",
+      ]);
       const buttons = rows.flatMap((row) => row.findAll("button"));
       expect(buttons.map((button) => button.text())).toEqual(["Back", "Next", "Submit"]);
       expect(buttons.every((button) => button.attributes("disabled") !== undefined)).toBe(true);

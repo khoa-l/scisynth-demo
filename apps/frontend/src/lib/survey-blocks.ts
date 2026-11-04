@@ -69,6 +69,16 @@ export const blockLabels: Record<SurveyBlock["type"], string> = {
   end: "End of survey",
 };
 
+export const blockHues: Record<SurveyBlock["type"], number> = {
+  text: 250,
+  scale: 250,
+  chart: 170,
+  label: 170,
+  separator: 75,
+  page: 75,
+  end: 75,
+};
+
 export const blockTemplates: SurveyBlock[] = [
   { id: "text", type: "text", text: "" },
   { id: "scale", type: "scale", text: "" },

@@ -7,9 +7,11 @@ const groupHues: Record<string, number> = {
   projection: 340,
 };
 
+export function hueBackground(hue: number) {
+  return `linear-gradient(135deg, oklch(0.9 0.07 ${hue}), oklch(0.84 0.09 ${hue}))`;
+}
+
 export function groupBackground(group: string) {
   const hue = groupHues[group];
-  return hue === undefined
-    ? undefined
-    : `linear-gradient(135deg, oklch(0.9 0.07 ${hue}), oklch(0.84 0.09 ${hue}))`;
+  return hue === undefined ? undefined : hueBackground(hue);
 }

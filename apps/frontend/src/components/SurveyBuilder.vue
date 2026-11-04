@@ -14,11 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { hueBackground } from "@/lib/dataset-nodes/group-colors";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 import { storeSurvey } from "@/lib/survey-cache";
 import {
   SURVEY_BLOCK_GROUP,
   TASK_BLOCK,
+  blockHues,
   blockLabels,
   surveyBlocks,
   surveyColumnClass,
@@ -101,62 +103,72 @@ function withChanges<Block extends ChartBlock | LabelBlock>(block: Block, change
         :key="block.id"
         :item="block"
         :data="TASK_BLOCK"
-        class="flex cursor-grab flex-col gap-1.5 rounded-lg border bg-background p-3 active:cursor-grabbing"
+        class="cursor-grab rounded-lg border bg-background text-sm shadow-sm active:cursor-grabbing"
       >
-        <span class="text-xs text-muted-foreground">{{ blockLabels[block.type] }}</span>
-        <Separator v-if="block.type === 'separator'" />
-        <div v-else-if="block.type === 'page'" class="flex justify-between">
-          <Button disabled size="sm" variant="outline">Back</Button>
-          <Button disabled size="sm">Next</Button>
+        <div
+          data-slot="block-title"
+          class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
+          :style="{ background: hueBackground(blockHues[block.type]) }"
+        >
+          {{ blockLabels[block.type] }}
         </div>
-        <Button v-else-if="block.type === 'end'" disabled size="sm" class="self-end">Submit</Button>
-        <template v-else-if="block.type === 'scale'">
-          <Input
+        <div class="flex flex-col gap-1.5 p-3">
+          <Separator v-if="block.type === 'separator'" />
+          <div v-else-if="block.type === 'page'" class="flex justify-between">
+            <Button disabled size="sm" variant="outline">Back</Button>
+            <Button disabled size="sm">Next</Button>
+          </div>
+          <Button v-else-if="block.type === 'end'" disabled size="sm" class="self-end"
+            >Submit</Button
+          >
+          <template v-else-if="block.type === 'scale'">
+            <Input
+              :default-value="block.text"
+              aria-label="Question"
+              placeholder="Ask a question to rate from 1 to 5…"
+              @input="show(withText(block.id, $event))"
+              @change="save(withText(block.id, $event))"
+            />
+            <SurveyScale disabled aria-label="Scale" />
+          </template>
+          <template v-else-if="block.type === 'chart'">
+            <SurveyChartSettings
+              :project-id="projectId"
+              :block="block"
+              @update="save(withChanges(block, $event))"
+            />
+            <Input
+              :default-value="block.text"
+              aria-label="Caption"
+              placeholder="Add a caption…"
+              @input="show(withText(block.id, $event))"
+              @change="save(withText(block.id, $event))"
+            />
+          </template>
+          <template v-else-if="block.type === 'label'">
+            <Input
+              :default-value="block.text"
+              aria-label="Instruction"
+              placeholder="Tell respondents what to label…"
+              @input="show(withText(block.id, $event))"
+              @change="save(withText(block.id, $event))"
+            />
+            <SurveyChartSettings
+              :project-id="projectId"
+              :block="block"
+              @update="save(withChanges(block, $event))"
+            />
+            <SurveyLabelSettings :block="block" @update="save(withChanges(block, $event))" />
+          </template>
+          <Textarea
+            v-else
             :default-value="block.text"
-            aria-label="Question"
-            placeholder="Ask a question to rate from 1 to 5…"
+            aria-label="Text"
+            placeholder="Write some text…"
             @input="show(withText(block.id, $event))"
             @change="save(withText(block.id, $event))"
           />
-          <SurveyScale disabled aria-label="Scale" />
-        </template>
-        <template v-else-if="block.type === 'chart'">
-          <SurveyChartSettings
-            :project-id="projectId"
-            :block="block"
-            @update="save(withChanges(block, $event))"
-          />
-          <Input
-            :default-value="block.text"
-            aria-label="Caption"
-            placeholder="Add a caption…"
-            @input="show(withText(block.id, $event))"
-            @change="save(withText(block.id, $event))"
-          />
-        </template>
-        <template v-else-if="block.type === 'label'">
-          <Input
-            :default-value="block.text"
-            aria-label="Instruction"
-            placeholder="Tell respondents what to label…"
-            @input="show(withText(block.id, $event))"
-            @change="save(withText(block.id, $event))"
-          />
-          <SurveyChartSettings
-            :project-id="projectId"
-            :block="block"
-            @update="save(withChanges(block, $event))"
-          />
-          <SurveyLabelSettings :block="block" @update="save(withChanges(block, $event))" />
-        </template>
-        <Textarea
-          v-else
-          :default-value="block.text"
-          aria-label="Text"
-          placeholder="Write some text…"
-          @input="show(withText(block.id, $event))"
-          @change="save(withText(block.id, $event))"
-        />
+        </div>
       </SortableRow>
     </ol>
   </div>
