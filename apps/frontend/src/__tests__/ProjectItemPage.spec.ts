@@ -1,3 +1,4 @@
+import { flushPromises } from "@vue/test-utils";
 import { describe, it, expect } from "vite-plus/test";
 
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
@@ -22,7 +23,7 @@ describe.each([
     noun: "dataset",
     backLabel: "Datasets",
     backPath: `/project/${PROJECT_ID}/dataset`,
-    actions: [],
+    actions: ["Download"],
   },
   {
     name: "Survey",
@@ -71,5 +72,21 @@ describe.each([
     expect(wrapper.text()).toContain(`This ${noun} couldn't be found.`);
     expect(wrapper.find("section").exists()).toBe(false);
     expect(wrapper.find("a").text()).toBe(`Back to ${backLabel}`);
+  });
+});
+
+describe("Dataset download menu", () => {
+  it("offers downloading the graph or the data", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+    const { wrapper } = await mountPage(ProjectDatasetView, {
+      props: { projectId: PROJECT_ID, datasetId: DATASET.id },
+    });
+
+    const trigger = wrapper.findAll("button").find((b) => b.text() === "Download")!;
+    await trigger.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    const items = [...document.body.querySelectorAll("[role=menuitem]")];
+    expect(items.map((item) => item.textContent?.trim())).toEqual(["Graph", "Data"]);
   });
 });
