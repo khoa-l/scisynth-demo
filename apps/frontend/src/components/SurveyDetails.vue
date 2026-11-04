@@ -7,7 +7,11 @@ import FolderTabs from "@/components/FolderTabs.vue";
 import SurveyBlockPalette from "@/components/SurveyBlockPalette.vue";
 import { TASK_BLOCK } from "@/lib/survey-blocks";
 
-const tabs = [{ label: "General" }, { label: "Data" }];
+const tabs = [{ label: "General" }];
+
+const trashBackground = `linear-gradient(135deg,
+  color-mix(in oklch, var(--destructive) 8%, var(--background)),
+  color-mix(in oklch, var(--destructive) 18%, var(--background)))`;
 
 const details = useTemplateRef<HTMLElement>("details");
 const { isOver, isAccepting } = makeDroppable(details, {
@@ -19,13 +23,14 @@ const { isOver, isAccepting } = makeDroppable(details, {
 
 <template>
   <div ref="details" role="group" aria-label="Survey details" class="relative h-full">
-    <FolderTabs v-slot="{ tab }" :tabs="tabs" label="Survey sections">
-      <SurveyBlockPalette v-if="tab.label === 'General'" />
+    <FolderTabs :tabs="tabs" label="Survey sections">
+      <SurveyBlockPalette />
     </FolderTabs>
     <div
       v-if="isAccepting"
       class="absolute inset-0 z-20 flex items-center justify-center gap-2 border-2 border-dashed bg-background/90 text-sm text-muted-foreground transition-colors"
-      :class="{ 'border-destructive bg-destructive/10 text-destructive': isOver }"
+      :class="{ 'border-destructive text-destructive': isOver }"
+      :style="isOver ? { background: trashBackground } : undefined"
     >
       <Trash2 />
       Drop here to remove

@@ -321,7 +321,7 @@ describe("Survey builder", () => {
       trashDrag.state.over = true;
       await flushPromises();
       expect(details().find(".absolute.inset-0").classes()).toEqual(
-        expect.arrayContaining(["border-destructive", "bg-destructive/10", "text-destructive"]),
+        expect.arrayContaining(["border-destructive", "text-destructive"]),
       );
     });
   });
