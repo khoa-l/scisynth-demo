@@ -304,9 +304,8 @@ useResizeObserver(canvas, draw);
           <RotateCcw />
         </Button>
       </ButtonGroup>
-      <Toggle v-model="labelsHidden" variant="outline" class="ml-auto">
+      <Toggle v-model="labelsHidden" variant="outline" aria-label="Hide labels" class="ml-auto">
         <EyeOff />
-        Hide labels
       </Toggle>
     </div>
     <div class="relative">

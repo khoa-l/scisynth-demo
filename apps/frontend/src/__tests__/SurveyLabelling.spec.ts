@@ -235,7 +235,7 @@ describe("Labelling a chart", () => {
     await flushPromises();
     await drag(wrapper, [[100, 100]]);
 
-    const hide = wrapper.findAll("button").find((button) => button.text() === "Hide labels")!;
+    const hide = wrapper.find('[aria-label="Hide labels"]');
     expect(hide.attributes("aria-pressed")).toBe("true");
     expect(fillRect).not.toHaveBeenCalled();
     expect(await submitted(wrapper)).toEqual({ l1: { defect: [0, 1] } });
@@ -352,7 +352,7 @@ describe("Labelling a chart", () => {
     expect(shown.find('[aria-label="Tools"]').exists()).toBe(false);
     const move = shown.find('[aria-label="Navigation"] [aria-label="Move"]');
     expect(move.attributes("aria-pressed")).toBe("true");
-    expect(shown.findAll("button").some((button) => button.text() === "Hide labels")).toBe(true);
+    expect(shown.find('[aria-label="Hide labels"]').exists()).toBe(true);
     expect(shown.find("canvas").classes()).toContain("pointer-events-none");
   });
 });
