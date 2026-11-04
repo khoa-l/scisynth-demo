@@ -81,7 +81,7 @@ watch(
             mode: "markers",
             x: value.x,
             y: value.y,
-            marker: { color: z, colorscale, size: 4, showscale },
+            marker: { color: z, colorscale, size: props.detailed ? 4 : 3, showscale },
           };
     const layout: Partial<Layout> = {
       ...(props.detailed
