@@ -65,7 +65,7 @@ function detail(wrapper: Wrapper) {
 }
 
 async function open(wrapper: Wrapper, index: number) {
-  await list(wrapper).findAll("button")[index]!.trigger("click");
+  await list(wrapper).findAll("button[aria-pressed]")[index]!.trigger("click");
   await flushPromises();
 }
 
@@ -100,7 +100,7 @@ describe("Survey results view", () => {
   it("lists the responses with when they were sent and to which version", async () => {
     const wrapper = await mountView();
 
-    const rows = list(wrapper).findAll("button");
+    const rows = list(wrapper).findAll("button[aria-pressed]");
     expect(rows.map((row) => row.text())).toEqual([
       `${new Date(LATEST.submitted_at).toLocaleString()}Version 2`,
       `${new Date(OLDER.submitted_at).toLocaleString()}Version 1`,
@@ -113,12 +113,16 @@ describe("Survey results view", () => {
     const wrapper = await mountView();
 
     await open(wrapper, 0);
-    expect(list(wrapper).findAll("button")[0]!.attributes("aria-pressed")).toBe("true");
+    expect(list(wrapper).findAll("button[aria-pressed]")[0]!.attributes("aria-pressed")).toBe(
+      "true",
+    );
     expect(detail(wrapper).text()).toContain("Would you return?");
     expect(pressedPoints(wrapper)).toEqual([["4"]]);
 
     await open(wrapper, 1);
-    expect(list(wrapper).findAll("button")[0]!.attributes("aria-pressed")).toBe("false");
+    expect(list(wrapper).findAll("button[aria-pressed]")[0]!.attributes("aria-pressed")).toBe(
+      "false",
+    );
     expect(detail(wrapper).text()).toContain(
       `Submitted ${new Date(OLDER.submitted_at).toLocaleString()} to version 1`,
     );
@@ -136,6 +140,25 @@ describe("Survey results view", () => {
     const wrapper = await mountView({ responses: [] });
 
     expect(list(wrapper).text()).toBe("No responses yet.");
+  });
+
+  it("offers downloading every response or each one", async () => {
+    const wrapper = await mountView();
+
+    const download = wrapper.findAll("button").find((b) => b.text() === "Download all responses");
+    expect(download!.attributes("disabled")).toBeUndefined();
+    const rows = list(wrapper).findAll("li");
+    expect(rows.map((row) => row.find('[aria-label="Download response"]').exists())).toEqual([
+      true,
+      true,
+    ]);
+  });
+
+  it("can't download all responses before there are any", async () => {
+    const wrapper = await mountView({ responses: [] });
+
+    const download = wrapper.findAll("button").find((b) => b.text() === "Download all responses");
+    expect(download!.attributes("disabled")).toBeDefined();
   });
 
   it("says when the survey can't be found", async () => {

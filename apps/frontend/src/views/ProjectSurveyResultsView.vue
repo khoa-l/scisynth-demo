@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Download } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 
@@ -9,6 +10,7 @@ import {
 } from "@/client/@tanstack/vue-query.gen";
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyTask from "@/components/SurveyTask.vue";
+import { Button } from "@/components/ui/button";
 import { isAnswer, type LabeledPoints } from "@/lib/survey-blocks";
 import { versionCharts } from "@/lib/survey-charts";
 
@@ -60,6 +62,12 @@ function submittedAt(value: string) {
     :back-to="{ name: 'project-survey', params: { projectId, surveyId } }"
     back-label="Builder"
   >
+    <template #actions>
+      <Button variant="outline" size="lg" class="h-10 px-4" :disabled="!responses?.length">
+        <Download data-icon="inline-start" />
+        Download all responses
+      </Button>
+    </template>
     <template #left>
       <div role="group" aria-label="Responses" class="h-full overflow-y-auto bg-background p-4">
         <p v-if="responsesPending" class="text-sm text-muted-foreground">Loading responses…</p>
@@ -68,16 +76,24 @@ function submittedAt(value: string) {
           No responses yet.
         </p>
         <ul v-else class="flex flex-col gap-1">
-          <li v-for="response in responses" :key="response.id">
+          <li v-for="response in responses" :key="response.id" class="group relative">
             <button
               type="button"
               :aria-pressed="response.id === selectedId"
-              class="flex w-full items-center justify-between gap-4 rounded-md px-3 py-2 text-left text-sm hover:bg-muted aria-pressed:bg-muted"
+              class="flex w-full items-center justify-between gap-4 rounded-md py-2 pr-12 pl-3 text-left text-sm hover:bg-muted aria-pressed:bg-muted"
               @click="selectedId = response.id"
             >
               <span>{{ submittedAt(response.submitted_at) }}</span>
               <span class="text-muted-foreground">Version {{ response.version }}</span>
             </button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Download response"
+              class="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
+              <Download />
+            </Button>
           </li>
         </ul>
       </div>
