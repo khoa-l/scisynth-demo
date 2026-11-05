@@ -228,7 +228,7 @@ catalogs:
     cn:
       specifier: ^0.5.1
       version: 0.5.1
-    plotly.js-cartesian-dist-min:
+    plotly.js-dist-min:
       specifier: ^4.2.0
       version: 4.2.0
     reka-ui:
@@ -301,7 +301,7 @@ importers:
       cn:
         specifier: 'catalog:'
         version: 0.5.1
-      plotly.js-cartesian-dist-min:
+      plotly.js-dist-min:
         specifier: 'catalog:'
         version: 4.2.0
       reka-ui:
@@ -3203,8 +3203,8 @@ packages:
   pkg-types@2.4.0:
     resolution: {integrity: sha512-07Fys7iVx0X6TcviMOgogM1Lk33ZyqOezMnU79S+kffWqwolG/5W9V8EgQSeYCIfFTYVgssRbnH630Oa2+soBA==}
 
-  plotly.js-cartesian-dist-min@4.2.0:
-    resolution: {integrity: sha512-bAnVTRac2uCrhWhEDAY8KqvQyuJNwoQo099elhnB8gM5QJchNMuDTljXFgJpsA2PKgMh+xAKUSZ+2aWEXASzKQ==}
+  plotly.js-dist-min@4.2.0:
+    resolution: {integrity: sha512-nxwhTxrRtQAWcZLBplb7xi73o0P2z/zjNuh1RKO4ssmPK7Kh30bQcObnAJhekBogI2rqUMbM0JJZC0TrG5Tq5Q==}
 
   pngjs@7.0.0:
     resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
@@ -6604,7 +6604,7 @@ snapshots:
       exsolve: 1.2.0
       pathe: 2.0.3
 
-  plotly.js-cartesian-dist-min@4.2.0: {}
+  plotly.js-dist-min@4.2.0: {}
 
   pngjs@7.0.0: {}
 

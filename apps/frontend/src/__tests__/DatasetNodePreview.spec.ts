@@ -2,7 +2,7 @@ import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 import type { PlotData } from "plotly.js";
-import Plotly from "plotly.js-cartesian-dist-min";
+import Plotly from "plotly.js-dist-min";
 
 import { AXIS, connect, dropKind, enter, mountView } from "./dataset-view";
 import { DATASET, fetchMock, jsonResponse, requests } from "./helpers";
@@ -257,6 +257,27 @@ describe("Dataset node preview", () => {
       },
     ]);
     expect(sampler.find('[aria-label="Plot type"]').exists()).toBe(false);
+  });
+
+  it("draws scatters of more than a thousand points with WebGL", async () => {
+    const wrapper = await mountView();
+    const bytes = new Uint8Array(new Float32Array(1001).buffer);
+    const points = { ...AXIS, bdata: btoa(String.fromCharCode(...bytes)), shape: "1001" };
+    answerPreviews(() =>
+      jsonResponse({
+        layout: "points",
+        axes: ["x", "y"],
+        x: points,
+        y: points,
+        channels: [points],
+      }),
+    );
+    const sampler = await dropKind(wrapper, "PointSampler");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+    await flushPromises();
+
+    const call = react.mock.calls.find(([element]) => element === thumbnail(sampler).element);
+    expect(call![1][0]).toMatchObject({ type: "scattergl", x: points });
   });
 
   it("switches a grid preview and its viewed chart between a heatmap and a scatterplot", async () => {

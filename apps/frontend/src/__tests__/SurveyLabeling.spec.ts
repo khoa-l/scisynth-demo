@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vite-plus/test";
 
 import { QueryClient } from "@tanstack/vue-query";
 import { flushPromises, type DOMWrapper, type VueWrapper } from "@vue/test-utils";
-import Plotly from "plotly.js-cartesian-dist-min";
+import Plotly from "plotly.js-dist-min";
 
 import type { LabelBlock } from "../lib/survey-blocks";
 import ProjectSurveyResultsView from "../views/ProjectSurveyResultsView.vue";

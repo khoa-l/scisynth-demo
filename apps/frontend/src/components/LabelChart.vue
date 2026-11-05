@@ -84,7 +84,7 @@ type PlotElement = HTMLDivElement & {
 
 const plot = shallowRef<PlotElement | null>(null);
 const canvas = useTemplateRef<HTMLCanvasElement>("canvas");
-const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
+const plotly = import("plotly.js-dist-min").then((module) => module.default);
 const stroke = ref<Pixel[]>([]);
 
 const NAVIGATION = ["pan", "zoom"] as const;

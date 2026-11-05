@@ -3,7 +3,7 @@ import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 import { QueryClient } from "@tanstack/vue-query";
 import { flushPromises } from "@vue/test-utils";
 import type { PlotData } from "plotly.js";
-import Plotly from "plotly.js-cartesian-dist-min";
+import Plotly from "plotly.js-dist-min";
 
 import type { DatasetPublic } from "../client";
 import type { ChartBlock, ChartSource, LabelBlock, SurveyBlock } from "../lib/survey-blocks";

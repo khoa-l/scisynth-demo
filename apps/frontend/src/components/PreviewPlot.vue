@@ -17,6 +17,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
 
+const WEBGL_POINTS = 1000;
+
+function scatterType(count: number) {
+  return count > WEBGL_POINTS ? "scattergl" : "scatter";
+}
+
 const transparent = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)" };
 
 const grey = [
@@ -65,7 +71,7 @@ watch(channelCount, (count) => {
 });
 
 const plot = useTemplateRef<HTMLDivElement>("plot");
-const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
+const plotly = import("plotly.js-dist-min").then((module) => module.default);
 
 watch(
   [() => props.preview, () => props.blank, () => props.plot, plot, channel],
@@ -82,7 +88,7 @@ watch(
       const [xs, ys] = [decode(value.x), decode(value.y)];
       const count = xs.length * ys.length;
       trace = {
-        type: "scatter",
+        type: scatterType(count),
         mode: "markers",
         x: Float32Array.from({ length: count }, (_, i) => xs[i % xs.length]!),
         y: Float32Array.from({ length: count }, (_, i) => ys[Math.floor(i / xs.length)]!),
@@ -90,7 +96,7 @@ watch(
       };
     } else {
       trace = {
-        type: "scatter",
+        type: scatterType(Number(value.x.shape)),
         mode: "markers",
         x: value.x,
         y: value.y,

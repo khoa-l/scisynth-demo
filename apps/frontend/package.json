@@ -23,7 +23,7 @@
     "@vueuse/core": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
-    "plotly.js-cartesian-dist-min": "catalog:",
+    "plotly.js-dist-min": "catalog:",
     "reka-ui": "catalog:",
     "shadcn-vue": "catalog:",
     "tw-animate-css": "catalog:",
