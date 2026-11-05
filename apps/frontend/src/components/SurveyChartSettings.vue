@@ -17,12 +17,17 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import type { ChartBlock, LabelBlock } from "@/lib/survey-blocks";
+import { LABEL_TOOLS, type ChartBlock, type LabelBlock } from "@/lib/survey-blocks";
 import { liveNodePreview } from "@/lib/survey-charts";
 
 const props = defineProps<{ projectId: string; block: ChartBlock | LabelBlock }>();
 const emit = defineEmits<{
-  update: [changes: Pick<ChartBlock, "source"> | Pick<ChartBlock, "appearance">];
+  update: [
+    changes:
+      | Pick<ChartBlock, "source">
+      | Pick<ChartBlock, "appearance">
+      | Pick<LabelBlock, "tools">,
+  ];
 }>();
 
 const uid = useId();
@@ -44,6 +49,9 @@ const { data: preview } = useQuery(
 );
 
 const channelCount = computed(() => preview.value?.channels.length ?? 0);
+const hasChannels = computed(() => !!props.block.source && channelCount.value > 1);
+
+const toolNames = { point: "Point", lasso: "Lasso", brush: "Brush" };
 const chosen = computed(() =>
   props.block.source ? `${props.block.source.dataset_id}/${props.block.source.node_id}` : undefined,
 );
@@ -83,6 +91,12 @@ function setChannels(value: unknown) {
   if (!props.block.source || !Array.isArray(value) || !value.length) return;
   const channels = value.filter(Number.isInteger).sort((a, b) => a - b);
   emit("update", { source: { ...props.block.source, channels } });
+}
+
+function setTools(value: unknown) {
+  if (!Array.isArray(value)) return;
+  const tools = LABEL_TOOLS.filter((tool) => value.includes(tool));
+  if (tools.length) emit("update", { tools });
 }
 
 function setAppearance(value: unknown) {
@@ -132,25 +146,52 @@ function setAppearance(value: unknown) {
         <ToggleGroupItem value="blank">Blank</ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <template v-if="block.source && channelCount > 1">
-      <span :id="`${uid}-channels`" class="text-sm text-muted-foreground">Channels</span>
-      <ToggleGroup
-        type="multiple"
-        variant="outline"
-        orientation="horizontal"
-        :aria-labelledby="`${uid}-channels`"
-        :model-value="block.source.channels"
-        @update:model-value="setChannels"
-      >
-        <ToggleGroupItem
-          v-for="index in channelCount"
-          :key="index"
-          :value="index - 1"
-          :aria-label="`Channel ${index}`"
+    <template v-if="hasChannels || block.type === 'label'">
+      <span v-if="hasChannels" :id="`${uid}-channels`" class="text-sm text-muted-foreground">
+        Channels
+      </span>
+      <span v-else :id="`${uid}-tools`" class="text-sm text-muted-foreground">Tools</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <ToggleGroup
+          v-if="hasChannels"
+          type="multiple"
+          variant="outline"
+          orientation="horizontal"
+          :aria-labelledby="`${uid}-channels`"
+          :model-value="block.source?.channels"
+          @update:model-value="setChannels"
         >
-          {{ index }}
-        </ToggleGroupItem>
-      </ToggleGroup>
+          <ToggleGroupItem
+            v-for="index in channelCount"
+            :key="index"
+            :value="index - 1"
+            :aria-label="`Channel ${index}`"
+          >
+            {{ index }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <div
+          v-if="block.type === 'label'"
+          class="flex items-center gap-2"
+          :class="{ 'ml-auto': hasChannels }"
+        >
+          <span v-if="hasChannels" :id="`${uid}-tools`" class="text-sm text-muted-foreground">
+            Tools
+          </span>
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            orientation="horizontal"
+            :aria-labelledby="`${uid}-tools`"
+            :model-value="block.tools"
+            @update:model-value="setTools"
+          >
+            <ToggleGroupItem v-for="tool in LABEL_TOOLS" :key="tool" :value="tool">
+              {{ toolNames[tool] }}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </div>
     </template>
   </div>
 </template>

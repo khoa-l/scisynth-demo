@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import { Plus, Trash } from "@lucide/vue";
-import { useId } from "vue";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { LABEL_COLORS, LABEL_TOOLS, type LabelBlock, type SurveyLabel } from "@/lib/survey-blocks";
+import { LABEL_COLORS, type LabelBlock, type SurveyLabel } from "@/lib/survey-blocks";
 
 const props = defineProps<{ block: LabelBlock }>();
-const emit = defineEmits<{
-  update: [changes: Pick<LabelBlock, "labels"> | Pick<LabelBlock, "tools">];
-}>();
-
-const uid = useId();
-
-const toolNames = { point: "Point", lasso: "Lasso", brush: "Brush" };
+const emit = defineEmits<{ update: [changes: Pick<LabelBlock, "labels">] }>();
 
 function changeLabel(id: string, changes: Partial<SurveyLabel>) {
   emit("update", {
@@ -45,12 +36,6 @@ function add() {
     color: LABEL_COLORS[count % LABEL_COLORS.length]!,
   };
   emit("update", { labels: [...props.block.labels, label] });
-}
-
-function setTools(value: unknown) {
-  if (!Array.isArray(value)) return;
-  const tools = LABEL_TOOLS.filter((tool) => value.includes(tool));
-  if (tools.length) emit("update", { tools });
 }
 </script>
 
@@ -83,26 +68,15 @@ function setTools(value: unknown) {
         </Button>
       </li>
     </ul>
-    <div class="flex items-center justify-between gap-2">
-      <Button variant="outline" size="sm" :disabled="block.labels.length >= 20" @click="add">
-        <Plus data-icon="inline-start" />
-        Add label
-      </Button>
-      <div class="flex items-center gap-2">
-        <span :id="`${uid}-tools`" class="text-sm text-muted-foreground">Tools</span>
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          orientation="horizontal"
-          :aria-labelledby="`${uid}-tools`"
-          :model-value="block.tools"
-          @update:model-value="setTools"
-        >
-          <ToggleGroupItem v-for="tool in LABEL_TOOLS" :key="tool" :value="tool">
-            {{ toolNames[tool] }}
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-    </div>
+    <Button
+      variant="outline"
+      size="sm"
+      class="self-start"
+      :disabled="block.labels.length >= 20"
+      @click="add"
+    >
+      <Plus data-icon="inline-start" />
+      Add label
+    </Button>
   </div>
 </template>

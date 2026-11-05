@@ -78,7 +78,7 @@ function withText(id: string, event: Event) {
   );
 }
 
-function withChanges<Block extends ChartBlock | LabelBlock>(block: Block, changes: Partial<Block>) {
+function withChanges(block: ChartBlock | LabelBlock, changes: Partial<Omit<LabelBlock, "type">>) {
   return blocks.value.map((other) => (other.id === block.id ? { ...block, ...changes } : other));
 }
 </script>
