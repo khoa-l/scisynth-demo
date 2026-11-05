@@ -1,5 +1,5 @@
 import { flushPromises } from "@vue/test-utils";
-import { describe, it, expect } from "vite-plus/test";
+import { describe, it, expect, vi } from "vite-plus/test";
 
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
@@ -76,17 +76,51 @@ describe.each([
 });
 
 describe("Dataset download menu", () => {
-  it("offers downloading the graph or the data", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+  async function openMenu() {
     const { wrapper } = await mountPage(ProjectDatasetView, {
       props: { projectId: PROJECT_ID, datasetId: DATASET.id },
     });
-
     const trigger = wrapper.findAll("button").find((b) => b.text() === "Download")!;
     await trigger.trigger("keydown", { key: "Enter" });
     await flushPromises();
+    return [...document.body.querySelectorAll<HTMLElement>("[role=menuitem]")];
+  }
 
-    const items = [...document.body.querySelectorAll("[role=menuitem]")];
+  it("offers downloading the graph or the data", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(DATASET));
+
+    const items = await openMenu();
+
     expect(items.map((item) => item.textContent?.trim())).toEqual(["Graph", "Data"]);
+  });
+
+  it("downloads the graph as a scisynth file", async () => {
+    const exported = {
+      format: "scisynth-dataset",
+      version: 1,
+      name: DATASET.name,
+      generator: { scisynth: "abc123", numpy: "2.5.4" },
+      graph: DATASET.content,
+    };
+    fetchMock.mockImplementation(async (input) =>
+      jsonResponse((input as Request).url.endsWith("/export") ? exported : DATASET),
+    );
+    const createObjectURL = vi.fn<(file: Blob) => string>().mockReturnValue("blob:graph");
+    vi.stubGlobal(
+      "URL",
+      class extends URL {
+        static createObjectURL = createObjectURL;
+        static revokeObjectURL = vi.fn();
+      },
+    );
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    const [graph] = await openMenu();
+    graph!.click();
+    await flushPromises();
+
+    const link = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(link.download).toBe(`${DATASET.name}.scisynth.json`);
+    expect(JSON.parse(await createObjectURL.mock.calls[0]![0].text())).toEqual(exported);
   });
 });

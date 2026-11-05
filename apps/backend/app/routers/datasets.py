@@ -1,13 +1,25 @@
+import json
+from importlib.metadata import distribution, version
+
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, col, select
 
 from app.auth import CurrentUser
+from app.dataset_graph import DatasetGraph
 from app.db import SessionDep
 from app.models import Dataset, User
 from app.routers.projects import get_owned_project
-from app.schemas import DatasetCreate, DatasetPublic, DatasetUpdate
+from app.schemas import DatasetCreate, DatasetFile, DatasetPublic, DatasetUpdate
 
 router = APIRouter(prefix="/projects/{project_id}/datasets", tags=["datasets"])
+
+
+def scisynth_version() -> str:
+    source = json.loads(distribution("scisynth").read_text("direct_url.json") or "{}")
+    return source.get("vcs_info", {}).get("commit_id") or version("scisynth")
+
+
+GENERATOR = {"scisynth": scisynth_version(), "numpy": version("numpy")}
 
 
 def get_owned_dataset(
@@ -51,6 +63,16 @@ def get_dataset(
 ) -> DatasetPublic:
     return DatasetPublic.model_validate(
         get_owned_dataset(project_id, dataset_id, user, db)
+    )
+
+
+@router.get("/{dataset_id}/export")
+def export_dataset(
+    project_id: str, dataset_id: str, user: CurrentUser, db: SessionDep
+) -> DatasetFile:
+    dataset = get_owned_dataset(project_id, dataset_id, user, db)
+    return DatasetFile(
+        name=dataset.name, generator=GENERATOR, graph=DatasetGraph(**dataset.content)
     )
 
 

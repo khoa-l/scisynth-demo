@@ -80,6 +80,14 @@ class DatasetUpdate(BaseModel):
     content: DatasetGraph | None = None
 
 
+class DatasetFile(BaseModel):
+    format: Literal["scisynth-dataset"] = "scisynth-dataset"
+    version: Literal[1] = 1
+    name: Name
+    generator: dict[str, str]
+    graph: DatasetGraph
+
+
 class SurveyPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

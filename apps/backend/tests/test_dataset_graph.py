@@ -64,6 +64,24 @@ def test_saves_the_graph_and_keeps_the_name(
     assert client.get(dataset_url).json()["content"] == GRAPH
 
 
+def test_exports_the_graph_as_a_file(client: TestClient, dataset_url: str) -> None:
+    client.patch(dataset_url, json={"content": GRAPH})
+
+    exported = client.get(f"{dataset_url}/export").json()
+
+    assert exported["format"] == "scisynth-dataset"
+    assert exported["version"] == 1
+    assert exported["name"] == "Fields"
+    assert exported["graph"] == GRAPH
+    assert set(exported["generator"]) == {"scisynth", "numpy"}
+
+
+def test_only_the_owner_can_export(client: TestClient, dataset_url: str) -> None:
+    sign_up(client, "bob@example.com")
+
+    assert client.get(f"{dataset_url}/export").status_code == 404
+
+
 def test_keeps_parameter_types_including_blank_values(
     client: TestClient, dataset_url: str
 ) -> None:

@@ -15,6 +15,31 @@ export type DatasetCreate = {
 };
 
 /**
+ * DatasetFile
+ */
+export type DatasetFile = {
+    /**
+     * Format
+     */
+    format?: 'scisynth-dataset';
+    /**
+     * Version
+     */
+    version?: 1;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Generator
+     */
+    generator: {
+        [key: string]: string;
+    };
+    graph: DatasetGraphOutput;
+};
+
+/**
  * DatasetGraph
  */
 export type DatasetGraphInput = {
@@ -960,6 +985,40 @@ export type DatasetsUpdateDatasetResponses = {
 };
 
 export type DatasetsUpdateDatasetResponse = DatasetsUpdateDatasetResponses[keyof DatasetsUpdateDatasetResponses];
+
+export type DatasetsExportDatasetData = {
+    body?: never;
+    path: {
+        /**
+         * Project Id
+         */
+        project_id: string;
+        /**
+         * Dataset Id
+         */
+        dataset_id: string;
+    };
+    query?: never;
+    url: '/api/projects/{project_id}/datasets/{dataset_id}/export';
+};
+
+export type DatasetsExportDatasetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DatasetsExportDatasetError = DatasetsExportDatasetErrors[keyof DatasetsExportDatasetErrors];
+
+export type DatasetsExportDatasetResponses = {
+    /**
+     * Successful Response
+     */
+    200: DatasetFile;
+};
+
+export type DatasetsExportDatasetResponse = DatasetsExportDatasetResponses[keyof DatasetsExportDatasetResponses];
 
 export type SurveysGetSurveysData = {
     body?: never;

@@ -3,6 +3,7 @@ import { ChevronDown, Download, Table, Workflow } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
+import { datasetsExportDataset } from "@/client";
 import { datasetsGetDatasetOptions } from "@/client/@tanstack/vue-query.gen";
 import DatasetNodePalette from "@/components/DatasetNodePalette.vue";
 import DatasetBuilder from "@/components/DatasetBuilder.vue";
@@ -25,6 +26,19 @@ const { data: dataset, isError } = useQuery(
     }),
   ),
 );
+
+async function downloadGraph() {
+  const { data } = await datasetsExportDataset({
+    path: { project_id: props.projectId, dataset_id: props.datasetId },
+    throwOnError: true,
+  });
+  const file = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(file);
+  link.download = `${data.name}.scisynth.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 </script>
 
 <template>
@@ -47,7 +61,7 @@ const { data: dataset, isError } = useQuery(
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem>
+          <DropdownMenuItem @select="downloadGraph">
             <Workflow />
             Graph
           </DropdownMenuItem>

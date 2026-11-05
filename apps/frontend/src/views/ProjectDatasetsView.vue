@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Upload } from "@lucide/vue";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 import {
@@ -8,6 +9,7 @@ import {
 import DatasetList from "@/components/DatasetList.vue";
 import NewItemButton from "@/components/NewItemButton.vue";
 import ProjectPage from "@/components/ProjectPage.vue";
+import { Button } from "@/components/ui/button";
 
 const props = defineProps<{ projectId: string }>();
 
@@ -25,13 +27,19 @@ const { mutateAsync: createDataset } = useMutation({
 
 <template>
   <ProjectPage :project-id="projectId">
-    <NewItemButton
-      label="New Dataset"
-      title="New dataset"
-      description="Give your dataset a name."
-      initial-name="untitled-dataset"
-      :create="(name) => createDataset({ path: { project_id: projectId }, body: { name } })"
-    />
+    <div class="flex gap-2">
+      <NewItemButton
+        label="New Dataset"
+        title="New dataset"
+        description="Give your dataset a name."
+        initial-name="untitled-dataset"
+        :create="(name) => createDataset({ path: { project_id: projectId }, body: { name } })"
+      />
+      <Button variant="outline" size="lg" class="mt-4 h-10 px-4">
+        <Upload data-icon="inline-start" />
+        Upload Dataset
+      </Button>
+    </div>
     <DatasetList class="mt-6" :project-id="projectId" />
   </ProjectPage>
 </template>
