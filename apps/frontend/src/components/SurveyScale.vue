@@ -20,7 +20,7 @@ const answer = defineModel<number>();
       v-for="point in SCALE_POINTS"
       :key="point"
       :value="point"
-      class="flex-1 aria-pressed:bg-primary aria-pressed:text-primary-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+      class="flex-1 data-[state=on]:bg-linear-135 data-[state=on]:from-[oklch(0.9_0.07_250)] data-[state=on]:to-[oklch(0.84_0.09_250)] data-[state=on]:text-neutral-900"
     >
       {{ point }}
     </ToggleGroupItem>
