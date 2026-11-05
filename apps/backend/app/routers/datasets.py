@@ -57,6 +57,20 @@ def create_dataset(
     return DatasetPublic.model_validate(dataset)
 
 
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
+def upload_dataset(
+    project_id: str, body: DatasetFile, user: CurrentUser, db: SessionDep
+) -> DatasetPublic:
+    get_owned_project(project_id, user, db)
+    dataset = Dataset(
+        name=body.name, project_id=project_id, content=body.graph.model_dump()
+    )
+    db.add(dataset)
+    db.commit()
+    db.refresh(dataset)
+    return DatasetPublic.model_validate(dataset)
+
+
 @router.get("/{dataset_id}")
 def get_dataset(
     project_id: str, dataset_id: str, user: CurrentUser, db: SessionDep

@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { Upload } from "@lucide/vue";
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 
 import {
   datasetsCreateDatasetMutation,
   datasetsGetDatasetsQueryKey,
+  datasetsUploadDatasetMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import DatasetList from "@/components/DatasetList.vue";
 import NewItemButton from "@/components/NewItemButton.vue";
 import ProjectPage from "@/components/ProjectPage.vue";
-import { Button } from "@/components/ui/button";
+import UploadDatasetButton from "@/components/UploadDatasetButton.vue";
 
 const props = defineProps<{ projectId: string }>();
 
 const queryClient = useQueryClient();
 
+function refreshDatasets() {
+  void queryClient.invalidateQueries({
+    queryKey: datasetsGetDatasetsQueryKey({ path: { project_id: props.projectId } }),
+  });
+}
+
 const { mutateAsync: createDataset } = useMutation({
   ...datasetsCreateDatasetMutation(),
-  onSuccess: () => {
-    void queryClient.invalidateQueries({
-      queryKey: datasetsGetDatasetsQueryKey({ path: { project_id: props.projectId } }),
-    });
-  },
+  onSuccess: refreshDatasets,
+});
+
+const { mutateAsync: uploadDataset } = useMutation({
+  ...datasetsUploadDatasetMutation(),
+  onSuccess: refreshDatasets,
 });
 </script>
 
@@ -35,10 +42,9 @@ const { mutateAsync: createDataset } = useMutation({
         initial-name="untitled-dataset"
         :create="(name) => createDataset({ path: { project_id: projectId }, body: { name } })"
       />
-      <Button variant="outline" size="lg" class="mt-4 h-10 px-4">
-        <Upload data-icon="inline-start" />
-        Upload Dataset
-      </Button>
+      <UploadDatasetButton
+        :upload="(file) => uploadDataset({ path: { project_id: projectId }, body: file })"
+      />
     </div>
     <DatasetList class="mt-6" :project-id="projectId" />
   </ProjectPage>

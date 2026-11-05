@@ -11,14 +11,14 @@ export function useDialogAction() {
     if (isOpen) error.value = null;
   });
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>, fallback?: string) {
     pending.value = true;
     error.value = null;
     try {
       await action();
       open.value = false;
     } catch (caught) {
-      error.value = errorMessage(caught);
+      error.value = errorMessage(caught, fallback);
     } finally {
       pending.value = false;
     }

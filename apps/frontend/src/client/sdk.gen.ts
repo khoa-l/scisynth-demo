@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, DatasetsUploadDatasetData, DatasetsUploadDatasetErrors, DatasetsUploadDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -169,6 +169,23 @@ export const datasetsCreateDataset = <ThrowOnError extends boolean = false>(opti
             type: 'apiKey'
         }],
     url: '/api/projects/{project_id}/datasets',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Upload Dataset
+ */
+export const datasetsUploadDataset = <ThrowOnError extends boolean = false>(options: Options<DatasetsUploadDatasetData, ThrowOnError>): RequestResult<DatasetsUploadDatasetResponses, DatasetsUploadDatasetErrors, ThrowOnError> => (options.client ?? client).post<DatasetsUploadDatasetResponses, DatasetsUploadDatasetErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/datasets/upload',
     ...options,
     headers: {
         'Content-Type': 'application/json',

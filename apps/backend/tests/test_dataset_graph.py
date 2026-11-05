@@ -82,6 +82,44 @@ def test_only_the_owner_can_export(client: TestClient, dataset_url: str) -> None
     assert client.get(f"{dataset_url}/export").status_code == 404
 
 
+def test_uploading_an_exported_file_makes_a_copy(
+    client: TestClient, dataset_url: str
+) -> None:
+    client.patch(dataset_url, json={"content": GRAPH})
+    exported = client.get(f"{dataset_url}/export").json()
+    datasets_url = dataset_url.rsplit("/", 1)[0]
+
+    response = client.post(
+        f"{datasets_url}/upload", json={**exported, "name": "Fields copy"}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["name"] == "Fields copy"
+    assert response.json()["content"] == GRAPH
+    assert response.json()["id"] != dataset_url.rsplit("/", 1)[1]
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"format": "something-else"},
+        {"version": 2},
+        {"graph": {**GRAPH, "edges": [edge("e1", "a", "missing")]}},
+        {"name": " "},
+    ],
+)
+def test_rejects_uploading_a_file_it_cant_open(
+    client: TestClient, dataset_url: str, changes: dict
+) -> None:
+    exported = client.get(f"{dataset_url}/export").json()
+    datasets_url = dataset_url.rsplit("/", 1)[0]
+
+    response = client.post(f"{datasets_url}/upload", json={**exported, **changes})
+
+    assert response.status_code == 422
+    assert len(client.get(datasets_url).json()) == 1
+
+
 def test_keeps_parameter_types_including_blank_values(
     client: TestClient, dataset_url: str
 ) -> None:

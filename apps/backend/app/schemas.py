@@ -84,7 +84,7 @@ class DatasetFile(BaseModel):
     format: Literal["scisynth-dataset"] = "scisynth-dataset"
     version: Literal[1] = 1
     name: Name
-    generator: dict[str, str]
+    generator: dict[str, str] = Field(default_factory=dict)
     graph: DatasetGraph
 
 
