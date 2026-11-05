@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from app.dataset_graph import DatasetGraph, Ref
 from app.models import Dataset, SurveyChart, SurveyVersion
-from app.routers.previews import channel_values, node_preview, observe
+from app.routers.previews import channel_values, node_preview, observe, typed_array
 from app.schemas import NodePreview, NodePreviewRequest
 
 
@@ -63,9 +63,7 @@ def charted_blocks(content: dict[str, Any]) -> list[ChartBlock | LabelBlock]:
     ]
 
 
-def freeze_chart(
-    source: ChartSource, appearance: str, project_id: str, db: Session
-) -> NodePreview:
+def freeze_chart(source: ChartSource, project_id: str, db: Session) -> NodePreview:
     dataset = db.get(Dataset, source.dataset_id)
     if dataset is None or dataset.project_id != project_id:
         raise ValueError("The chart's dataset isn't in this project")
@@ -76,10 +74,7 @@ def freeze_chart(
     channels = channel_values(observation)
     if max(source.channels) >= len(channels):
         raise ValueError(f"The chart's data has no channel {max(source.channels) + 1}")
-    picked = [channels[i] for i in source.channels]
-    if appearance == "blank":
-        picked = [np.where(np.isfinite(np.stack(picked)).any(axis=0), 0.0, np.nan)]
-    return node_preview(observation, picked)
+    return node_preview(observation, [channels[i] for i in source.channels])
 
 
 def freeze_charts(
@@ -88,13 +83,11 @@ def freeze_charts(
     charts = {}
     for block in charted_blocks(content):
         if block.source:
-            charts[block.id] = freeze_chart(
-                block.source, block.appearance, project_id, db
-            )
+            charts[block.id] = freeze_chart(block.source, project_id, db)
     return charts
 
 
-def labellable(preview: dict[str, Any]) -> np.ndarray:
+def labelable(preview: dict[str, Any]) -> np.ndarray:
     channels = [
         np.frombuffer(base64.b64decode(channel["bdata"]), np.float32)
         for channel in preview["channels"]
@@ -102,16 +95,22 @@ def labellable(preview: dict[str, Any]) -> np.ndarray:
     return np.isfinite(np.stack(channels)).any(axis=0)
 
 
+def blank(preview: dict[str, Any]) -> NodePreview:
+    shape = [int(n) for n in preview["channels"][0]["shape"].split(", ")]
+    values = np.where(labelable(preview).reshape(shape), 0.0, np.nan)
+    return NodePreview.model_validate({**preview, "channels": [typed_array(values)]})
+
+
 def frozen_charts(version_id: str, db: Session) -> dict[str, dict[str, Any]]:
     charts = db.exec(select(SurveyChart).where(SurveyChart.version_id == version_id))
     return {chart.block_id: chart.preview for chart in charts}
 
 
-def get_chart(
+def find_chart(
     survey_id: str, version_id: str, block_id: str, db: Session
-) -> NodePreview:
-    chart = db.exec(
-        select(SurveyChart)
+) -> tuple[SurveyChart, SurveyVersion]:
+    found = db.exec(
+        select(SurveyChart, SurveyVersion)
         .join(SurveyVersion)
         .where(
             SurveyChart.version_id == version_id,
@@ -119,6 +118,41 @@ def get_chart(
             SurveyVersion.survey_id == survey_id,
         )
     ).first()
-    if chart is None:
+    if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Chart not found")
+    return found
+
+
+def get_chart(
+    survey_id: str, version_id: str, block_id: str, db: Session
+) -> NodePreview:
+    chart, _ = find_chart(survey_id, version_id, block_id, db)
     return NodePreview.model_validate(chart.preview)
+
+
+def get_respondent_chart(
+    survey_id: str, version_id: str, block_id: str, db: Session
+) -> NodePreview:
+    chart, version = find_chart(survey_id, version_id, block_id, db)
+    blanked = any(
+        block.id == block_id and block.appearance == "blank"
+        for block in charted_blocks(version.content)
+    )
+    return (
+        blank(chart.preview) if blanked else NodePreview.model_validate(chart.preview)
+    )
+
+
+def respondent_content(content: dict[str, Any]) -> dict[str, Any]:
+    blocks = content.get("blocks")
+    if not isinstance(blocks, list):
+        return content
+    return {
+        **content,
+        "blocks": [
+            {**block, "source": None, "has_chart": True}
+            if isinstance(block, dict) and block.get("source")
+            else block
+            for block in blocks
+        ],
+    }

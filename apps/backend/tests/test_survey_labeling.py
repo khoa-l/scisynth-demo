@@ -71,7 +71,7 @@ def test_publishing_rejects_an_unfinished_labeling_block(
     assert message in response.json()["detail"]
 
 
-def test_accepts_labelled_points_and_tidies_them(
+def test_accepts_labeled_points_and_tidies_them(
     client: TestClient, project_url: str, source: dict
 ) -> None:
     survey_url = create_survey(client, project_url, labeling(source), SCALE)
@@ -88,7 +88,7 @@ def test_accepts_labelled_points_and_tidies_them(
     assert stored["data"] == {"l1": {"defect": [0, 3, 5], "clean": [4, 255]}, "q1": 4}
 
 
-def test_leaves_out_a_labeling_answer_with_nothing_labelled(
+def test_leaves_out_a_labeling_answer_with_nothing_labeled(
     client: TestClient, project_url: str, source: dict
 ) -> None:
     survey_url = create_survey(client, project_url, labeling(source))

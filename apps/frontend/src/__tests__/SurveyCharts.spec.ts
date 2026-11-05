@@ -222,7 +222,7 @@ describe("Chart blocks", () => {
         : jsonResponse({
             name: "Intake form",
             version_id: VERSION_ID,
-            content: { blocks: [chart()] },
+            content: { blocks: [chart({ source: null, has_chart: true })] },
           }),
     );
 
@@ -239,34 +239,60 @@ describe("Chart blocks", () => {
     expect(drawn(wrapper.find('[role="img"]').element)).toMatchObject({ z: SECOND });
   });
 
-  it("shows the owner the chart frozen with the version a response answered", async () => {
+  describe("in the results", () => {
     const SURVEY_URL = `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`;
-    const VERSION = {
-      id: "Vq1k8LmN0pQr4StUv6WxY",
-      number: 1,
-      content: { blocks: [chart()] },
-      published_at: "2026-11-02T00:00:00Z",
-    };
     const RESPONSE = { id: "R1", version: 1, submitted_at: "2026-11-02T10:00:00Z", data: {} };
-    fetchMock.mockImplementation(async (input) => {
-      const { pathname } = new URL((input as Request).url);
-      if (pathname === `${SURVEY_URL}/responses`) return jsonResponse([RESPONSE]);
-      if (pathname === `${SURVEY_URL}/versions`) return jsonResponse([VERSION]);
-      if (pathname.endsWith("/charts/c1")) return jsonResponse({ ...PREVIEW, channels: [FIRST] });
-      return jsonResponse(SURVEY);
-    });
-    const { wrapper } = await mountPage(ProjectSurveyResultsView, {
-      props: { projectId: PROJECT_ID, surveyId: SURVEY.id },
+
+    async function mountResults(block: ChartBlock) {
+      const version = {
+        id: "Vq1k8LmN0pQr4StUv6WxY",
+        number: 1,
+        content: { blocks: [block] },
+        published_at: "2026-11-02T00:00:00Z",
+      };
+      fetchMock.mockImplementation(async (input) => {
+        const { pathname } = new URL((input as Request).url);
+        if (pathname === `${SURVEY_URL}/responses`) return jsonResponse([RESPONSE]);
+        if (pathname === `${SURVEY_URL}/versions`) return jsonResponse([version]);
+        if (pathname.endsWith("/charts/c1")) {
+          return jsonResponse({ ...PREVIEW, channels: [FIRST] });
+        }
+        return jsonResponse(SURVEY);
+      });
+      const { wrapper } = await mountPage(ProjectSurveyResultsView, {
+        props: { projectId: PROJECT_ID, surveyId: SURVEY.id },
+      });
+      await wrapper.find('[aria-label="Responses"] button').trigger("click");
+      await flushPromises();
+      return { wrapper, version };
+    }
+
+    function showData(wrapper: Awaited<ReturnType<typeof mountResults>>["wrapper"]) {
+      return wrapper.findAll("button").find((button) => button.text() === "Show data");
+    }
+
+    it("shows the owner the chart frozen with the version a response answered", async () => {
+      const { wrapper, version } = await mountResults(chart());
+
+      expect(requests().map((r) => new URL(r.url).pathname)).toContain(
+        `${SURVEY_URL}/versions/${version.id}/charts/c1`,
+      );
+      const plot = wrapper.find('[aria-label="Response"] [role="img"]');
+      expect(drawn(plot.element)).toMatchObject({ z: FIRST });
+      expect(showData(wrapper)).toBeUndefined();
     });
 
-    await wrapper.find('[aria-label="Responses"] button').trigger("click");
-    await flushPromises();
+    it("shows a blank chart as respondents saw it until the owner shows its data", async () => {
+      const { wrapper } = await mountResults(chart({ appearance: "blank" }));
+      const plot = wrapper.find('[aria-label="Response"] [role="img"]');
+      expect(drawn(plot.element)).toMatchObject({ showscale: false });
 
-    expect(requests().map((r) => new URL(r.url).pathname)).toContain(
-      `${SURVEY_URL}/versions/${VERSION.id}/charts/c1`,
-    );
-    const plot = wrapper.find('[aria-label="Response"] [role="img"]');
-    expect(drawn(plot.element)).toMatchObject({ z: FIRST });
+      await showData(wrapper)!.trigger("click");
+      await flushPromises();
+
+      expect(showData(wrapper)!.attributes("aria-pressed")).toBe("true");
+      expect(drawn(plot.element)).toMatchObject({ z: FIRST, colorscale: "Viridis" });
+    });
   });
 
   describe("Labeling in the builder", () => {

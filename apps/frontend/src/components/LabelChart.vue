@@ -6,6 +6,7 @@ import {
   Lasso,
   MousePointerClick,
   Move,
+  Palette,
   RotateCcw,
   ZoomIn,
 } from "@lucide/vue";
@@ -38,9 +39,16 @@ import {
 } from "@/lib/labeling";
 import type { LabelBlock, LabeledPoints, LabelTool } from "@/lib/survey-blocks";
 
-const props = defineProps<{ preview: NodePreview; block: LabelBlock; disabled?: boolean }>();
+const props = defineProps<{
+  preview: NodePreview;
+  block: LabelBlock;
+  disabled?: boolean;
+  blank?: boolean;
+  revealable?: boolean;
+}>();
 
 const labeled = defineModel<LabeledPoints>({ default: () => ({}) });
+const revealed = defineModel<boolean>("revealed", { default: false });
 
 const POINT_RADIUS = 16;
 const BRUSH_RADIUS = 12;
@@ -244,17 +252,6 @@ useResizeObserver(canvas, draw);
 
 <template>
   <div class="flex flex-col gap-2">
-    <ul v-if="disabled" aria-label="Labels" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-      <li
-        v-for="surveyLabel in block.labels"
-        :key="surveyLabel.id"
-        class="flex items-center gap-1.5"
-      >
-        <span class="size-3 rounded-full" :style="{ background: surveyLabel.color }" />
-        {{ surveyLabel.name }}
-        <span class="text-muted-foreground">{{ labeled[surveyLabel.id]?.length ?? 0 }}</span>
-      </li>
-    </ul>
     <div class="flex flex-wrap items-center gap-2">
       <template v-if="!disabled && label">
         <Select
@@ -328,15 +325,20 @@ useResizeObserver(canvas, draw);
           <RotateCcw />
         </Button>
       </ButtonGroup>
-      <Toggle v-model="labelsHidden" variant="outline" aria-label="Hide labels" class="ml-auto">
-        <EyeOff />
-      </Toggle>
+      <div class="ml-auto flex gap-2">
+        <Toggle v-if="revealable" v-model="revealed" variant="outline" aria-label="Show data">
+          <Palette />
+        </Toggle>
+        <Toggle v-model="labelsHidden" variant="outline" aria-label="Hide labels">
+          <EyeOff />
+        </Toggle>
+      </div>
     </div>
     <div class="relative">
       <PreviewPlot
         :preview="preview"
         :label="block.text || 'Chart to label'"
-        :blank="block.appearance === 'blank'"
+        :blank="blank"
         detailed
         navigable
         @drawn="plotted"

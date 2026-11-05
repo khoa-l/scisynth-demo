@@ -6,7 +6,7 @@ import {
   type NodePreview,
 } from "@/client";
 import { nodePreviewRequest } from "@/lib/dataset-nodes/graph";
-import type { ChartSource } from "@/lib/survey-blocks";
+import type { ChartBlock, LabelBlock } from "@/lib/survey-blocks";
 
 interface ChartQueryOptions {
   queryKey: unknown[];
@@ -15,7 +15,7 @@ interface ChartQueryOptions {
   staleTime?: number;
 }
 
-export type ChartQuery = (blockId: string, source: ChartSource) => ChartQueryOptions;
+export type ChartQuery = (block: ChartBlock | LabelBlock) => ChartQueryOptions;
 
 export function liveNodePreview(projectId: string, datasetId: string, nodeId: string) {
   return {
@@ -35,21 +35,21 @@ export function liveNodePreview(projectId: string, datasetId: string, nodeId: st
 }
 
 export function liveCharts(projectId: string): ChartQuery {
-  return (_blockId, source) => ({
-    ...liveNodePreview(projectId, source.dataset_id, source.node_id),
+  return ({ source }) => ({
+    ...liveNodePreview(projectId, source?.dataset_id ?? "", source?.node_id ?? ""),
     select: (preview) => ({
       ...preview,
-      channels: source.channels.flatMap((channel) => preview.channels[channel] ?? []),
+      channels: (source?.channels ?? []).flatMap((channel) => preview.channels[channel] ?? []),
     }),
   });
 }
 
 export function publishedCharts(publicId: string, versionId: string): ChartQuery {
-  return (blockId) => ({
-    queryKey: ["survey-chart", "published", publicId, versionId, blockId],
+  return ({ id }) => ({
+    queryKey: ["survey-chart", "published", publicId, versionId, id],
     queryFn: async () => {
       const { data } = await publicGetPublishedChart({
-        path: { public_id: publicId, version_id: versionId, block_id: blockId },
+        path: { public_id: publicId, version_id: versionId, block_id: id },
         throwOnError: true,
       });
       return data;
@@ -59,15 +59,15 @@ export function publishedCharts(publicId: string, versionId: string): ChartQuery
 }
 
 export function versionCharts(projectId: string, surveyId: string, versionId: string): ChartQuery {
-  return (blockId) => ({
-    queryKey: ["survey-chart", "version", projectId, surveyId, versionId, blockId],
+  return ({ id }) => ({
+    queryKey: ["survey-chart", "version", projectId, surveyId, versionId, id],
     queryFn: async () => {
       const { data } = await surveysGetSurveyChart({
         path: {
           project_id: projectId,
           survey_id: surveyId,
           version_id: versionId,
-          block_id: blockId,
+          block_id: id,
         },
         throwOnError: true,
       });

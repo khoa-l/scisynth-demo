@@ -10,7 +10,7 @@ from app.schemas import (
     SurveyResponseReceipt,
 )
 from app.survey_answers import check_answers
-from app.survey_charts import get_chart
+from app.survey_charts import get_respondent_chart, respondent_content
 
 router = APIRouter(prefix="/public/surveys/{public_id}", tags=["public"])
 
@@ -32,7 +32,9 @@ def get_published(public_id: str, db: SessionDep) -> PublishedSurvey:
         )
     ).one()
     return PublishedSurvey(
-        name=survey.name, version_id=version.id, content=version.content
+        name=survey.name,
+        version_id=version.id,
+        content=respondent_content(version.content),
     )
 
 
@@ -41,7 +43,7 @@ def get_published_chart(
     public_id: str, version_id: str, block_id: str, db: SessionDep
 ) -> NodePreview:
     survey = get_published_survey(public_id, db)
-    return get_chart(survey.id, version_id, block_id, db)
+    return get_respondent_chart(survey.id, version_id, block_id, db)
 
 
 @router.post("/responses", status_code=status.HTTP_201_CREATED)

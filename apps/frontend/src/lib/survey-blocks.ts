@@ -22,6 +22,7 @@ export interface ChartBlock {
   text: string;
   appearance: "shown" | "blank";
   source: ChartSource | null;
+  has_chart?: boolean;
 }
 
 export interface SurveyLabel {

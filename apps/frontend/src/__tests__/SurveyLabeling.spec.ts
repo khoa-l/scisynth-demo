@@ -356,11 +356,29 @@ describe("Labeling a chart", () => {
 
     const shown = wrapper.find('[aria-label="Response"]');
     const legend = shown.find('ul[aria-label="Labels"]');
-    expect(legend.findAll("li").map((item) => item.text())).toEqual(["Defect 1", "Clean 1"]);
+    const rows = legend
+      .findAll("li")
+      .map((item) => item.findAll("span").map((span) => span.text()));
+    expect(rows).toEqual([
+      ["", "Defect", "1"],
+      ["", "Clean", "1"],
+    ]);
     expect(shown.find('[aria-label="Tools"]').exists()).toBe(false);
     const move = shown.find('[aria-label="Navigation"] [aria-label="Move"]');
     expect(move.attributes("aria-pressed")).toBe("true");
     expect(shown.find('[aria-label="Hide labels"]').exists()).toBe(true);
     expect(shown.find("canvas").classes()).toContain("pointer-events-none");
+
+    const showData = shown.find('[aria-label="Show data"]');
+    expect(showData.attributes("aria-pressed")).toBe("false");
+    await showData.trigger("click");
+    await flushPromises();
+    expect(showData.attributes("aria-pressed")).toBe("true");
+  });
+
+  it("only lets the owner show a blank chart's data", async () => {
+    const wrapper = await mountSurvey();
+
+    expect(wrapper.find('[aria-label="Show data"]').exists()).toBe(false);
   });
 });

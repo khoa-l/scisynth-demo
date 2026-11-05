@@ -149,6 +149,40 @@ def test_a_blank_chart_keeps_where_the_data_is_but_not_its_values(
     assert decode(frozen["x"]).tolist() == decode(shown["x"]).tolist()
 
 
+def test_the_owner_sees_the_real_data_of_a_blank_chart(
+    client: TestClient, project_url: str
+) -> None:
+    dataset_id = create_dataset(client, project_url, DROPPED)
+    survey_url = create_survey(
+        client,
+        project_url,
+        chart(
+            {"dataset_id": dataset_id, "node_id": "drop", "channels": [0, 1]},
+            appearance="blank",
+        ),
+    )
+    version_id = publish(client, survey_url).split("/versions/")[1]
+
+    owned = client.get(f"{survey_url}/versions/{version_id}/charts/c1").json()
+
+    assert owned == live(client, DROPPED, "drop")
+
+
+def test_respondents_are_not_told_where_a_charts_data_comes_from(
+    client: TestClient, project_url: str
+) -> None:
+    dataset_id = create_dataset(client, project_url, SAMPLED)
+    source = {"dataset_id": dataset_id, "node_id": "grid", "channels": [0]}
+    empty = {**chart(None), "id": "c2"}
+    survey_url = create_survey(client, project_url, chart(source), empty)
+    public_url = publish(client, survey_url).split("/versions/")[0]
+    client.cookies.clear()
+
+    blocks = client.get(public_url).json()["content"]["blocks"]
+
+    assert blocks == [{**chart(None), "has_chart": True}, empty]
+
+
 def test_a_chart_without_data_is_left_out(
     client: TestClient, project_url: str, engine: Engine
 ) -> None:

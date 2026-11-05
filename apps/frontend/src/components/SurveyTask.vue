@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import LabelLegend from "@/components/LabelLegend.vue";
 import SurveyChart from "@/components/SurveyChart.vue";
 import SurveyScale from "@/components/SurveyScale.vue";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,9 @@ const pages = computed(() => {
     if (block.type === "end") break;
     if (block.type === "page") pages.push([[]]);
     else if (block.type === "separator") pages.at(-1)!.push([]);
-    else if ("source" in block ? block.source : block.text) pages.at(-1)!.at(-1)!.push(block);
+    else if ("source" in block ? block.source || block.has_chart : block.text) {
+      pages.at(-1)!.at(-1)!.push(block);
+    }
   }
   return pages.map((cards) => cards.filter((card) => card.length)).filter((cards) => cards.length);
 });
@@ -81,6 +84,10 @@ const cards = computed(() => {
   const shown = props.answered ? pages.value.flat() : pages.value[page.value];
   return shown?.length ? shown : [[]];
 });
+function labelBlocks(card: (ContentBlock | ChartBlock | LabelBlock)[]) {
+  return card.filter((block) => block.type === "label");
+}
+
 const isEmpty = computed(() => !pages.value.length);
 const isLastPage = computed(() => page.value >= pages.value.length - 1);
 const hasFooter = computed(
@@ -90,48 +97,60 @@ const hasFooter = computed(
 
 <template>
   <div class="flex flex-col gap-4" :class="surveyColumnClass">
-    <Card v-for="(card, index) in cards" :key="`${page}-${index}`">
-      <CardHeader v-if="index === 0">
-        <CardTitle>{{ name }}</CardTitle>
-        <CardDescription v-if="isEmpty">This survey has no questions yet.</CardDescription>
-      </CardHeader>
-      <CardContent v-if="card.length" class="flex flex-col gap-4">
-        <template v-for="block in card" :key="block.id">
-          <div v-if="block.type === 'scale'" class="flex flex-col gap-2">
-            <p :id="`question-${block.id}`" class="text-sm font-medium wrap-anywhere">
-              {{ block.text }}
-            </p>
-            <SurveyScale
-              :model-value="scaleAnswer(block.id)"
+    <div v-for="(card, index) in cards" :key="`${page}-${index}`" class="flex items-start gap-4">
+      <Card class="min-w-0 flex-1">
+        <CardHeader v-if="index === 0">
+          <CardTitle>{{ name }}</CardTitle>
+          <CardDescription v-if="isEmpty">This survey has no questions yet.</CardDescription>
+        </CardHeader>
+        <CardContent v-if="card.length" class="flex flex-col gap-4">
+          <template v-for="block in card" :key="block.id">
+            <div v-if="block.type === 'scale'" class="flex flex-col gap-2">
+              <p :id="`question-${block.id}`" class="text-sm font-medium wrap-anywhere">
+                {{ block.text }}
+              </p>
+              <SurveyScale
+                :model-value="scaleAnswer(block.id)"
+                :disabled="!!answered"
+                :aria-labelledby="`question-${block.id}`"
+                @update:model-value="setAnswer(block.id, $event)"
+              />
+            </div>
+            <SurveyChart
+              v-else-if="
+                (block.type === 'chart' || block.type === 'label') &&
+                (block.source || block.has_chart)
+              "
+              :block="block"
+              :charts="charts"
+              :labeled="labelAnswer(block.id)"
               :disabled="!!answered"
-              :aria-labelledby="`question-${block.id}`"
-              @update:model-value="setAnswer(block.id, $event)"
+              @label="setAnswer(block.id, $event)"
             />
-          </div>
-          <SurveyChart
-            v-else-if="(block.type === 'chart' || block.type === 'label') && block.source"
-            :block="block"
-            :source="block.source"
-            :charts="charts"
-            :labeled="labelAnswer(block.id)"
-            :disabled="!!answered"
-            @label="setAnswer(block.id, $event)"
-          />
-          <p v-else class="text-sm wrap-anywhere whitespace-pre-line">{{ block.text }}</p>
-        </template>
-      </CardContent>
-      <CardFooter v-if="index === cards.length - 1 && hasFooter" class="gap-2">
-        <Button v-if="page > 0" variant="outline" @click="page--">Back</Button>
-        <Button v-if="!isLastPage" class="ml-auto" @click="page++">Next</Button>
-        <Button
-          v-else-if="ends"
-          class="ml-auto"
-          :disabled="submitting"
-          @click="$emit('submit', answers)"
-        >
-          {{ submitting ? "Submitting…" : "Submit" }}
-        </Button>
-      </CardFooter>
-    </Card>
+            <p v-else class="text-sm wrap-anywhere whitespace-pre-line">{{ block.text }}</p>
+          </template>
+        </CardContent>
+        <CardFooter v-if="index === cards.length - 1 && hasFooter" class="gap-2">
+          <Button v-if="page > 0" variant="outline" @click="page--">Back</Button>
+          <Button v-if="!isLastPage" class="ml-auto" @click="page++">Next</Button>
+          <Button
+            v-else-if="ends"
+            class="ml-auto"
+            :disabled="submitting"
+            @click="$emit('submit', answers)"
+          >
+            {{ submitting ? "Submitting…" : "Submit" }}
+          </Button>
+        </CardFooter>
+      </Card>
+      <div v-if="answered && labelBlocks(card).length" class="flex w-36 shrink-0 flex-col gap-4">
+        <LabelLegend
+          v-for="block in labelBlocks(card)"
+          :key="block.id"
+          :block="block"
+          :labeled="labelAnswer(block.id)"
+        />
+      </div>
+    </div>
   </div>
 </template>

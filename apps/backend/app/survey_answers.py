@@ -3,7 +3,7 @@ from typing import Any
 from sqlmodel import Session
 
 from app.models import SurveyChart
-from app.survey_charts import LabelBlock, charted_blocks, labellable
+from app.survey_charts import LabelBlock, charted_blocks, labelable
 
 
 def scale_questions(content: dict[str, Any]) -> set[str]:
@@ -25,7 +25,7 @@ def check_labels(
     chart = db.get(SurveyChart, (version_id, block.id))
     if chart is None:
         raise ValueError(f"{block.id} has no chart to label")
-    points = labellable(chart.preview)
+    points = labelable(chart.preview)
     label_ids = {label.id for label in block.labels}
     checked = {}
     seen: set[int] = set()
