@@ -256,6 +256,35 @@ describe("Dataset node preview", () => {
         marker: { color: points, colorscale: "Viridis", size: 3, showscale: false },
       },
     ]);
+    expect(sampler.find('[aria-label="Plot type"]').exists()).toBe(false);
+  });
+
+  it("switches a grid preview and its viewed chart between a heatmap and a scatterplot", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const field = await dropKind(wrapper, "GaussianField");
+    await field.find('[aria-label="View preview"]').trigger("click");
+    await flushPromises();
+    const viewed = wrapper.find('[aria-label="Viewed node"] [role="img"]').element;
+    const lastTrace = (element: Element) =>
+      react.mock.calls.filter(([drawn]) => drawn === element).at(-1)![1][0];
+
+    await field.find('[aria-label="Scatterplot"]').trigger("click");
+    await flushPromises();
+
+    const scatter = {
+      type: "scatter",
+      x: new Float32Array([0, 1, 0, 1]),
+      y: new Float32Array([0, 0, 1, 1]),
+      marker: { color: new Float32Array([0, 1, 2, 3]) },
+    };
+    expect(lastTrace(thumbnail(field).element)).toMatchObject(scatter);
+    expect(lastTrace(viewed)).toMatchObject(scatter);
+
+    await field.find('[aria-label="Heatmap"]').trigger("click");
+    await flushPromises();
+
+    expect(lastTrace(thumbnail(field).element)).toMatchObject({ type: "heatmap", z: CHANNEL });
   });
 
   it("previews a defect applied to the observation connected to it", async () => {

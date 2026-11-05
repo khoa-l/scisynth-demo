@@ -12,6 +12,7 @@ const props = defineProps<{
   detailed?: boolean;
   blank?: boolean;
   navigable?: boolean;
+  plot?: "heatmap" | "scatter";
 }>();
 
 const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
@@ -67,22 +68,35 @@ const plot = useTemplateRef<HTMLDivElement>("plot");
 const plotly = import("plotly.js-cartesian-dist-min").then((module) => module.default);
 
 watch(
-  [() => props.preview, () => props.blank, plot, channel],
-  async ([value, blank, element, index]) => {
+  [() => props.preview, () => props.blank, () => props.plot, plot, channel],
+  async ([value, blank, kind, element, index]) => {
     const z = value.channels[index];
     if (!element || !z) return;
     const colorscale = blank ? grey : "Viridis";
     const showscale = props.detailed && !blank;
-    const trace =
-      value.layout === "grid"
-        ? { type: "heatmap", x: value.x, y: value.y, z, colorscale, showscale }
-        : {
-            type: "scatter",
-            mode: "markers",
-            x: value.x,
-            y: value.y,
-            marker: { color: z, colorscale, size: props.detailed ? 4 : 3, showscale },
-          };
+    const marker = { colorscale, size: props.detailed ? 4 : 3, showscale };
+    let trace: object;
+    if (value.layout === "grid" && kind !== "scatter") {
+      trace = { type: "heatmap", x: value.x, y: value.y, z, colorscale, showscale };
+    } else if (value.layout === "grid") {
+      const [xs, ys] = [decode(value.x), decode(value.y)];
+      const count = xs.length * ys.length;
+      trace = {
+        type: "scatter",
+        mode: "markers",
+        x: Float32Array.from({ length: count }, (_, i) => xs[i % xs.length]!),
+        y: Float32Array.from({ length: count }, (_, i) => ys[Math.floor(i / xs.length)]!),
+        marker: { ...marker, color: decode(z) },
+      };
+    } else {
+      trace = {
+        type: "scatter",
+        mode: "markers",
+        x: value.x,
+        y: value.y,
+        marker: { ...marker, color: z },
+      };
+    }
     const layout: Partial<Layout> = {
       ...(props.detailed
         ? detailedLayout(value, getComputedStyle(element).fontFamily)
@@ -94,7 +108,7 @@ watch(
       ...(props.navigable && { scrollZoom: true, displayModeBar: false }),
     };
     const Plotly = await plotly;
-    await Plotly.react(element, [trace as Data], layout, config);
+    await Plotly.react(element, [trace as unknown as Data], layout, config);
     emit("drawn", element);
   },
   { immediate: true },

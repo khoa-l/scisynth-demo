@@ -51,6 +51,8 @@ const previewRequest = computed(() =>
   nodePreviewRequest(toGraph(nodes.value, edges.value), props.id),
 );
 
+const plot = ref<"heatmap" | "scatter">("heatmap");
+
 const viewed = inject(VIEWED_NODE, ref(null));
 const isViewed = computed(() => viewed.value === props.id);
 
@@ -83,12 +85,15 @@ function setParam(name: string, value: ParamValue) {
   >
     <DatasetNodePreview
       v-if="hasPreview && !data.previewHidden"
+      v-model:plot="plot"
+      switchable
       :label="kind.label"
       :request="previewRequest"
       class="absolute -inset-x-px bottom-full mb-2"
     />
     <Teleport v-if="hasPreview && isViewed" :to="`#${VIEWED_PREVIEW_ID}`">
       <DatasetNodePreview
+        v-model:plot="plot"
         detailed
         :label="kind.label"
         :request="previewRequest"
