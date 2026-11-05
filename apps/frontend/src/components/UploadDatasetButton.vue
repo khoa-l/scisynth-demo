@@ -76,7 +76,13 @@ function submit() {
         <FieldGroup>
           <Field>
             <FieldLabel :for="fileId">File</FieldLabel>
-            <Input :id="fileId" type="file" accept=".json" @change="choose" />
+            <Input
+              :id="fileId"
+              type="file"
+              accept=".json"
+              class="overflow-hidden py-0 pl-0 file:mr-2.5 file:h-7.5 file:cursor-pointer file:items-center file:border-r file:border-input file:px-2.5 file:transition-colors file:hover:bg-muted dark:file:hover:bg-muted/50"
+              @change="choose"
+            />
           </Field>
           <Field v-if="contents">
             <FieldLabel :for="nameId">Name</FieldLabel>
