@@ -19,13 +19,15 @@ const { mutateAsync: createProject } = useMutation({
 </script>
 
 <template>
-  <h1 class="text-2xl font-medium tracking-tight">Dashboard</h1>
-  <NewItemButton
-    label="Empty Project"
-    title="New project"
-    description="Give your project a name."
-    initial-name="untitled-project"
-    :create="(name) => createProject({ body: { name } })"
-  />
-  <ProjectList class="mt-6" />
+  <div>
+    <h1 class="text-2xl font-medium tracking-tight">Dashboard</h1>
+    <NewItemButton
+      label="Empty Project"
+      title="New project"
+      description="Give your project a name."
+      initial-name="untitled-project"
+      :create="(name) => createProject({ body: { name } })"
+    />
+    <ProjectList class="mt-6" />
+  </div>
 </template>

@@ -73,7 +73,11 @@ const { mutate: logout, isPending: isLoggingOut } = useMutation({
     <main
       class="relative z-10 min-w-0 flex-1 overflow-auto rounded-tl-xl bg-background p-6 shadow-lg"
     >
-      <RouterView />
+      <RouterView v-slot="{ Component, route: viewRoute }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" :key="viewRoute.path" />
+        </Transition>
+      </RouterView>
     </main>
   </div>
 </template>
