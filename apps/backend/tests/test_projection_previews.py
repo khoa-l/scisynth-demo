@@ -42,6 +42,23 @@ def test_previews_pca_as_points_placed_by_their_channels(signed_in: TestClient) 
     assert np.allclose(np.abs(embedded), np.abs(expected), atol=1e-4)
 
 
+def test_pca_preview_follows_its_options(signed_in: TestClient) -> None:
+    nodes, edges = projected("PCA")
+    channels = preview(signed_in, "grid", nodes[:-1], edges[:-1])["channels"]
+    values = np.stack([decode(c).T.ravel() for c in channels], axis=1)
+
+    def embedding(whiten: bool, svd_solver: str = "auto") -> np.ndarray:
+        nodes, edges = projected("PCA", whiten=whiten, svd_solver=svd_solver)
+        result = preview(signed_in, "p", nodes, edges)
+        return np.stack([decode(result["x"]), decode(result["y"])], axis=1)
+
+    whitened = embedding(whiten=True, svd_solver="full")
+    expected = PCA(n_components=2, whiten=True, svd_solver="full").fit_transform(values)
+    assert np.allclose(np.abs(whitened), np.abs(expected), atol=1e-3)
+    assert np.allclose(whitened.std(axis=0), 1, atol=1e-2)
+    assert not np.allclose(np.abs(embedding(whiten=False)), np.abs(whitened))
+
+
 def test_previews_umap_and_follows_its_seed(signed_in: TestClient) -> None:
     def embedding(seed: int) -> np.ndarray:
         nodes, edges = projected("UMAP", shape=8, n_neighbors=10, seed=seed)
@@ -89,6 +106,8 @@ def test_dropped_locations_have_no_place_in_the_projection(
         ),
         ([stage("p", "UMAP", "grid")[0]], [], "needs one input connected"),
         (*projected("UMAP", shape=8, n_neighbours=10), "n_neighbours"),
+        (*projected("PCA", svd_solver="fastest"), "svd_solver"),
+        (*projected("PCA", seed=True), "seed must be"),
     ],
 )
 def test_rejects_projections_it_cannot_preview(

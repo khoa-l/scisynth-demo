@@ -479,16 +479,27 @@ describe("Dataset node preview", () => {
     expect(previews()).toHaveLength(0);
 
     const bumps = await dropKind(wrapper, "GaussianBumps");
+    const regions = await dropKind(wrapper, "VoronoiRegions");
     await flushPromises();
 
     expect(thumbnail(bumps).attributes("aria-label")).toBe("Preview of Gaussian bumps");
-    const [body] = await Promise.all(previews().map((r) => r.clone().json()));
-    expect(body.nodes).toEqual([
-      {
-        id: bumps.attributes("data-id"),
-        kind: "GaussianBumps",
-        params: { count: 10, width: 0.1, height: 1, seed: 0 },
-      },
+    expect(thumbnail(regions).attributes("aria-label")).toBe("Preview of Voronoi regions");
+    const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+    expect(bodies.map((body) => body.nodes)).toEqual([
+      [
+        {
+          id: bumps.attributes("data-id"),
+          kind: "GaussianBumps",
+          params: { count: 10, width: 0.1, height: 1, seed: 0 },
+        },
+      ],
+      [
+        {
+          id: regions.attributes("data-id"),
+          kind: "VoronoiRegions",
+          params: { count: 10, seed: 0 },
+        },
+      ],
     ]);
   });
 });

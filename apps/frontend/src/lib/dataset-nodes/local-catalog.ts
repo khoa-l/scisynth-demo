@@ -90,6 +90,18 @@ export const localCatalog: NodeCatalog = {
       },
     },
     {
+      name: "VoronoiRegions",
+      label: "Voronoi regions",
+      category: "latent",
+      group: "latent",
+      inputs: [],
+      outputs: [field],
+      params: {
+        count: int("Regions", 10, { min: 1, max: 10000 }),
+        seed,
+      },
+    },
+    {
       name: "AnalyticField",
       label: "Analytic field",
       category: "latent",
@@ -200,7 +212,22 @@ export const localCatalog: NodeCatalog = {
       group: "projection",
       inputs: [observation],
       outputs: [],
-      params: {},
+      params: {
+        whiten: { type: "boolean", label: "Whiten", default: false },
+        svd_solver: {
+          type: "enum",
+          label: "Solver",
+          default: "auto",
+          options: [
+            { value: "auto", label: "Auto" },
+            { value: "full", label: "Full" },
+            { value: "covariance_eigh", label: "Covariance" },
+            { value: "randomized", label: "Randomized" },
+            { value: "arpack", label: "ARPACK" },
+          ],
+        },
+        seed,
+      },
     },
     {
       name: "UMAP",

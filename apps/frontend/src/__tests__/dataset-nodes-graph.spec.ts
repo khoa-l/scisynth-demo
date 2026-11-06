@@ -121,6 +121,8 @@ describe("Dataset graph", () => {
       nodes: [
         savedNode("q", "Quantize", { levels: 1.5, vmin: 0, old: 7 }),
         savedNode("i", "InterpolatedField", { order: 9, mode: "unknown-mode" }),
+        savedNode("p", "PCA", { whiten: 1, svd_solver: "full" }),
+        savedNode("w", "PCA", { whiten: true, seed: true }),
       ],
       edges: [],
     });
@@ -128,6 +130,8 @@ describe("Dataset graph", () => {
     expect(nodes.map((node) => node.data.params)).toEqual([
       { levels: 256, vmin: 0, vmax: null },
       { order: 1, mode: "nearest" },
+      { whiten: false, svd_solver: "full", seed: 0 },
+      { whiten: true, svd_solver: "auto", seed: 0 },
     ]);
   });
 

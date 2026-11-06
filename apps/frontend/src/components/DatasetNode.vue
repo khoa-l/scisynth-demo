@@ -25,7 +25,7 @@ import { download } from "@/lib/download";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
-const PREVIEWABLE_GENERATORS = new Set(["GaussianField", "GaussianBumps"]);
+const PREVIEWABLE_GENERATORS = new Set(["GaussianField", "GaussianBumps", "VoronoiRegions"]);
 const PREVIEWED_FROM_INPUTS = new Set([
   "composite",
   "sampler",

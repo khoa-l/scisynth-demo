@@ -169,6 +169,18 @@ def test_keeps_parameter_types_including_blank_values(
     assert isinstance(params["levels"], int)
 
 
+def test_keeps_switch_parameters_as_booleans(
+    client: TestClient, dataset_url: str
+) -> None:
+    pca = node("a", "PCA", whiten=True, seed=1)
+    client.patch(dataset_url, json={"content": {**EMPTY, "nodes": [pca]}})
+
+    params = client.get(dataset_url).json()["content"]["nodes"][0]["params"]
+    assert params == {"whiten": True, "seed": 1}
+    assert params["whiten"] is True
+    assert type(params["seed"]) is int
+
+
 def test_remembers_which_node_previews_are_hidden(
     client: TestClient, dataset_url: str
 ) -> None:

@@ -2,7 +2,14 @@ import json
 from importlib.metadata import distribution, version
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FiniteFloat,
+    StrictBool,
+    model_validator,
+)
 
 
 def scisynth_version() -> str:
@@ -16,7 +23,9 @@ MAX_NODES = 500
 MAX_EDGES = 2000
 
 Ref = Annotated[str, Field(min_length=1, max_length=64)]
-ParamValue = int | FiniteFloat | Annotated[str, Field(max_length=200)] | None
+ParamValue = (
+    StrictBool | int | FiniteFloat | Annotated[str, Field(max_length=200)] | None
+)
 
 
 class _Strict(BaseModel):

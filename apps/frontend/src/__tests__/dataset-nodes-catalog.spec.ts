@@ -26,12 +26,14 @@ describe("Node catalog", () => {
     expect(seeded).toEqual([
       "GaussianField",
       "GaussianBumps",
+      "VoronoiRegions",
       "PointSampler",
       "GaussianNoise",
       "PoissonNoise",
       "RandomDropout",
       "PositionJitter",
       "RandomInsertion",
+      "PCA",
       "UMAP",
     ]);
   });

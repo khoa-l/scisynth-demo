@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException, Response, status
 from scisynth.core import Domain, Observation, registry
 from scisynth.latent import (
     FieldLatent,
-    GaussianBumps,
     GaussianField,
     LatentGenerator,
     Multichannel,
@@ -38,7 +37,7 @@ LATENT_SHAPE = (64, 64)
 LATENT_MAX_CELLS = 512 * 512
 SAMPLE_MAX_CELLS = 256 * 256
 POINTS_LIMIT = 10_000
-BUMPS_LIMIT = 100
+COUNT_LIMITS = {"GaussianBumps": ("bumps", 100), "VoronoiRegions": ("regions", 10_000)}
 COMPOSITES = {"Sum": Sum, "Product": Product, "Multichannel": Multichannel}
 PROJECTIONS = ("PCA", "UMAP")
 
@@ -71,7 +70,7 @@ def inputs(body: NodePreviewRequest, node_id: str) -> list[str]:
 def split_seed(node: NodeSpec) -> tuple[dict, int]:
     params = dict(node.params)
     seed = params.pop("seed", 0)
-    if not isinstance(seed, int) or seed < 0:
+    if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
         raise ValueError("seed must be a whole number of at least 0")
     return params, seed
 
@@ -88,20 +87,19 @@ def build_latent(
     if node.kind in COMPOSITES:
         return COMPOSITES[node.kind](*terms)
     params, seed = split_seed(node)
+    if node.kind in COUNT_LIMITS:
+        noun, limit = COUNT_LIMITS[node.kind]
+        count = params.get("count")
+        if isinstance(count, int) and count > limit:
+            raise ValueError(
+                f"Too many {noun} to preview: {count:,}, at most {limit:,}"
+            )
     domain = Domain.from_extents([(0.0, 1.0), (0.0, 1.0)])
     generator = LatentGenerator.from_dict(
         {"type": node.kind, "params": {**params, "domain": domain}}
     )
     if isinstance(generator, GaussianField):
         generator.max_cells = LATENT_MAX_CELLS
-    if (
-        isinstance(generator, GaussianBumps)
-        and isinstance(generator.count, int)
-        and generator.count > BUMPS_LIMIT
-    ):
-        raise ValueError(
-            f"Too many bumps to preview: {generator.count:,}, at most {BUMPS_LIMIT:,}"
-        )
     return cast(FieldLatent, generator.realize(seed))
 
 

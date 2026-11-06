@@ -46,6 +46,26 @@ def test_previews_gaussian_bumps_from_their_parameters_and_seed(
     assert one.max() == pytest.approx(3, rel=0.2)
 
 
+def regions(node_id: str, **params: object) -> dict:
+    return {
+        "id": node_id,
+        "kind": "VoronoiRegions",
+        "params": {"count": 10, "seed": 0, **params},
+    }
+
+
+def test_previews_voronoi_regions_as_a_label_map(signed_in: TestClient) -> None:
+    def values(**changes: object) -> np.ndarray:
+        return grid(preview(signed_in, "a", [regions("a", **changes)]))
+
+    labels = values()
+    assert labels.shape == (64, 64)
+    assert set(np.unique(labels)) == set(range(10))
+    assert np.array_equal(labels, values())
+    assert not np.array_equal(values(seed=1), values(seed=2))
+    assert set(np.unique(values(count=1))) == {0}
+
+
 def test_previews_composites_from_their_connected_terms(signed_in: TestClient) -> None:
     a, b = field("a", seed=1), field("b", seed=2)
     one = grid(preview(signed_in, "a", [a]))
@@ -126,6 +146,8 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
         ("c", [bumps("c", width=0)], [], "widths must be > 0"),
         ("c", [bumps("c", count=-1)], [], "count must be >= 0"),
         ("c", [bumps("c", count=101)], [], "Too many bumps to preview: 101"),
+        ("c", [regions("c", count=0)], [], "count must be >= 1"),
+        ("c", [regions("c", count=10_001)], [], "Too many regions to preview: 10,001"),
         (
             "c",
             [{"id": "c", "kind": "AnalyticField", "params": {}}],

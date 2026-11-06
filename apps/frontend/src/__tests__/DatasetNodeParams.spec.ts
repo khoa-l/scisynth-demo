@@ -83,4 +83,20 @@ describe("Dataset node parameters", () => {
     await flushPromises();
     expect(lastNodeData(wrapper).params).toEqual({ order: 1, mode: "grid-wrap" });
   });
+
+  it("turns switch parameters on and off", async () => {
+    const wrapper = await mountView();
+    const pca = await dropKind(wrapper, "PCA");
+
+    expect(pca.findAll("label").map((label) => label.text())).toEqual(["Whiten", "Solver", "Seed"]);
+    const whiten = pca.find('[role="switch"]');
+    expect(whiten.attributes("aria-checked")).toBe("false");
+
+    await whiten.trigger("click");
+    expect(lastNodeData(wrapper).params).toEqual({ whiten: true, svd_solver: "auto", seed: 0 });
+    expect(whiten.attributes("aria-checked")).toBe("true");
+
+    await whiten.trigger("click");
+    expect(lastNodeData(wrapper).params.whiten).toBe(false);
+  });
 });

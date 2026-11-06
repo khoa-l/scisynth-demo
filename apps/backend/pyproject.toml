@@ -109,7 +109,7 @@ pythonpath = ["."]
 "migrations/env.py" = ["F401"]
 
 [tool.uv.sources]
-scisynth = { git = "https://github.com/khoa-l/scisynth", rev = "5adfe9a8b7f6002d60e9d500ed09f4f9fa741e1a" }
+scisynth = { git = "https://github.com/khoa-l/scisynth", rev = "3cc959b55262a79c72e9db32a80045071ce3d7d0" }
 
 [[tool.alembic.post_write_hooks]]
 name = "ruff_check"

@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type {
   IntegerParam,
   NumberParam,
@@ -63,6 +64,13 @@ function restoreIfBlank(name: string, def: NumberParam | IntegerParam, event: Fo
           </SelectItem>
         </SelectContent>
       </Select>
+      <Switch
+        v-else-if="def.type === 'boolean'"
+        :id="`${uid}-${name}`"
+        :model-value="values[name] as boolean"
+        class="justify-self-end"
+        @update:model-value="emit('update', name, $event)"
+      />
       <NumberField
         v-else
         :id="`${uid}-${name}`"

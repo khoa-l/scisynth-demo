@@ -54,8 +54,13 @@ interface EnumParam extends BaseParam {
   options: { value: string; label: string }[];
 }
 
-export type ParamDef = NumberParam | IntegerParam | EnumParam;
+interface BooleanParam extends BaseParam {
+  type: "boolean";
+  default: boolean;
+}
 
-export type ParamValue = number | string | null;
+export type ParamDef = NumberParam | IntegerParam | EnumParam | BooleanParam;
+
+export type ParamValue = boolean | number | string | null;
 
 export type ParamValues = Record<string, ParamValue>;

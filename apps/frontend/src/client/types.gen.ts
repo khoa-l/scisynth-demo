@@ -172,7 +172,7 @@ export type GraphNodeInput = {
      * Params
      */
     params?: {
-        [key: string]: number | number | string | null;
+        [key: string]: boolean | number | number | string | null;
     };
     position: Position;
     /**
@@ -197,7 +197,7 @@ export type GraphNodeOutput = {
      * Params
      */
     params: {
-        [key: string]: number | number | string | null;
+        [key: string]: boolean | number | number | string | null;
     };
     position: Position;
     /**
@@ -294,7 +294,7 @@ export type NodeSpec = {
      * Params
      */
     params?: {
-        [key: string]: number | number | string | null;
+        [key: string]: boolean | number | number | string | null;
     };
 };
 
@@ -414,7 +414,7 @@ export type StagePreviewRequest = {
      * Params
      */
     params?: {
-        [key: string]: number | number | string | null;
+        [key: string]: boolean | number | number | string | null;
     };
 };
 
