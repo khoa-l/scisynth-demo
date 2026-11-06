@@ -5,13 +5,14 @@ import "@vue-flow/core/dist/theme-default.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { Background } from "@vue-flow/background";
 import {
+  ConnectionLineType,
   Panel,
   VueFlow,
   connectionExists,
   useVueFlow,
   type ValidConnectionFunc,
 } from "@vue-flow/core";
-import { useDebounceFn, useMounted, whenever } from "@vueuse/core";
+import { useDebounceFn, useLocalStorage, useMounted, whenever } from "@vueuse/core";
 import { computed, markRaw, onBeforeUnmount, provide, ref, watch } from "vue";
 
 import type { DatasetPublic } from "@/client";
@@ -20,6 +21,7 @@ import {
   datasetsUpdateDatasetMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import DatasetNode from "@/components/DatasetNode.vue";
+import GraphSettings from "@/components/GraphSettings.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import {
   NODE_KIND_MIME,
@@ -30,6 +32,7 @@ import {
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
 import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
+import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
@@ -37,7 +40,9 @@ const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
 const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
 const lineStyle = { strokeWidth: 2 };
-const defaultEdgeOptions = { style: lineStyle };
+const lineType = useLocalStorage<LineType>("dataset-builder-line-type", ConnectionLineType.Bezier);
+if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Bezier;
+const defaultEdgeOptions = computed(() => ({ type: lineType.value, style: lineStyle }));
 
 provide(VIEWED_NODE, ref(null));
 
@@ -109,6 +114,8 @@ function save() {
   });
 }
 
+watch(lineType, (type) => setEdges((current) => current.map((edge) => ({ ...edge, type }))));
+
 const saveSoon = useDebounceFn(save, 500);
 watch(serialized, () => saveSoon());
 onBeforeUnmount(() => saveSoon.flush());
@@ -168,6 +175,7 @@ function onDrop(event: DragEvent) {
     class="bg-muted inset-shadow-sm"
     :node-types="nodeTypes"
     :default-edge-options="defaultEdgeOptions"
+    :connection-line-type="lineType"
     :connection-line-style="lineStyle"
     :is-valid-connection="isValidConnection"
     @dragover="onDragOver"
@@ -176,6 +184,9 @@ function onDrop(event: DragEvent) {
     <Background variant="lines" color="#dcdcdc" />
     <Panel v-if="saveFailed" position="top-center" class="w-max">
       <SaveFailedAlert @retry="save" />
+    </Panel>
+    <Panel position="top-right">
+      <GraphSettings v-model:line-type="lineType" />
     </Panel>
   </VueFlow>
 </template>

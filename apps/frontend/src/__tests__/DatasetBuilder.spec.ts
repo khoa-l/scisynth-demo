@@ -109,6 +109,32 @@ describe("Dataset builder", () => {
     });
   });
 
+  it("draws every connection with the chosen line type, and remembers it", async () => {
+    localStorage.clear();
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, field, sampler, "latent");
+    expect(flow(wrapper).edges[0]!.type).toBe("default");
+
+    const step = wrapper.findAll('[role="group"][aria-label="Graph settings"] button')[2]!;
+    expect(step.text()).toBe("Step");
+    await step.trigger("click");
+    expect(flow(wrapper).edges[0]!.type).toBe("step");
+
+    const second = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, field, second, "latent");
+    expect(flow(wrapper).edges.map((edge) => edge.type)).toEqual(["step", "step"]);
+
+    wrapper.unmount();
+    const reopened = await mountView();
+    const field2 = await dropKind(reopened, "GaussianField");
+    const sampler2 = await dropKind(reopened, "GridSampler");
+    await connect(reopened, field2, sampler2, "latent");
+    expect(flow(reopened).edges[0]!.type).toBe("step");
+    localStorage.clear();
+  });
+
   describe("saving", () => {
     const SAVED: DatasetPublic = {
       ...DATASET,
