@@ -164,7 +164,7 @@ onBeforeUnmount(async () => {
         class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
       />
       <div
-        class="pointer-events-none absolute inset-0 rounded-md border-2 border-amber-400 bg-white/50 transition-opacity duration-200"
+        class="pointer-events-none absolute inset-0 rounded-md border-2 border-yellow-400 bg-yellow-50/60 transition-opacity duration-200"
         :class="stale ? 'opacity-100' : 'opacity-0'"
       />
     </div>

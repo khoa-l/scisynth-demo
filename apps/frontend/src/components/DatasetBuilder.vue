@@ -170,7 +170,6 @@ function onDrop(event: DragEvent) {
     :default-edge-options="defaultEdgeOptions"
     :connection-line-style="lineStyle"
     :is-valid-connection="isValidConnection"
-    only-render-visible-elements
     @dragover="onDragOver"
     @drop="onDrop"
   >
