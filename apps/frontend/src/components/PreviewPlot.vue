@@ -13,6 +13,7 @@ const props = defineProps<{
   blank?: boolean;
   navigable?: boolean;
   plot?: "heatmap" | "scatter";
+  stale?: boolean;
 }>();
 
 const emit = defineEmits<{ drawn: [element: HTMLDivElement] }>();
@@ -154,11 +155,18 @@ onBeforeUnmount(async () => {
         <ChevronRight class="size-3" />
       </button>
     </div>
-    <div
-      ref="plot"
-      role="img"
-      :aria-label="label"
-      class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
-    />
+    <div class="relative">
+      <div
+        ref="plot"
+        role="img"
+        :aria-label="label"
+        :aria-busy="stale"
+        class="aspect-square overflow-hidden rounded-md border bg-background shadow-sm"
+      />
+      <div
+        class="pointer-events-none absolute inset-0 rounded-md border-2 border-amber-400 bg-white/50 transition-opacity duration-200"
+        :class="stale ? 'opacity-100' : 'opacity-0'"
+      />
+    </div>
   </div>
 </template>

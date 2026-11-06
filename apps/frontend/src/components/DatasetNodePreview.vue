@@ -27,7 +27,11 @@ const request = refDebounced(
   300,
 );
 
-const { data: preview, error } = useQuery(
+const {
+  data: preview,
+  error,
+  isPlaceholderData,
+} = useQuery(
   computed(() => ({
     queryKey: ["node-preview", request.value],
     queryFn: async () => {
@@ -76,6 +80,7 @@ const errorMessage = computed(() => {
       :label="`Preview of ${label}`"
       :detailed="detailed"
       :plot="plot"
+      :stale="isPlaceholderData"
     />
   </div>
 </template>

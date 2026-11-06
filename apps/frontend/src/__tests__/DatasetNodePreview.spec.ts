@@ -33,7 +33,7 @@ afterEach(() => {
   react.mockClear();
 });
 
-function answerPreviews(preview: () => Response) {
+function answerPreviews(preview: () => Response | Promise<Response>) {
   fetchMock.mockImplementation(async (input) =>
     new URL((input as Request).url).pathname === "/api/previews/nodes"
       ? preview()
@@ -432,6 +432,27 @@ describe("Dataset node preview", () => {
     const [, scale, seeded] = await Promise.all(previews().map((r) => r.clone().json()));
     expect(scale.nodes[0].params.length_scale).toBe(0.3);
     expect(seeded.nodes[0].params.seed).toBe(5);
+  });
+
+  it("marks the thumbnail as busy while its preview is recalculated", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const field = await dropKind(wrapper, "GaussianField");
+    await vi.advanceTimersByTimeAsync(300);
+    await flushPromises();
+    expect(thumbnail(field).attributes("aria-busy")).toBe("false");
+
+    let respond!: (response: Response) => void;
+    answerPreviews(() => new Promise<Response>((resolve) => (respond = resolve)));
+    await enter(field.find("input"), "0.3");
+    await vi.advanceTimersByTimeAsync(300);
+    await flushPromises();
+    expect(thumbnail(field).attributes("aria-busy")).toBe("true");
+
+    respond(jsonResponse(PREVIEW));
+    await flushPromises();
+    expect(thumbnail(field).attributes("aria-busy")).toBe("false");
   });
 
   it("shows why a field can't be previewed in place of its thumbnail", async () => {
