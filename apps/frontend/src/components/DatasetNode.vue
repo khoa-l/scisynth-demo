@@ -18,7 +18,7 @@ import {
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
 import { nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
-import { groupBackground } from "@/lib/dataset-nodes/group-colors";
+import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 import { download } from "@/lib/download";
@@ -112,6 +112,7 @@ function setParam(name: string, value: ParamValue) {
     v-if="kind"
     class="relative w-64 rounded-lg border bg-background text-sm shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
+    :style="{ '--hue': groupHues[kind.group] }"
   >
     <DatasetNodePreview
       v-if="hasPreview && !data.previewHidden"

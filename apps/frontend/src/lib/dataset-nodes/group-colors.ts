@@ -1,4 +1,4 @@
-const groupHues: Record<string, number> = {
+export const groupHues: Record<string, number> = {
   latent: 250,
   composite: 300,
   sampler: 170,

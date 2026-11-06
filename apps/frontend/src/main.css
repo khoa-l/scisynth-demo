@@ -152,11 +152,11 @@
 .vue-flow .vue-flow__edge.selected .vue-flow__edge-path,
 .vue-flow .vue-flow__edge:focus .vue-flow__edge-path,
 .vue-flow .vue-flow__edge:focus-visible .vue-flow__edge-path {
-  stroke: var(--color-amber-500);
+  stroke: var(--color-blue-500);
 }
 
 .vue-flow .vue-flow__handle-connecting.vue-flow__handle-valid {
-  background: var(--color-amber-500);
+  background: var(--color-blue-500);
 }
 
 .vue-flow .vue-flow__edges:not(:has(.vue-flow__edge.selected)) {
