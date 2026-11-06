@@ -152,6 +152,15 @@ export const localCatalog: NodeCatalog = {
       params: {},
     },
     {
+      name: "Threshold",
+      label: "Threshold",
+      category: "latent",
+      group: "composite",
+      inputs: [field],
+      outputs: [field],
+      params: { level: num("Level", 0, { step: 0.1 }) },
+    },
+    {
       name: "Multichannel",
       label: "Multichannel",
       category: "latent",

@@ -12,6 +12,7 @@ from scisynth.latent import (
     Multichannel,
     Product,
     Sum,
+    Threshold,
 )
 from scisynth.projection import Projection
 from scisynth.samplers import GridSampler, PointSampler, Sampler
@@ -84,6 +85,13 @@ def build_latent(
     terms = [
         build_latent(body, source, (*path, node_id)) for source in inputs(body, node_id)
     ]
+    if node.kind == "Threshold":
+        if len(terms) != 1:
+            raise ValueError("Threshold needs one field connected")
+        level = node.params.get("level", 0.0)
+        if isinstance(level, bool) or not isinstance(level, int | float):
+            raise ValueError("level must be a number")
+        return Threshold(terms[0], float(level))
     if node.kind in COMPOSITES:
         return COMPOSITES[node.kind](*terms)
     params, seed = split_seed(node)
@@ -171,7 +179,9 @@ def observe(body: NodePreviewRequest) -> Observation:
     node = find_node(body, body.node)
     if node.kind in PROJECTIONS:
         return project(body, node)
-    if node.kind in COMPOSITES or issubclass(registry.get(node.kind), LatentGenerator):
+    if node.kind in (*COMPOSITES, "Threshold") or issubclass(
+        registry.get(node.kind), LatentGenerator
+    ):
         return GridSampler(LATENT_SHAPE).run(build_latent(body, node.id, ()), seed=0)
     return build_observation(body, node.id, ())
 

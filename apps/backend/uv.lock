@@ -139,7 +139,7 @@ requires-dist = [
     { name = "nanoid", specifier = ">=2.0.0" },
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.3.1" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
-    { name = "scisynth", extras = ["viz"], git = "https://github.com/khoa-l/scisynth?rev=3cc959b55262a79c72e9db32a80045071ce3d7d0" },
+    { name = "scisynth", extras = ["viz"], git = "https://github.com/khoa-l/scisynth?rev=94b1952a06ffbbafdfd5f6e8bd2af1435719664c" },
     { name = "sqlmodel", specifier = ">=0.0.48" },
     { name = "umap-learn", specifier = ">=0.5.12" },
 ]
@@ -1554,7 +1554,7 @@ wheels = [
 [[package]]
 name = "scisynth"
 version = "0.1.0a1"
-source = { git = "https://github.com/khoa-l/scisynth?rev=3cc959b55262a79c72e9db32a80045071ce3d7d0#3cc959b55262a79c72e9db32a80045071ce3d7d0" }
+source = { git = "https://github.com/khoa-l/scisynth?rev=94b1952a06ffbbafdfd5f6e8bd2af1435719664c#94b1952a06ffbbafdfd5f6e8bd2af1435719664c" }
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },

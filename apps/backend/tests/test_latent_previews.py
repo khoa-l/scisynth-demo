@@ -85,6 +85,19 @@ def test_previews_composites_from_their_connected_terms(signed_in: TestClient) -
     assert np.allclose(grid(stacked, 1), two)
 
 
+def test_previews_a_threshold_of_its_connected_field(signed_in: TestClient) -> None:
+    a = field("a", seed=3)
+    values = grid(preview(signed_in, "a", [a]))
+
+    def cut(**params: object) -> np.ndarray:
+        nodes = [a, {"id": "t", "kind": "Threshold", "params": params}]
+        return grid(preview(signed_in, "t", nodes, [link("a", "t", "field")]))
+
+    assert np.array_equal(cut(level=0.5), (values > 0.5).astype(np.float32))
+    assert np.array_equal(cut(), (values > 0).astype(np.float32))
+    assert cut(level=1).mean() < cut(level=0).mean()
+
+
 def test_previews_composites_only_with_enough_terms(signed_in: TestClient) -> None:
     a = field("a")
     body = {"node": "c", "nodes": [a, composite("c", "Sum")], "edges": [link("a", "c")]}
@@ -123,6 +136,19 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
     [
         ("c", [composite("c", "Sum")], [], "Sum needs at least two fields"),
         ("c", [composite("c", "Multichannel")], [], "needs at least one channel"),
+        ("t", [composite("t", "Threshold")], [], "Threshold needs one field connected"),
+        (
+            "t",
+            [field("a"), {"id": "t", "kind": "Threshold", "params": {"level": "x"}}],
+            [link("a", "t", "field")],
+            "level must be a number",
+        ),
+        (
+            "t",
+            [field("a"), field("b"), composite("t", "Threshold")],
+            [link("a", "t", "field"), link("b", "t", "field")],
+            "Threshold needs one field connected",
+        ),
         (
             "p",
             [composite("s", "Sum"), composite("p", "Product")],

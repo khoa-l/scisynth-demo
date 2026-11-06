@@ -163,6 +163,25 @@ describe("Dataset node preview", () => {
     expect(body.nodes.every((n: object) => !("position" in n))).toBe(true);
   });
 
+  it("previews a Threshold of the field connected to it", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+    const threshold = await dropKind(wrapper, "Threshold");
+    const field = await dropKind(wrapper, "GaussianField");
+    expect(thumbnail(threshold).exists()).toBe(false);
+
+    await connect(wrapper, field, threshold, "field");
+    await flushPromises();
+
+    expect(thumbnail(threshold).attributes("aria-label")).toBe("Preview of Threshold");
+    const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+    const body = bodies.find((b) => b.node === threshold.attributes("data-id"))!;
+    expect(body.nodes.find((n: { kind: string }) => n.kind === "Threshold").params).toEqual({
+      level: 0,
+    });
+    expect(body.edges).toMatchObject([{ source_port: "field", target_port: "field" }]);
+  });
+
   it("steps through a Multichannel's channels with the arrows above its preview", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse({ ...PREVIEW, channels: [CHANNEL, SECOND_CHANNEL] }));
