@@ -55,9 +55,26 @@ describe("Dataset node", () => {
     expect(shortfall().exists()).toBe(false);
   });
 
+  it("deletes a node and its connections from the node's toolbar", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, field, sampler, "latent");
+    expect(wrapper.findAll(".vue-flow__edge")).toHaveLength(1);
+
+    await field.find('[aria-label="Delete node"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.findAll(".vue-flow__node").map((node) => node.attributes("data-id"))).toEqual([
+      sampler.attributes("data-id"),
+    ]);
+    expect(wrapper.findAll(".vue-flow__edge")).toHaveLength(0);
+    expect(sampler.find('[aria-label="Delete node"]').exists()).toBe(true);
+  });
+
   describe("preview controls", () => {
     function controls(node: DOMWrapper<Element>) {
-      return node.find('[aria-label="Preview controls"]');
+      return node.find('[aria-label="View preview"]');
     }
 
     function view(node: DOMWrapper<Element>) {

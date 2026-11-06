@@ -358,13 +358,13 @@ describe("Dataset node preview", () => {
     const sampler = await dropKind(wrapper, "GridSampler");
     await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
     expect(thumbnail(umap).exists()).toBe(false);
-    expect(umap.find('[aria-label="Preview controls"]').exists()).toBe(false);
+    expect(umap.find('[aria-label="View preview"]').exists()).toBe(false);
 
     await connect(wrapper, sampler, umap, "observation", "observation");
     await flushPromises();
 
     expect(thumbnail(umap).attributes("aria-label")).toBe("Preview of UMAP");
-    expect(umap.find('[aria-label="Preview controls"]').exists()).toBe(true);
+    expect(umap.find('[aria-label="View preview"]').exists()).toBe(true);
     const bodies = await Promise.all(previews().map((r) => r.clone().json()));
     const body = bodies.find((b) => b.node === umap.attributes("data-id"))!;
     expect(body.nodes.find((n: { kind: string }) => n.kind === "UMAP").params).toEqual({
@@ -477,5 +477,18 @@ describe("Dataset node preview", () => {
 
     expect(thumbnail(analytic).exists()).toBe(false);
     expect(previews()).toHaveLength(0);
+
+    const bumps = await dropKind(wrapper, "GaussianBumps");
+    await flushPromises();
+
+    expect(thumbnail(bumps).attributes("aria-label")).toBe("Preview of Gaussian bumps");
+    const [body] = await Promise.all(previews().map((r) => r.clone().json()));
+    expect(body.nodes).toEqual([
+      {
+        id: bumps.attributes("data-id"),
+        kind: "GaussianBumps",
+        params: { count: 10, width: 0.1, height: 1, seed: 0 },
+      },
+    ]);
   });
 });

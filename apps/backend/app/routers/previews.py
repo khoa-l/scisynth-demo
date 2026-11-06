@@ -5,7 +5,15 @@ from typing import cast
 import numpy as np
 from fastapi import APIRouter, HTTPException, Response, status
 from scisynth.core import Domain, Observation, registry
-from scisynth.latent import FieldLatent, LatentGenerator, Multichannel, Product, Sum
+from scisynth.latent import (
+    FieldLatent,
+    GaussianBumps,
+    GaussianField,
+    LatentGenerator,
+    Multichannel,
+    Product,
+    Sum,
+)
 from scisynth.projection import Projection
 from scisynth.samplers import GridSampler, PointSampler, Sampler
 from scisynth.stages import Stage
@@ -30,6 +38,7 @@ LATENT_SHAPE = (64, 64)
 LATENT_MAX_CELLS = 512 * 512
 SAMPLE_MAX_CELLS = 256 * 256
 POINTS_LIMIT = 10_000
+BUMPS_LIMIT = 100
 COMPOSITES = {"Sum": Sum, "Product": Product, "Multichannel": Multichannel}
 PROJECTIONS = ("PCA", "UMAP")
 
@@ -81,11 +90,18 @@ def build_latent(
     params, seed = split_seed(node)
     domain = Domain.from_extents([(0.0, 1.0), (0.0, 1.0)])
     generator = LatentGenerator.from_dict(
-        {
-            "type": node.kind,
-            "params": {**params, "domain": domain, "max_cells": LATENT_MAX_CELLS},
-        }
+        {"type": node.kind, "params": {**params, "domain": domain}}
     )
+    if isinstance(generator, GaussianField):
+        generator.max_cells = LATENT_MAX_CELLS
+    if (
+        isinstance(generator, GaussianBumps)
+        and isinstance(generator.count, int)
+        and generator.count > BUMPS_LIMIT
+    ):
+        raise ValueError(
+            f"Too many bumps to preview: {generator.count:,}, at most {BUMPS_LIMIT:,}"
+        )
     return cast(FieldLatent, generator.realize(seed))
 
 

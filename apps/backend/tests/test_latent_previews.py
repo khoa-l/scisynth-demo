@@ -26,6 +26,26 @@ def test_field_preview_follows_its_parameters_and_seed(signed_in: TestClient) ->
     assert not np.array_equal(values(seed=1), values(seed=2))
 
 
+def bumps(node_id: str, **params: object) -> dict:
+    defaults = {"count": 10, "width": 0.1, "height": 1, "seed": 0}
+    return {"id": node_id, "kind": "GaussianBumps", "params": {**defaults, **params}}
+
+
+def test_previews_gaussian_bumps_from_their_parameters_and_seed(
+    signed_in: TestClient,
+) -> None:
+    def values(**changes: object) -> np.ndarray:
+        return grid(preview(signed_in, "a", [bumps("a", **changes)]))
+
+    assert values().shape == (64, 64)
+    assert np.array_equal(values(), values())
+    assert np.allclose(values(height=2), 2 * values())
+    assert not np.array_equal(values(seed=1), values(seed=2))
+    assert np.count_nonzero(values(count=0)) == 0
+    one = values(count=1, width=0.05, height=3)
+    assert one.max() == pytest.approx(3, rel=0.2)
+
+
 def test_previews_composites_from_their_connected_terms(signed_in: TestClient) -> None:
     a, b = field("a", seed=1), field("b", seed=2)
     one = grid(preview(signed_in, "a", [a]))
@@ -103,6 +123,9 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
         ),
         ("c", [field("c", length_scale=0)], [], "length_scale"),
         ("c", [field("c", seed=-1)], [], "seed must be"),
+        ("c", [bumps("c", width=0)], [], "widths must be > 0"),
+        ("c", [bumps("c", count=-1)], [], "count must be >= 0"),
+        ("c", [bumps("c", count=101)], [], "Too many bumps to preview: 101"),
         (
             "c",
             [{"id": "c", "kind": "AnalyticField", "params": {}}],

@@ -42,19 +42,15 @@ describe("Dataset node parameters", () => {
     const wrapper = await mountView();
     const levels = (await dropKind(wrapper, "Quantize")).find("input");
     const noise = await dropKind(wrapper, "GaussianNoise");
-    const [up, down] = noise.findAll("button");
-    expect([up, down].map((button) => button!.attributes("aria-label"))).toEqual([
-      "Increase",
-      "Decrease",
-    ]);
-
-    await press(up!);
+    const up = noise.find('[aria-label="Increase"]');
+    const down = noise.find('[aria-label="Decrease"]');
+    await press(up);
     expect(lastNodeData(wrapper).params.sigma).toBe(2);
-    await press(down!);
-    await press(down!);
-    await press(down!);
+    await press(down);
+    await press(down);
+    await press(down);
     expect(lastNodeData(wrapper).params.sigma).toBe(0);
-    expect(down!.attributes("disabled")).toBeDefined();
+    expect(down.attributes("disabled")).toBeDefined();
 
     await enter(levels, "2.4");
     expect(inputValue(levels)).toBe("2");

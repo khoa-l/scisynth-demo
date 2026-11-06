@@ -76,6 +76,20 @@ export const localCatalog: NodeCatalog = {
       },
     },
     {
+      name: "GaussianBumps",
+      label: "Gaussian bumps",
+      category: "latent",
+      group: "latent",
+      inputs: [],
+      outputs: [field],
+      params: {
+        count: int("Bumps", 10, { min: 0, max: 100 }),
+        width: num("Width", 0.1, { min: 0, step: 0.01 }),
+        height: num("Height", 1),
+        seed,
+      },
+    },
+    {
       name: "AnalyticField",
       label: "Analytic field",
       category: "latent",

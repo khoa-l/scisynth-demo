@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, Eye, EyeOff, ImageIcon, ImageOff } from "@lucide/vue";
+import { Download, Eye, EyeOff, ImageIcon, ImageOff, Trash2 } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
@@ -25,7 +25,7 @@ import { download } from "@/lib/download";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
-const PREVIEWABLE_GENERATORS = new Set(["GaussianField"]);
+const PREVIEWABLE_GENERATORS = new Set(["GaussianField", "GaussianBumps"]);
 const PREVIEWED_FROM_INPUTS = new Set([
   "composite",
   "sampler",
@@ -37,7 +37,7 @@ const PREVIEWED_FROM_INPUTS = new Set([
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
-const { edges, nodes, updateNodeData } = useVueFlow();
+const { edges, nodes, removeNodes, updateNodeData } = useVueFlow();
 const incoming = useNodeConnections({ handleType: "target" });
 
 function connectionCount(port: PortDef) {
@@ -92,6 +92,16 @@ async function downloadData() {
   }
 }
 
+const plainButton = cn(
+  toggleVariants({ variant: "outline" }),
+  "rounded-none border-l-0 px-2 first:rounded-l-lg first:border-l last:rounded-r-lg",
+);
+
+function remove() {
+  if (isViewed.value) viewed.value = null;
+  removeNodes(props.id);
+}
+
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
 }
@@ -121,32 +131,36 @@ function setParam(name: string, value: ParamValue) {
       />
     </Teleport>
     <ToggleGroup
-      v-if="hasPreview"
       type="multiple"
       variant="outline"
       orientation="horizontal"
-      aria-label="Preview controls"
+      aria-label="Node controls"
       :model-value="pressed"
       class="nodrag absolute top-full left-1/2 mt-2 -translate-x-1/2 bg-background shadow-sm"
       @update:model-value="setPressed"
       @click.stop
     >
-      <ToggleGroupItem value="viewed" aria-label="View preview">
-        <Eye v-if="isViewed" />
-        <EyeOff v-else />
-      </ToggleGroupItem>
-      <ToggleGroupItem value="hidden" aria-label="Hide preview">
-        <ImageOff v-if="data.previewHidden" />
-        <ImageIcon v-else />
-      </ToggleGroupItem>
-      <button
-        type="button"
-        aria-label="Download data"
-        :disabled="downloading"
-        :class="cn(toggleVariants({ variant: 'outline' }), 'rounded-l-none border-l-0 px-2')"
-        @click="downloadData"
-      >
-        <Download />
+      <template v-if="hasPreview">
+        <ToggleGroupItem value="viewed" aria-label="View preview">
+          <Eye v-if="isViewed" />
+          <EyeOff v-else />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="hidden" aria-label="Hide preview">
+          <ImageOff v-if="data.previewHidden" />
+          <ImageIcon v-else />
+        </ToggleGroupItem>
+        <button
+          type="button"
+          aria-label="Download data"
+          :disabled="downloading"
+          :class="plainButton"
+          @click="downloadData"
+        >
+          <Download />
+        </button>
+      </template>
+      <button type="button" aria-label="Delete node" :class="plainButton" @click="remove">
+        <Trash2 />
       </button>
     </ToggleGroup>
     <div
@@ -193,9 +207,16 @@ function setParam(name: string, value: ParamValue) {
   </div>
   <div
     v-else-if="catalog"
-    class="w-64 rounded-lg border border-dashed bg-background text-sm text-muted-foreground shadow-sm"
+    class="relative w-64 rounded-lg border border-dashed bg-background text-sm text-muted-foreground shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
   >
     <div data-slot="node-title" class="px-3 py-2 font-medium">Unknown: {{ data.kind }}</div>
+    <div
+      class="nodrag absolute top-full left-1/2 mt-2 -translate-x-1/2 rounded-lg bg-background shadow-sm"
+    >
+      <button type="button" aria-label="Delete node" :class="plainButton" @click.stop="remove">
+        <Trash2 />
+      </button>
+    </div>
   </div>
 </template>

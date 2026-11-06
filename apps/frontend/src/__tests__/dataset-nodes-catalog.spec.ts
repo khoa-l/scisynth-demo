@@ -25,6 +25,7 @@ describe("Node catalog", () => {
 
     expect(seeded).toEqual([
       "GaussianField",
+      "GaussianBumps",
       "PointSampler",
       "GaussianNoise",
       "PoissonNoise",
