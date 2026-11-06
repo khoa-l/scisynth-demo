@@ -42,6 +42,28 @@ export function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+export function fileResponse() {
+  return new Response(new Blob(["file"]), {
+    headers: { "Content-Type": "application/octet-stream" },
+  });
+}
+
+export function captureDownloads() {
+  const createObjectURL = vi.fn<(file: Blob) => string>().mockReturnValue("blob:download");
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static createObjectURL = createObjectURL;
+      static revokeObjectURL = vi.fn();
+    },
+  );
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  return {
+    names: () => click.mock.contexts.map((link) => (link as HTMLAnchorElement).download),
+    files: () => createObjectURL.mock.calls.map(([file]) => file),
+  };
+}
+
 export function requests() {
   return fetchMock.mock.calls.map((call) => call[0] as Request);
 }

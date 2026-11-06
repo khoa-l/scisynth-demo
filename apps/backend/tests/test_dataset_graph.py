@@ -1,10 +1,15 @@
+import io
+import json
+import zipfile
 from typing import Any
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from app.dataset_graph import MAX_NODES
 from tests.helpers import sign_up
+from tests.surveys import DROPPED
 
 EMPTY = {"version": 1, "nodes": [], "edges": []}
 
@@ -80,6 +85,40 @@ def test_only_the_owner_can_export(client: TestClient, dataset_url: str) -> None
     sign_up(client, "bob@example.com")
 
     assert client.get(f"{dataset_url}/export").status_code == 404
+
+
+def test_downloads_the_generated_data_of_every_node(
+    client: TestClient, dataset_url: str
+) -> None:
+    lonely = node("lonely", "GridSampler", shape=8)
+    client.patch(
+        dataset_url, json={"content": {**DROPPED, "nodes": [*DROPPED["nodes"], lonely]}}
+    )
+
+    response = client.get(f"{dataset_url}/data")
+
+    assert response.headers["content-type"] == "application/zip"
+    archive = zipfile.ZipFile(io.BytesIO(response.content))
+    assert set(archive.namelist()) == {
+        "Fields.scisynth.json",
+        "data/GaussianField-a.npz",
+        "data/GaussianField-b.npz",
+        "data/Multichannel-field.npz",
+        "data/GridSampler-grid.npz",
+        "data/RandomDropout-drop.npz",
+        "skipped.json",
+    }
+    arrays = np.load(io.BytesIO(archive.read("data/RandomDropout-drop.npz")))
+    assert arrays["values"].shape == (16, 16, 2)
+    assert not arrays["mask"].all()
+    assert set(json.loads(archive.read("skipped.json"))) == {"lonely"}
+    assert json.loads(archive.read("Fields.scisynth.json"))["name"] == "Fields"
+
+
+def test_only_the_owner_can_download_data(client: TestClient, dataset_url: str) -> None:
+    sign_up(client, "bob@example.com")
+
+    assert client.get(f"{dataset_url}/data").status_code == 404
 
 
 def test_uploading_an_exported_file_makes_a_copy(

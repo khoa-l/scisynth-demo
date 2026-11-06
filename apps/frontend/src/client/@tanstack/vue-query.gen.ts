@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsExportDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, datasetsUploadDataset, healthGetHealth, type Options, previewsPreviewNode, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicGetPublishedChart, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysGetSurvey, surveysGetSurveyChart, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsExportDatasetData, DatasetsExportDatasetError, DatasetsExportDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, DatasetsUploadDatasetData, DatasetsUploadDatasetError, DatasetsUploadDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedChartData, PublicGetPublishedChartError, PublicGetPublishedChartResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysGetSurveyChartData, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsDownloadDatasetData, datasetsExportDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, datasetsUploadDataset, healthGetHealth, type Options, previewsDownloadNodeData, previewsPreviewNode, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicGetPublishedChart, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysExportSurveyResponses, surveysGetSurvey, surveysGetSurveyChart, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataError, DatasetsDownloadDatasetDataResponse, DatasetsExportDatasetData, DatasetsExportDatasetError, DatasetsExportDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, DatasetsUploadDatasetData, DatasetsUploadDatasetError, DatasetsUploadDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataError, PreviewsDownloadNodeDataResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedChartData, PublicGetPublishedChartError, PublicGetPublishedChartResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesError, SurveysExportSurveyResponsesResponse, SurveysGetSurveyChartData, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -335,6 +335,24 @@ export const datasetsExportDatasetOptions = (options: Options<DatasetsExportData
     queryKey: datasetsExportDatasetQueryKey(options)
 });
 
+export const datasetsDownloadDatasetDataQueryKey = (options: Options<DatasetsDownloadDatasetDataData>) => createQueryKey('datasetsDownloadDatasetData', options);
+
+/**
+ * Download Dataset Data
+ */
+export const datasetsDownloadDatasetDataOptions = (options: Options<DatasetsDownloadDatasetDataData>) => queryOptions<DatasetsDownloadDatasetDataResponse, DatasetsDownloadDatasetDataError, DatasetsDownloadDatasetDataResponse, ReturnType<typeof datasetsDownloadDatasetDataQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await datasetsDownloadDatasetData({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: datasetsDownloadDatasetDataQueryKey(options)
+});
+
 export const surveysGetSurveysQueryKey = (options: Options<SurveysGetSurveysData>) => createQueryKey('surveysGetSurveys', options);
 
 /**
@@ -510,6 +528,24 @@ export const surveysGetSurveyResponsesOptions = (options: Options<SurveysGetSurv
     queryKey: surveysGetSurveyResponsesQueryKey(options)
 });
 
+export const surveysExportSurveyResponsesQueryKey = (options: Options<SurveysExportSurveyResponsesData>) => createQueryKey('surveysExportSurveyResponses', options);
+
+/**
+ * Export Survey Responses
+ */
+export const surveysExportSurveyResponsesOptions = (options: Options<SurveysExportSurveyResponsesData>) => queryOptions<SurveysExportSurveyResponsesResponse, SurveysExportSurveyResponsesError, SurveysExportSurveyResponsesResponse, ReturnType<typeof surveysExportSurveyResponsesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await surveysExportSurveyResponses({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: surveysExportSurveyResponsesQueryKey(options)
+});
+
 export const publicGetPublishedQueryKey = (options: Options<PublicGetPublishedData>) => createQueryKey('publicGetPublished', options);
 
 /**
@@ -587,6 +623,23 @@ export const previewsPreviewNodeMutation = (options?: Partial<Options<PreviewsPr
     const mutationOptions: UseMutationOptions<PreviewsPreviewNodeResponse, PreviewsPreviewNodeError, Options<PreviewsPreviewNodeData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await previewsPreviewNode({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Download Node Data
+ */
+export const previewsDownloadNodeDataMutation = (options?: Partial<Options<PreviewsDownloadNodeDataData>>): UseMutationOptions<PreviewsDownloadNodeDataResponse, PreviewsDownloadNodeDataError, Options<PreviewsDownloadNodeDataData>> => {
+    const mutationOptions: UseMutationOptions<PreviewsDownloadNodeDataResponse, PreviewsDownloadNodeDataError, Options<PreviewsDownloadNodeDataData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await previewsDownloadNodeData({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

@@ -3,7 +3,7 @@ import json
 from typing import cast
 
 import numpy as np
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from scisynth.core import Domain, Observation, registry
 from scisynth.latent import FieldLatent, LatentGenerator, Multichannel, Product, Sum
 from scisynth.projection import Projection
@@ -13,12 +13,14 @@ from sklearn.decomposition import PCA
 
 from app.auth import CurrentUser
 from app.dataset_graph import NodeSpec
+from app.observation_npz import observation_npz
 from app.schemas import (
     NodePreview,
     NodePreviewRequest,
     PlotFigure,
     StagePreviewRequest,
     TypedArray,
+    binary_response,
 )
 
 router = APIRouter(prefix="/previews", tags=["previews"])
@@ -167,6 +169,19 @@ def preview_node(body: NodePreviewRequest, user: CurrentUser) -> NodePreview:
         return node_preview(observation, channel_values(observation))
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
+
+
+@router.post(
+    "/nodes/data",
+    response_class=Response,
+    responses=binary_response("application/octet-stream"),
+)
+def download_node_data(body: NodePreviewRequest, user: CurrentUser) -> Response:
+    try:
+        data = observation_npz(observe(body))
+    except PREVIEW_ERRORS as exc:
+        raise invalid(exc) from exc
+    return Response(data, media_type="application/octet-stream")
 
 
 def channel_values(observation: Observation) -> list[np.ndarray]:

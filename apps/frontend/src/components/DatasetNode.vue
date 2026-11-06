@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { Eye, EyeOff, ImageIcon, ImageOff } from "@lucide/vue";
+import { Download, Eye, EyeOff, ImageIcon, ImageOff } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
+import { cn } from "cn";
 import { computed, inject, ref } from "vue";
+
+import { previewsDownloadNodeData } from "@/client";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import DatasetNodePreview from "@/components/DatasetNodePreview.vue";
+import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   findKind,
@@ -17,6 +21,7 @@ import { nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
 import { groupBackground } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
+import { download } from "@/lib/download";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
@@ -72,6 +77,21 @@ function setPressed(value: unknown) {
   }
 }
 
+const downloading = ref(false);
+
+async function downloadData() {
+  downloading.value = true;
+  try {
+    const { data } = await previewsDownloadNodeData({
+      body: previewRequest.value,
+      throwOnError: true,
+    });
+    download(data, `${kind.value?.label}-${props.id}.npz`);
+  } finally {
+    downloading.value = false;
+  }
+}
+
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
 }
@@ -119,6 +139,15 @@ function setParam(name: string, value: ParamValue) {
         <ImageOff v-if="data.previewHidden" />
         <ImageIcon v-else />
       </ToggleGroupItem>
+      <button
+        type="button"
+        aria-label="Download data"
+        :disabled="downloading"
+        :class="cn(toggleVariants({ variant: 'outline' }), 'rounded-l-none border-l-0 px-2')"
+        @click="downloadData"
+      >
+        <Download />
+      </button>
     </ToggleGroup>
     <div
       data-slot="node-title"

@@ -1,6 +1,16 @@
+import json
+from importlib.metadata import distribution, version
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
+
+
+def scisynth_version() -> str:
+    source = json.loads(distribution("scisynth").read_text("direct_url.json") or "{}")
+    return source.get("vcs_info", {}).get("commit_id") or version("scisynth")
+
+
+GENERATOR = {"scisynth": scisynth_version(), "numpy": version("numpy")}
 
 MAX_NODES = 500
 MAX_EDGES = 2000

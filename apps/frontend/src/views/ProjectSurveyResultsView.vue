@@ -3,6 +3,7 @@ import { Download } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 
+import { surveysExportSurveyResponses } from "@/client";
 import {
   surveysGetSurveyOptions,
   surveysGetSurveyResponsesOptions,
@@ -11,6 +12,7 @@ import {
 import ProjectItemPage from "@/components/ProjectItemPage.vue";
 import SurveyTask from "@/components/SurveyTask.vue";
 import { Button } from "@/components/ui/button";
+import { download } from "@/lib/download";
 import { isAnswer, type LabeledPoints } from "@/lib/survey-blocks";
 import { versionCharts } from "@/lib/survey-charts";
 
@@ -47,6 +49,22 @@ const answered = computed(() =>
   ),
 );
 
+const downloading = ref(false);
+
+async function downloadResponses(responseId?: string) {
+  downloading.value = true;
+  try {
+    const { data } = await surveysExportSurveyResponses({
+      path: path.value,
+      query: { response_id: responseId },
+      throwOnError: true,
+    });
+    download(data, `${survey.value?.name}-${responseId ?? "responses"}.zip`);
+  } finally {
+    downloading.value = false;
+  }
+}
+
 function submittedAt(value: string) {
   return new Date(value).toLocaleString();
 }
@@ -63,7 +81,13 @@ function submittedAt(value: string) {
     back-label="Builder"
   >
     <template #actions>
-      <Button variant="outline" size="lg" class="h-10 px-4" :disabled="!responses?.length">
+      <Button
+        variant="outline"
+        size="lg"
+        class="h-10 px-4"
+        :disabled="!responses?.length || downloading"
+        @click="downloadResponses()"
+      >
         <Download data-icon="inline-start" />
         Download all responses
       </Button>
@@ -75,22 +99,28 @@ function submittedAt(value: string) {
         <p v-else-if="!responses?.length" class="text-sm text-muted-foreground">
           No responses yet.
         </p>
-        <ul v-else class="flex flex-col gap-1">
-          <li v-for="response in responses" :key="response.id" class="group relative">
+        <ul v-else class="divide-y overflow-hidden rounded-md border">
+          <li
+            v-for="response in responses"
+            :key="response.id"
+            class="group relative flex items-center justify-between gap-4 px-4 py-2 text-sm transition-colors focus-within:bg-muted hover:bg-muted has-aria-pressed:bg-muted"
+          >
             <button
               type="button"
               :aria-pressed="response.id === selectedId"
-              class="flex w-full items-center justify-between gap-4 rounded-md py-2 pr-12 pl-3 text-left text-sm hover:bg-muted aria-pressed:bg-muted"
+              class="flex min-w-0 flex-1 items-center justify-between gap-4 text-left outline-none after:absolute after:inset-0"
               @click="selectedId = response.id"
             >
-              <span>{{ submittedAt(response.submitted_at) }}</span>
-              <span class="text-muted-foreground">Version {{ response.version }}</span>
+              <span class="truncate">{{ submittedAt(response.submitted_at) }}</span>
+              <span class="shrink-0 text-muted-foreground">Version {{ response.version }}</span>
             </button>
             <Button
               variant="outline"
               size="icon-sm"
               aria-label="Download response"
-              class="absolute top-1/2 right-2 -translate-y-1/2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+              :disabled="downloading"
+              class="relative z-10 shrink-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+              @click="downloadResponses(response.id)"
             >
               <Download />
             </Button>

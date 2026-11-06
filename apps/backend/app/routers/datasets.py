@@ -1,25 +1,21 @@
-import json
-from importlib.metadata import distribution, version
-
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlmodel import Session, col, select
 
 from app.auth import CurrentUser
-from app.dataset_graph import DatasetGraph
+from app.dataset_graph import GENERATOR, DatasetGraph
 from app.db import SessionDep
+from app.exports import export_dataset_data
 from app.models import Dataset, User
 from app.routers.projects import get_owned_project
-from app.schemas import DatasetCreate, DatasetFile, DatasetPublic, DatasetUpdate
+from app.schemas import (
+    DatasetCreate,
+    DatasetFile,
+    DatasetPublic,
+    DatasetUpdate,
+    binary_response,
+)
 
 router = APIRouter(prefix="/projects/{project_id}/datasets", tags=["datasets"])
-
-
-def scisynth_version() -> str:
-    source = json.loads(distribution("scisynth").read_text("direct_url.json") or "{}")
-    return source.get("vcs_info", {}).get("commit_id") or version("scisynth")
-
-
-GENERATOR = {"scisynth": scisynth_version(), "numpy": version("numpy")}
 
 
 def get_owned_dataset(
@@ -88,6 +84,18 @@ def export_dataset(
     return DatasetFile(
         name=dataset.name, generator=GENERATOR, graph=DatasetGraph(**dataset.content)
     )
+
+
+@router.get(
+    "/{dataset_id}/data",
+    response_class=Response,
+    responses=binary_response("application/zip"),
+)
+def download_dataset_data(
+    project_id: str, dataset_id: str, user: CurrentUser, db: SessionDep
+) -> Response:
+    dataset = get_owned_dataset(project_id, dataset_id, user, db)
+    return Response(export_dataset_data(dataset), media_type="application/zip")
 
 
 @router.patch("/{dataset_id}")

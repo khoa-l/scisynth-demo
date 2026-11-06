@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, DatasetsUploadDatasetData, DatasetsUploadDatasetErrors, DatasetsUploadDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataErrors, DatasetsDownloadDatasetDataResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, DatasetsUploadDatasetData, DatasetsUploadDatasetErrors, DatasetsUploadDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataErrors, PreviewsDownloadNodeDataResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesErrors, SurveysExportSurveyResponsesResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -250,6 +250,19 @@ export const datasetsExportDataset = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * Download Dataset Data
+ */
+export const datasetsDownloadDatasetData = <ThrowOnError extends boolean = false>(options: Options<DatasetsDownloadDatasetDataData, ThrowOnError>): RequestResult<DatasetsDownloadDatasetDataResponses, DatasetsDownloadDatasetDataErrors, ThrowOnError> => (options.client ?? client).get<DatasetsDownloadDatasetDataResponses, DatasetsDownloadDatasetDataErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/datasets/{dataset_id}/data',
+    ...options
+});
+
+/**
  * Get Surveys
  */
 export const surveysGetSurveys = <ThrowOnError extends boolean = false>(options: Options<SurveysGetSurveysData, ThrowOnError>): RequestResult<SurveysGetSurveysResponses, SurveysGetSurveysErrors, ThrowOnError> => (options.client ?? client).get<SurveysGetSurveysResponses, SurveysGetSurveysErrors, ThrowOnError>({
@@ -388,6 +401,19 @@ export const surveysGetSurveyResponses = <ThrowOnError extends boolean = false>(
 });
 
 /**
+ * Export Survey Responses
+ */
+export const surveysExportSurveyResponses = <ThrowOnError extends boolean = false>(options: Options<SurveysExportSurveyResponsesData, ThrowOnError>): RequestResult<SurveysExportSurveyResponsesResponses, SurveysExportSurveyResponsesErrors, ThrowOnError> => (options.client ?? client).get<SurveysExportSurveyResponsesResponses, SurveysExportSurveyResponsesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/projects/{project_id}/surveys/{survey_id}/responses/export',
+    ...options
+});
+
+/**
  * Get Published
  */
 export const publicGetPublished = <ThrowOnError extends boolean = false>(options: Options<PublicGetPublishedData, ThrowOnError>): RequestResult<PublicGetPublishedResponses, PublicGetPublishedErrors, ThrowOnError> => (options.client ?? client).get<PublicGetPublishedResponses, PublicGetPublishedErrors, ThrowOnError>({ url: '/api/public/surveys/{public_id}', ...options });
@@ -436,6 +462,23 @@ export const previewsPreviewNode = <ThrowOnError extends boolean = false>(option
             type: 'apiKey'
         }],
     url: '/api/previews/nodes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Download Node Data
+ */
+export const previewsDownloadNodeData = <ThrowOnError extends boolean = false>(options: Options<PreviewsDownloadNodeDataData, ThrowOnError>): RequestResult<PreviewsDownloadNodeDataResponses, PreviewsDownloadNodeDataErrors, ThrowOnError> => (options.client ?? client).post<PreviewsDownloadNodeDataResponses, PreviewsDownloadNodeDataErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/previews/nodes/data',
     ...options,
     headers: {
         'Content-Type': 'application/json',

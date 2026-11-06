@@ -1,4 +1,6 @@
 import base64
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Annotated, Any, Literal, Self
 
 import numpy as np
@@ -6,10 +8,11 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 from sqlmodel import Session, select
 
-from app.dataset_graph import DatasetGraph, Ref
+from app.dataset_graph import GENERATOR, DatasetGraph, Ref
 from app.models import Dataset, SurveyChart, SurveyVersion
+from app.observation_npz import observation_npz
 from app.routers.previews import channel_values, node_preview, observe, typed_array
-from app.schemas import NodePreview, NodePreviewRequest
+from app.schemas import DatasetFile, NodePreview, NodePreviewRequest
 
 
 class ChartSource(BaseModel):
@@ -63,7 +66,14 @@ def charted_blocks(content: dict[str, Any]) -> list[ChartBlock | LabelBlock]:
     ]
 
 
-def freeze_chart(source: ChartSource, project_id: str, db: Session) -> NodePreview:
+@dataclass
+class FrozenChart:
+    preview: dict[str, Any]
+    dataset_file: dict[str, Any]
+    observation: bytes
+
+
+def freeze_chart(source: ChartSource, project_id: str, db: Session) -> FrozenChart:
     dataset = db.get(Dataset, source.dataset_id)
     if dataset is None or dataset.project_id != project_id:
         raise ValueError("The chart's dataset isn't in this project")
@@ -74,17 +84,32 @@ def freeze_chart(source: ChartSource, project_id: str, db: Session) -> NodePrevi
     channels = channel_values(observation)
     if max(source.channels) >= len(channels):
         raise ValueError(f"The chart's data has no channel {max(source.channels) + 1}")
-    return node_preview(observation, [channels[i] for i in source.channels])
+    return FrozenChart(
+        preview=node_preview(
+            observation, [channels[i] for i in source.channels]
+        ).model_dump(),
+        dataset_file=DatasetFile(
+            name=dataset.name, generator=GENERATOR, graph=graph
+        ).model_dump(),
+        observation=observation_npz(observation),
+    )
 
 
 def freeze_charts(
     content: dict[str, Any], project_id: str, db: Session
-) -> dict[str, NodePreview]:
-    charts = {}
-    for block in charted_blocks(content):
-        if block.source:
-            charts[block.id] = freeze_chart(block.source, project_id, db)
-    return charts
+) -> dict[str, FrozenChart]:
+    return {
+        block.id: freeze_chart(block.source, project_id, db)
+        for block in charted_blocks(content)
+        if block.source
+    }
+
+
+def chart_versions(charts: Mapping[str, FrozenChart | SurveyChart]) -> dict[str, Any]:
+    return {
+        block_id: (chart.preview, chart.dataset_file.get("graph"))
+        for block_id, chart in charts.items()
+    }
 
 
 def labelable(preview: dict[str, Any]) -> np.ndarray:
@@ -101,9 +126,9 @@ def blank(preview: dict[str, Any]) -> NodePreview:
     return NodePreview.model_validate({**preview, "channels": [typed_array(values)]})
 
 
-def frozen_charts(version_id: str, db: Session) -> dict[str, dict[str, Any]]:
+def frozen_charts(version_id: str, db: Session) -> dict[str, SurveyChart]:
     charts = db.exec(select(SurveyChart).where(SurveyChart.version_id == version_id))
-    return {chart.block_id: chart.preview for chart in charts}
+    return {chart.block_id: chart for chart in charts}
 
 
 def find_chart(

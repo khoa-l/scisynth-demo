@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 from tests.previews import composite, field, link, preview, sampled, sampler, stage
@@ -7,12 +9,12 @@ def placed(*nodes: dict) -> list[dict]:
     return [{**node, "position": {"x": 0, "y": 0}} for node in nodes]
 
 
-SAMPLED = {
+SAMPLED: dict[str, Any] = {
     "version": 1,
     "nodes": placed(field("field"), sampler("grid", "GridSampler", shape=16)),
     "edges": [sampled("grid")],
 }
-TWO_CHANNELS = {
+TWO_CHANNELS: dict[str, Any] = {
     "version": 1,
     "nodes": placed(
         field("a", seed=1),
@@ -26,7 +28,7 @@ TWO_CHANNELS = {
         sampled("grid"),
     ],
 }
-DROPPED = {
+DROPPED: dict[str, Any] = {
     **TWO_CHANNELS,
     "nodes": [
         *TWO_CHANNELS["nodes"],

@@ -5,7 +5,14 @@ import type { PlotData } from "plotly.js";
 import Plotly from "plotly.js-dist-min";
 
 import { AXIS, connect, dropKind, enter, mountView } from "./dataset-view";
-import { DATASET, fetchMock, jsonResponse, requests } from "./helpers";
+import {
+  DATASET,
+  captureDownloads,
+  fetchMock,
+  fileResponse,
+  jsonResponse,
+  requests,
+} from "./helpers";
 
 const CHANNEL = { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" };
 const SECOND_CHANNEL = { ...CHANNEL, bdata: "AACAQAAAoEAAAMBAAADgQA==" };
@@ -366,6 +373,25 @@ describe("Dataset node preview", () => {
       metric: "euclidean",
       seed: 0,
     });
+  });
+
+  it("downloads the generated data of a node from its toolbar", async () => {
+    const wrapper = await mountView();
+    fetchMock.mockImplementation(async (input) => {
+      const { pathname } = new URL((input as Request).url);
+      if (pathname === "/api/previews/nodes/data") return fileResponse();
+      return pathname === "/api/previews/nodes" ? jsonResponse(PREVIEW) : jsonResponse(DATASET);
+    });
+    const downloads = captureDownloads();
+    const field = await dropKind(wrapper, "GaussianField");
+    await flushPromises();
+
+    await field.find('[aria-label="Download data"]').trigger("click");
+    await flushPromises();
+
+    const sent = requests().find((r) => new URL(r.url).pathname === "/api/previews/nodes/data");
+    expect(await sent!.json()).toEqual(await previews()[0]!.json());
+    expect(downloads.names()).toEqual([`Gaussian field-${field.attributes("data-id")}.npz`]);
   });
 
   it("sends only the nodes upstream of the preview", async () => {

@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from collections.abc import Sequence
+from dataclasses import asdict
+
+from fastapi import APIRouter, HTTPException, Response, status
 from sqlmodel import Session, col, select
 
 from app.auth import CurrentUser
 from app.db import SessionDep
+from app.exports import export_responses
 from app.models import (
     Survey,
     SurveyChart,
@@ -20,8 +24,9 @@ from app.schemas import (
     SurveyResponsePublic,
     SurveyUpdate,
     SurveyVersionPublic,
+    binary_response,
 )
-from app.survey_charts import freeze_charts, frozen_charts, get_chart
+from app.survey_charts import chart_versions, freeze_charts, frozen_charts, get_chart
 
 router = APIRouter(prefix="/projects/{project_id}/surveys", tags=["surveys"])
 
@@ -111,11 +116,10 @@ def publish_survey(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, f"A chart can't be shown: {exc}"
         ) from exc
-    previews = {block_id: chart.model_dump() for block_id, chart in charts.items()}
     if (
         latest is None
         or latest.content != survey.content
-        or frozen_charts(latest.id, db) != previews
+        or chart_versions(frozen_charts(latest.id, db)) != chart_versions(charts)
     ):
         latest = SurveyVersion(
             survey_id=survey.id,
@@ -125,8 +129,8 @@ def publish_survey(
         db.add(latest)
         db.flush()
         db.add_all(
-            SurveyChart(version_id=latest.id, block_id=block_id, preview=preview)
-            for block_id, preview in previews.items()
+            SurveyChart(version_id=latest.id, block_id=block_id, **asdict(chart))
+            for block_id, chart in charts.items()
         )
     survey.published_version = latest.number
     survey.public_id = survey.public_id or new_id()
@@ -174,6 +178,29 @@ def get_survey_chart(
     return get_chart(survey.id, version_id, block_id, db)
 
 
+def survey_responses(
+    survey_id: str,
+    db: Session,
+    version: int | None = None,
+    response_id: str | None = None,
+) -> Sequence[tuple[SurveyResponse, SurveyVersion]]:
+    query = (
+        select(SurveyResponse, SurveyVersion)
+        .join(SurveyVersion)
+        .where(SurveyResponse.survey_id == survey_id)
+        .order_by(
+            col(SurveyVersion.number).desc(),
+            col(SurveyResponse.submitted_at).desc(),
+            col(SurveyResponse.id),
+        )
+    )
+    if version is not None:
+        query = query.where(SurveyVersion.number == version)
+    if response_id is not None:
+        query = query.where(SurveyResponse.id == response_id)
+    return db.exec(query).all()
+
+
 @router.get("/{survey_id}/responses")
 def get_survey_responses(
     project_id: str,
@@ -183,24 +210,31 @@ def get_survey_responses(
     version: int | None = None,
 ) -> list[SurveyResponsePublic]:
     survey = get_owned_survey(project_id, survey_id, user, db)
-    query = (
-        select(SurveyResponse, SurveyVersion.number)
-        .join(SurveyVersion)
-        .where(SurveyResponse.survey_id == survey.id)
-        .order_by(
-            col(SurveyVersion.number).desc(),
-            col(SurveyResponse.submitted_at).desc(),
-            col(SurveyResponse.id),
-        )
-    )
-    if version is not None:
-        query = query.where(SurveyVersion.number == version)
     return [
         SurveyResponsePublic(
             id=response.id,
-            version=number,
+            version=version.number,
             submitted_at=response.submitted_at,
             data=response.data,
         )
-        for response, number in db.exec(query).all()
+        for response, version in survey_responses(survey.id, db, version)
     ]
+
+
+@router.get(
+    "/{survey_id}/responses/export",
+    response_class=Response,
+    responses=binary_response("application/zip"),
+)
+def export_survey_responses(
+    project_id: str,
+    survey_id: str,
+    user: CurrentUser,
+    db: SessionDep,
+    response_id: str | None = None,
+) -> Response:
+    survey = get_owned_survey(project_id, survey_id, user, db)
+    rows = survey_responses(survey.id, db, response_id=response_id)
+    if response_id is not None and not rows:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Response not found")
+    return Response(export_responses(survey, rows, db), media_type="application/zip")

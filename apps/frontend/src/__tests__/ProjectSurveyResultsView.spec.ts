@@ -3,7 +3,16 @@ import { describe, it, expect } from "vite-plus/test";
 import { flushPromises } from "@vue/test-utils";
 
 import ProjectSurveyResultsView from "../views/ProjectSurveyResultsView.vue";
-import { PROJECT_ID, SURVEY, fetchMock, jsonResponse, mountPage, requests } from "./helpers";
+import {
+  PROJECT_ID,
+  SURVEY,
+  captureDownloads,
+  fetchMock,
+  jsonResponse,
+  mountPage,
+  requests,
+  fileResponse,
+} from "./helpers";
 
 const SURVEY_URL = `/api/projects/${PROJECT_ID}/surveys/${SURVEY.id}`;
 
@@ -45,6 +54,7 @@ async function mountView({ responses = [LATEST, OLDER], survey = jsonResponse(SU
   fetchMock.mockImplementation(async (input) => {
     const { pathname } = new URL((input as Request).url);
     if (pathname === `${SURVEY_URL}/responses`) return jsonResponse(responses);
+    if (pathname === `${SURVEY_URL}/responses/export`) return fileResponse();
     if (pathname === `${SURVEY_URL}/versions`) return jsonResponse(VERSIONS);
     return survey;
   });
@@ -151,6 +161,30 @@ describe("Survey results view", () => {
     expect(rows.map((row) => row.find('[aria-label="Download response"]').exists())).toEqual([
       true,
       true,
+    ]);
+  });
+
+  it("downloads every response, or one, as a zip", async () => {
+    const wrapper = await mountView();
+    const downloads = captureDownloads();
+    const exports = () =>
+      requests()
+        .map((r) => new URL(r.url))
+        .filter((url) => url.pathname === `${SURVEY_URL}/responses/export`)
+        .map((url) => url.searchParams.get("response_id"));
+
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Download all responses")!
+      .trigger("click");
+    await flushPromises();
+    await list(wrapper).findAll('[aria-label="Download response"]')[1]!.trigger("click");
+    await flushPromises();
+
+    expect(exports()).toEqual([null, OLDER.id]);
+    expect(downloads.names()).toEqual([
+      `${SURVEY.name}-responses.zip`,
+      `${SURVEY.name}-${OLDER.id}.zip`,
     ]);
   });
 

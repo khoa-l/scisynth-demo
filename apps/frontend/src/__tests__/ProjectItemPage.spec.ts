@@ -1,5 +1,5 @@
 import { flushPromises } from "@vue/test-utils";
-import { describe, it, expect, vi } from "vite-plus/test";
+import { describe, it, expect } from "vite-plus/test";
 
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import ProjectSurveyView from "../views/ProjectSurveyView.vue";
@@ -7,10 +7,12 @@ import {
   DATASET,
   PROJECT_ID,
   SURVEY,
+  captureDownloads,
   fetchMock,
   jsonResponse,
   mountPage,
   requests,
+  fileResponse,
 } from "./helpers";
 
 describe.each([
@@ -105,22 +107,29 @@ describe("Dataset download menu", () => {
     fetchMock.mockImplementation(async (input) =>
       jsonResponse((input as Request).url.endsWith("/export") ? exported : DATASET),
     );
-    const createObjectURL = vi.fn<(file: Blob) => string>().mockReturnValue("blob:graph");
-    vi.stubGlobal(
-      "URL",
-      class extends URL {
-        static createObjectURL = createObjectURL;
-        static revokeObjectURL = vi.fn();
-      },
-    );
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const downloads = captureDownloads();
 
     const [graph] = await openMenu();
     graph!.click();
     await flushPromises();
 
-    const link = click.mock.contexts[0] as HTMLAnchorElement;
-    expect(link.download).toBe(`${DATASET.name}.scisynth.json`);
-    expect(JSON.parse(await createObjectURL.mock.calls[0]![0].text())).toEqual(exported);
+    expect(downloads.names()).toEqual([`${DATASET.name}.scisynth.json`]);
+    expect(JSON.parse(await downloads.files()[0]!.text())).toEqual(exported);
+  });
+
+  it("downloads the generated data as a zip", async () => {
+    fetchMock.mockImplementation(async (input) =>
+      (input as Request).url.endsWith("/data") ? fileResponse() : jsonResponse(DATASET),
+    );
+    const downloads = captureDownloads();
+
+    const [, data] = await openMenu();
+    data!.click();
+    await flushPromises();
+
+    expect(new URL(requests().at(-1)!.url).pathname).toBe(
+      `/api/projects/${PROJECT_ID}/datasets/${DATASET.id}/data`,
+    );
+    expect(downloads.names()).toEqual([`${DATASET.name}-data.zip`]);
   });
 });

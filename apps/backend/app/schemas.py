@@ -178,3 +178,11 @@ class NodePreview(BaseModel):
     x: TypedArray
     y: TypedArray
     channels: list[TypedArray]
+
+
+def binary_response(media_type: str) -> dict[int | str, dict[str, Any]]:
+    return {
+        200: {
+            "content": {media_type: {"schema": {"type": "string", "format": "binary"}}}
+        }
+    }

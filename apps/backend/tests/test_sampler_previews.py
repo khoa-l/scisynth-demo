@@ -1,3 +1,5 @@
+import io
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -25,6 +27,25 @@ def test_previews_a_grid_sampler_at_its_shape(signed_in: TestClient) -> None:
     x = decode(result["x"])
     assert len(x) == 16
     assert [x[0], x[-1]] == [0, 1]
+
+
+def test_downloads_a_nodes_generated_data(signed_in: TestClient) -> None:
+    nodes = [field("field"), sampler("grid", "GridSampler", shape=16)]
+    body = {"node": "grid", "nodes": nodes, "edges": [sampled("grid")]}
+
+    response = signed_in.post(f"{NODES}/data", json=body)
+
+    assert response.headers["content-type"] == "application/octet-stream"
+    arrays = np.load(io.BytesIO(response.content))
+    shown = grid(preview(signed_in, "grid", nodes, [sampled("grid")]))
+    np.testing.assert_array_equal(arrays["values"][..., 0].T.astype(np.float32), shown)
+    assert arrays["truth"].shape == (16, 16, 1)
+
+
+def test_wont_download_data_it_cant_generate(signed_in: TestClient) -> None:
+    body = {"node": "grid", "nodes": [sampler("grid", "GridSampler", shape=16)]}
+
+    assert signed_in.post(f"{NODES}/data", json=body).status_code == 422
 
 
 def test_previews_a_point_sampler_as_points(signed_in: TestClient) -> None:

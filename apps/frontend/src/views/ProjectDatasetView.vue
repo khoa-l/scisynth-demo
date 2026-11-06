@@ -3,7 +3,7 @@ import { ChevronDown, Download, Table, Workflow } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
-import { datasetsExportDataset } from "@/client";
+import { datasetsDownloadDatasetData, datasetsExportDataset } from "@/client";
 import { datasetsGetDatasetOptions } from "@/client/@tanstack/vue-query.gen";
 import DatasetNodePalette from "@/components/DatasetNodePalette.vue";
 import DatasetBuilder from "@/components/DatasetBuilder.vue";
@@ -16,28 +16,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
+import { download } from "@/lib/download";
 
 const props = defineProps<{ projectId: string; datasetId: string }>();
 
+const path = computed(() => ({ project_id: props.projectId, dataset_id: props.datasetId }));
+
 const { data: dataset, isError } = useQuery(
-  computed(() =>
-    datasetsGetDatasetOptions({
-      path: { project_id: props.projectId, dataset_id: props.datasetId },
-    }),
-  ),
+  computed(() => datasetsGetDatasetOptions({ path: path.value })),
 );
 
 async function downloadGraph() {
-  const { data } = await datasetsExportDataset({
-    path: { project_id: props.projectId, dataset_id: props.datasetId },
-    throwOnError: true,
-  });
+  const { data } = await datasetsExportDataset({ path: path.value, throwOnError: true });
   const file = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(file);
-  link.download = `${data.name}.scisynth.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  download(file, `${data.name}.scisynth.json`);
+}
+
+async function downloadData() {
+  const { data } = await datasetsDownloadDatasetData({ path: path.value, throwOnError: true });
+  download(data, `${dataset.value?.name}-data.zip`);
 }
 </script>
 
@@ -65,7 +62,7 @@ async function downloadGraph() {
             <Workflow />
             Graph
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem @select="downloadData">
             <Table />
             Data
           </DropdownMenuItem>

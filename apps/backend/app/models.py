@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from nanoid import generate
-from sqlalchemy import JSON, Column, UniqueConstraint, text
+from sqlalchemy import JSON, Column, LargeBinary, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
 ID_LENGTH = 21
@@ -87,6 +87,8 @@ class SurveyChart(SQLModel, table=True):
     )
     block_id: str = Field(primary_key=True, max_length=64)
     preview: dict[str, Any] = json_column()
+    dataset_file: dict[str, Any] = json_column()
+    observation: bytes | None = Field(default=None, sa_column=Column(LargeBinary))
 
 
 class SurveyResponse(SQLModel, table=True):
