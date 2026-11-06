@@ -176,7 +176,7 @@ function setParam(name: string, value: ParamValue) {
           :id="port.id"
           type="target"
           :position="Position.Left"
-          class="size-2.5!"
+          class="size-3.5!"
           :connectable="port.multiple ? true : 'single'"
         />
         {{ port.label }}
@@ -193,7 +193,7 @@ function setParam(name: string, value: ParamValue) {
         :key="port.id"
         class="relative px-3 text-right text-muted-foreground"
       >
-        <Handle :id="port.id" type="source" :position="Position.Right" class="size-2.5!" />
+        <Handle :id="port.id" type="source" :position="Position.Right" class="size-3.5!" />
         {{ port.label }}
       </div>
     </div>

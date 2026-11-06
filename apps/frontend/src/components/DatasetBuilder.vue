@@ -39,7 +39,7 @@ import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
 const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
-const lineStyle = { strokeWidth: 2 };
+const lineStyle = { strokeWidth: 3 };
 const lineType = useLocalStorage<LineType>("dataset-builder-line-type", ConnectionLineType.Bezier);
 if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Bezier;
 const defaultEdgeOptions = computed(() => ({ type: lineType.value, style: lineStyle }));
@@ -177,6 +177,7 @@ function onDrop(event: DragEvent) {
     :default-edge-options="defaultEdgeOptions"
     :connection-line-type="lineType"
     :connection-line-style="lineStyle"
+    :connection-radius="40"
     :is-valid-connection="isValidConnection"
     @dragover="onDragOver"
     @drop="onDrop"
