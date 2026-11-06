@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { Download } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { computed } from "vue";
 
-import type { DatasetPublic } from "@/client";
+import { datasetsDownloadDatasetData, type DatasetPublic } from "@/client";
 import {
   datasetsDeleteDatasetMutation,
   datasetsGetDatasetsOptions,
@@ -10,6 +11,8 @@ import {
   datasetsUpdateDatasetMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import ItemList from "@/components/ItemList.vue";
+import { Button } from "@/components/ui/button";
+import { download } from "@/lib/download";
 
 const props = defineProps<{ projectId: string }>();
 
@@ -43,6 +46,14 @@ const { mutateAsync: remove } = useMutation({
     void queryClient.invalidateQueries({ queryKey: key.value });
   },
 });
+
+async function downloadData(dataset: DatasetPublic) {
+  const { data } = await datasetsDownloadDatasetData({
+    path: { project_id: props.projectId, dataset_id: dataset.id },
+    throwOnError: true,
+  });
+  download(data, `${dataset.name}-data.zip`);
+}
 </script>
 
 <template>
@@ -58,5 +69,16 @@ const { mutateAsync: remove } = useMutation({
         update({ path: { project_id: projectId, dataset_id: dataset.id }, body: { name } })
     "
     :remove="(dataset) => remove({ path: { project_id: projectId, dataset_id: dataset.id } })"
-  />
+  >
+    <template #actions="{ item }">
+      <Button
+        variant="outline"
+        size="icon-sm"
+        aria-label="Download dataset"
+        @click="downloadData(item)"
+      >
+        <Download />
+      </Button>
+    </template>
+  </ItemList>
 </template>
