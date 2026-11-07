@@ -179,6 +179,7 @@ function onDrop(event: DragEvent) {
     :connection-line-style="lineStyle"
     :connection-radius="40"
     :is-valid-connection="isValidConnection"
+    multi-selection-key-code="Shift"
     @dragover="onDragOver"
     @drop="onDrop"
   >

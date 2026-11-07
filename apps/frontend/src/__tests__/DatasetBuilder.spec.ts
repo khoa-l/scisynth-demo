@@ -135,6 +135,27 @@ describe("Dataset builder", () => {
     localStorage.clear();
   });
 
+  it("adds to the selection when a node is clicked with shift held", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    const third = await dropKind(wrapper, "Gain");
+    const selected = () =>
+      wrapper.findAll(".vue-flow__node.selected").map((node) => node.attributes("data-id"));
+
+    await first.trigger("click");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", code: "ShiftLeft" }));
+    await flushPromises();
+    await second.trigger("click", { shiftKey: true });
+    document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", code: "ShiftLeft" }));
+    await flushPromises();
+    expect(selected()).toEqual([first.attributes("data-id"), second.attributes("data-id")]);
+
+    await third.trigger("click");
+    await flushPromises();
+    expect(selected()).toEqual([third.attributes("data-id")]);
+  });
+
   describe("saving", () => {
     const SAVED: DatasetPublic = {
       ...DATASET,
