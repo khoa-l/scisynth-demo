@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { h, useTemplateRef } from "vue";
 
 import SortableRow from "@/components/SortableRow.vue";
-import { hueBackground } from "@/lib/dataset-nodes/group-colors";
+import { hueBackground } from "@/lib/gradient";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
 import {
   SURVEY_BLOCK_GROUP,

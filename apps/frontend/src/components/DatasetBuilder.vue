@@ -32,16 +32,13 @@ import {
   nodeCatalogQuery,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
+import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
 import {
   DATASET_GROUP,
-  DATASET_NODE,
-  flowNode,
-  fromGraph,
   memberConnection,
   standInId,
-  toGraph,
   withCollapsedEdges,
-} from "@/lib/dataset-nodes/graph";
+} from "@/lib/dataset-nodes/groups";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";

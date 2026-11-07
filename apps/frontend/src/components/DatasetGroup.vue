@@ -9,11 +9,11 @@ import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
 import {
-  collapseGroup,
-  groupPorts,
+  memberPorts,
+  setGroupCollapsed,
   ungroupNodes,
   withCollapsedEdges,
-} from "@/lib/dataset-nodes/graph";
+} from "@/lib/dataset-nodes/groups";
 
 const props = defineProps<NodeProps<{ collapsed: boolean }>>();
 
@@ -24,12 +24,12 @@ const memberCount = computed(
   () => nodes.value.filter((node) => node.parentNode === props.id).length,
 );
 const members = computed(() =>
-  catalog.value ? groupPorts(nodes.value, edges.value, catalog.value, props.id) : [],
+  catalog.value ? memberPorts(nodes.value, edges.value, catalog.value, props.id) : [],
 );
 
 function setPressed(value: unknown) {
   const collapsed = Array.isArray(value) && value.includes("collapsed");
-  update(collapseGroup(nodes.value, props.id, collapsed));
+  update(setGroupCollapsed(nodes.value, props.id, collapsed));
 }
 
 function ungroup() {

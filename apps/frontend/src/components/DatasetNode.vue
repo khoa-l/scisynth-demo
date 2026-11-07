@@ -17,13 +17,8 @@ import {
   requiredConnections,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
-import {
-  DATASET_NODE,
-  groupNodes,
-  isStandIn,
-  nodePreviewRequest,
-  toGraph,
-} from "@/lib/dataset-nodes/graph";
+import { DATASET_NODE, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
+import { groupNodes, isStandIn } from "@/lib/dataset-nodes/groups";
 import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
@@ -112,7 +107,7 @@ const selectedDatasetNodes = computed(() =>
   getSelectedNodes.value.filter((node) => node.type === DATASET_NODE),
 );
 
-function group() {
+function groupSelected() {
   setNodes(
     groupNodes(
       nodes.value,
@@ -185,7 +180,7 @@ function setParam(name: string, value: ParamValue) {
         type="button"
         aria-label="Group nodes"
         :class="plainButton"
-        @click="group"
+        @click="groupSelected"
       >
         <Group />
       </button>

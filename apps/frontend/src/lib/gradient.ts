@@ -23,3 +23,7 @@ export function itemTextColor(id: string): string {
   const midHue = (baseHue(id) + HUE_SPREAD / 2) % 360;
   return `oklch(0.95 0.06 ${midHue})`;
 }
+
+export function hueBackground(hue: number) {
+  return `linear-gradient(135deg, oklch(0.9 0.07 ${hue}), oklch(0.84 0.09 ${hue}))`;
+}

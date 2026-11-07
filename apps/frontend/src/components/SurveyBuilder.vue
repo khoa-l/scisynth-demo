@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { hueBackground } from "@/lib/dataset-nodes/group-colors";
+import { hueBackground } from "@/lib/gradient";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 import { storeSurvey } from "@/lib/survey-cache";
 import {

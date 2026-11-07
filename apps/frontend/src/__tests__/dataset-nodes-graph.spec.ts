@@ -3,17 +3,19 @@ import { describe, it, expect } from "vite-plus/test";
 import type { GraphNode } from "@vue-flow/core";
 
 import {
-  collapseGroup,
   fromGraph,
-  groupNodes,
   nodePreviewRequest,
   toGraph,
-  groupPorts,
-  memberConnection,
-  ungroupNodes,
-  withCollapsedEdges,
   type DatasetGraph,
 } from "../lib/dataset-nodes/graph";
+import {
+  groupNodes,
+  memberConnection,
+  memberPorts,
+  setGroupCollapsed,
+  ungroupNodes,
+  withCollapsedEdges,
+} from "../lib/dataset-nodes/groups";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
 function savedNode(id: string, kind: string, params: DatasetGraph["nodes"][number]["params"]) {
@@ -282,7 +284,7 @@ describe("Dataset graph", () => {
     it("collapses a group into one node and expands it again", () => {
       const { nodes } = load(GROUPED);
 
-      const collapsed = collapseGroup(nodes as GraphNode[], "g", true);
+      const collapsed = setGroupCollapsed(nodes as GraphNode[], "g", true);
       expect(collapsed.map((node) => [node.id, node.hidden])).toEqual([
         ["g", undefined],
         ["field", true],
@@ -296,7 +298,7 @@ describe("Dataset graph", () => {
         height: 300,
       });
 
-      const expanded = collapseGroup(collapsed as GraphNode[], "g", false);
+      const expanded = setGroupCollapsed(collapsed as GraphNode[], "g", false);
       expect(expanded.map((node) => node.hidden)).toEqual([undefined, false, false, undefined]);
       expect(expanded[0]).toMatchObject({ data: { collapsed: false }, style: undefined });
     });
@@ -491,7 +493,7 @@ describe("Dataset graph", () => {
     describe("ports of a collapsed group", () => {
       function ports(graph: DatasetGraph) {
         const { nodes, edges } = load(graph);
-        return groupPorts(nodes, edges, localCatalog, "g");
+        return memberPorts(nodes, edges, localCatalog, "g");
       }
 
       it("has the inputs and outputs that aren't joined up inside the group", () => {
