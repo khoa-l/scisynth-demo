@@ -49,10 +49,10 @@ export function paletteItem(wrapper: Wrapper, label: string) {
     .find((item) => item.text() === label)!;
 }
 
-export async function dropKind(wrapper: Wrapper, name: string) {
+export async function dropKind(wrapper: Wrapper, name: string, clientX = 0, clientY = 0) {
   const dataTransfer = fakeDataTransfer();
   dataTransfer.setData("application/x-scisynth-node", name);
-  await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX: 0, clientY: 0 });
+  await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX, clientY });
   await flushPromises();
   const nodes = wrapper.findAll(".vue-flow__node");
   return nodes[nodes.length - 1]!;

@@ -137,14 +137,16 @@ onConnect((connection) => {
 });
 
 const isValidConnection: ValidConnectionFunc = (connection, { sourceNode, targetNode }) =>
-  !!catalog.value &&
-  connection.source !== connection.target &&
-  canConnect(catalog.value, {
-    sourceKind: (sourceNode.data as DatasetNodeData).kind,
-    sourcePort: connection.sourceHandle,
-    targetKind: (targetNode.data as DatasetNodeData).kind,
-    targetPort: connection.targetHandle,
-  });
+  sourceNode.type === DATASET_GROUP ||
+  targetNode.type === DATASET_GROUP ||
+  (!!catalog.value &&
+    connection.source !== connection.target &&
+    canConnect(catalog.value, {
+      sourceKind: (sourceNode.data as DatasetNodeData).kind,
+      sourcePort: connection.sourceHandle,
+      targetKind: (targetNode.data as DatasetNodeData).kind,
+      targetPort: connection.targetHandle,
+    }));
 
 function onDragOver(event: DragEvent) {
   if (!event.dataTransfer?.types.includes(NODE_KIND_MIME)) return;

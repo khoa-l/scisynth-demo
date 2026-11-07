@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { Maximize2, Minimize2, Ungroup } from "@lucide/vue";
-import { useVueFlow, type NodeProps } from "@vue-flow/core";
+import { Handle, Position, useVueFlow, type Node, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
 import { computed } from "vue";
 
 import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { collapseGroup, ungroupNodes } from "@/lib/dataset-nodes/graph";
+import {
+  GROUP_INPUT,
+  GROUP_OUTPUT,
+  collapseGroup,
+  ungroupNodes,
+  withCollapsedEdges,
+} from "@/lib/dataset-nodes/graph";
 
 const props = defineProps<NodeProps<{ collapsed: boolean }>>();
 
-const { nodes, setNodes } = useVueFlow();
+const { edges, nodes, setEdges, setNodes } = useVueFlow();
 
 const memberCount = computed(
   () => nodes.value.filter((node) => node.parentNode === props.id).length,
@@ -18,11 +24,16 @@ const memberCount = computed(
 
 function setPressed(value: unknown) {
   const collapsed = Array.isArray(value) && value.includes("collapsed");
-  setNodes(collapseGroup(nodes.value, props.id, collapsed));
+  update(collapseGroup(nodes.value, props.id, collapsed));
 }
 
 function ungroup() {
-  setNodes(ungroupNodes(nodes.value, props.id));
+  update(ungroupNodes(nodes.value, props.id));
+}
+
+function update(next: Node[]) {
+  setNodes(next);
+  setEdges(withCollapsedEdges(next, edges.value));
 }
 </script>
 
@@ -37,9 +48,25 @@ function ungroup() {
     <div data-slot="group-title" class="px-3 py-2 text-sm font-medium text-muted-foreground">
       Group
     </div>
-    <div v-if="data.collapsed" class="px-3 pb-2 text-sm text-muted-foreground">
-      {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
-    </div>
+    <template v-if="data.collapsed">
+      <div class="px-3 pb-2 text-sm text-muted-foreground">
+        {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
+      </div>
+      <Handle
+        :id="GROUP_INPUT"
+        type="target"
+        :position="Position.Left"
+        :connectable="false"
+        class="size-3.5!"
+      />
+      <Handle
+        :id="GROUP_OUTPUT"
+        type="source"
+        :position="Position.Right"
+        :connectable="false"
+        class="size-3.5!"
+      />
+    </template>
     <ToggleGroup
       type="multiple"
       variant="outline"

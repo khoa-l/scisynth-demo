@@ -9,6 +9,7 @@ import {
   nodePreviewRequest,
   toGraph,
   ungroupNodes,
+  withCollapsedEdges,
   type DatasetGraph,
 } from "../lib/dataset-nodes/graph";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
@@ -268,6 +269,11 @@ describe("Dataset graph", () => {
         ["quantize", undefined],
       ]);
       expect(nodes[0]!.style).toEqual({ width: "auto", height: "auto" });
+      expect(edges.map((edge) => [edge.source, edge.sourceHandle, edge.target])).toEqual([
+        ["field", "field", "sampler"],
+        ["sampler", "observation", "quantize"],
+        ["g", "group-output", "quantize"],
+      ]);
       expect(toGraph(nodes, edges)).toEqual(collapsed);
     });
 
@@ -410,6 +416,82 @@ describe("Dataset graph", () => {
           { x: 10, y: 10 },
         ],
       ]);
+    });
+
+    describe("connections of a collapsed group", () => {
+      const member = (id: string, parentNode: string) => ({
+        id,
+        position: { x: 0, y: 0 },
+        parentNode,
+      });
+      const groupOf = (id: string, collapsed: boolean) => ({
+        id,
+        type: "dataset-group",
+        position: { x: 0, y: 0 },
+        data: { collapsed },
+      });
+      const link = (id: string, source: string, target: string) => ({
+        id,
+        source,
+        sourceHandle: "out",
+        target,
+        targetHandle: "in",
+      });
+      const nodes = [
+        groupOf("g", true),
+        groupOf("h", true),
+        groupOf("open", false),
+        member("a", "g"),
+        member("b", "g"),
+        member("c", "h"),
+        member("d", "open"),
+        { id: "outside", position: { x: 0, y: 0 } },
+      ];
+
+      function shown(edges: ReturnType<typeof withCollapsedEdges>) {
+        return edges
+          .filter((edge) => edge.data?.standsFor)
+          .map((edge) => [
+            edge.data.standsFor,
+            `${edge.source}.${edge.sourceHandle}`,
+            `${edge.target}.${edge.targetHandle}`,
+          ]);
+      }
+
+      it("draws connections in and out of the group to the group itself", () => {
+        const edges = [
+          link("in", "outside", "a"),
+          link("out", "b", "outside"),
+          link("inside", "a", "b"),
+          link("between", "a", "c"),
+          link("open", "d", "outside"),
+        ];
+
+        expect(shown(withCollapsedEdges(nodes, edges))).toEqual([
+          ["in", "outside.out", "g.group-input"],
+          ["out", "g.group-output", "outside.in"],
+          ["between", "g.group-output", "h.group-input"],
+        ]);
+      });
+
+      it("draws one line for several connections that look the same once collapsed", () => {
+        const edges = [link("first", "outside", "a"), link("second", "outside", "b")];
+
+        expect(shown(withCollapsedEdges(nodes, edges))).toEqual([
+          ["first", "outside.out", "g.group-input"],
+        ]);
+      });
+
+      it("replaces the lines it drew before, keeping the real connections", () => {
+        const edges = [link("in", "outside", "a")];
+        const once = withCollapsedEdges(nodes, edges);
+        const expanded = nodes.map((node) =>
+          node.id === "g" ? { ...node, data: { collapsed: false } } : node,
+        );
+
+        expect(withCollapsedEdges(nodes, once)).toEqual(once);
+        expect(withCollapsedEdges(expanded, once)).toEqual(edges);
+      });
     });
   });
 });

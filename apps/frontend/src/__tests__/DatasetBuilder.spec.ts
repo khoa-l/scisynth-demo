@@ -27,8 +27,25 @@ function groupButton(node: DOMWrapper<Element>) {
   return node.find('[aria-label="Node controls"] [aria-label="Group nodes"]');
 }
 
+async function groupTogether(first: DOMWrapper<Element>, second: DOMWrapper<Element>) {
+  await first.trigger("click");
+  await shiftClick(second);
+  await groupButton(second).trigger("click");
+  await flushPromises();
+}
+
+async function clickGroupControl(wrapper: Wrapper, label: string) {
+  await wrapper
+    .find(`.vue-flow__node-dataset-group [aria-label="Group controls"] [aria-label="${label}"]`)
+    .trigger("click");
+  await flushPromises();
+}
+
 function flow(wrapper: Wrapper) {
-  return wrapper.findComponent(VueFlow).vm as unknown as { edges: GraphEdge[] };
+  return wrapper.findComponent(VueFlow).vm as unknown as {
+    edges: GraphEdge[];
+    nodes: GraphNode[];
+  };
 }
 
 describe("Dataset builder", () => {
@@ -202,21 +219,11 @@ describe("Dataset builder", () => {
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(256);
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(100);
     const wrapper = await mountView();
-    const canvas = wrapper.find(".vue-flow");
-    for (const [kind, clientX, clientY] of [
-      ["GaussianField", 200, 100],
-      ["GridSampler", 600, 400],
-    ] as const) {
-      const dataTransfer = fakeDataTransfer();
-      dataTransfer.setData("application/x-scisynth-node", kind);
-      await canvas.trigger("drop", { dataTransfer, clientX, clientY });
-      await flushPromises();
-    }
-    const [first, second] = wrapper.findAll(".vue-flow__node");
-    const vm = wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] };
+    const first = await dropKind(wrapper, "GaussianField", 200, 100);
+    const second = await dropKind(wrapper, "GridSampler", 600, 400);
     const placed = () =>
-      vm.nodes
-        .filter((node) => node.type === "dataset-node")
+      flow(wrapper)
+        .nodes.filter((node) => node.type === "dataset-node")
         .map(({ computedPosition: { x, y } }) => ({ x, y }));
     const before = placed();
     expect(before).toEqual([
@@ -224,19 +231,20 @@ describe("Dataset builder", () => {
       { x: 472, y: 350 },
     ]);
 
-    await first!.trigger("click");
-    await shiftClick(second!);
-    await groupButton(second!).trigger("click");
-    await flushPromises();
+    await groupTogether(first, second);
     expect(placed()).toEqual(before);
 
-    const collapse = () =>
-      wrapper.find('.vue-flow__node-dataset-group [aria-label="Collapse group"]');
-    await collapse().trigger("click");
-    await flushPromises();
-    await collapse().trigger("click");
-    await flushPromises();
+    await clickGroupControl(wrapper, "Collapse group");
+    await clickGroupControl(wrapper, "Collapse group");
     expect(placed()).toEqual(before);
+
+    await clickGroupControl(wrapper, "Collapse group");
+    await clickGroupControl(wrapper, "Ungroup nodes");
+    expect(placed()).toEqual(before);
+    expect(flow(wrapper).nodes.map((node) => [node.parentNode, node.extent, node.hidden])).toEqual([
+      [undefined, undefined, false],
+      [undefined, undefined, false],
+    ]);
   });
 
   it("puts the selected nodes inside a new group", async () => {
@@ -245,40 +253,40 @@ describe("Dataset builder", () => {
     const second = await dropKind(wrapper, "GridSampler");
     await dropKind(wrapper, "Gain");
 
-    await first.trigger("click");
-    await shiftClick(second);
-    await groupButton(second).trigger("click");
-    await flushPromises();
+    await groupTogether(first, second);
 
     const group = wrapper.find(".vue-flow__node-dataset-group");
     expect(group.find('[data-slot="group-title"]').text()).toBe("Group");
-    const nodes = (wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] }).nodes;
     expect(
-      nodes
-        .filter((node) => node.parentNode === group.attributes("data-id"))
+      flow(wrapper)
+        .nodes.filter((node) => node.parentNode === group.attributes("data-id"))
         .map((node) => node.data.kind),
     ).toEqual(["GaussianField", "GridSampler"]);
+  });
+
+  it("keeps a selected group when the delete key is pressed", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await groupTogether(first, second);
+
+    await wrapper.find(".vue-flow__node-dataset-group").trigger("click");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace" }));
+    await flushPromises();
+
+    expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(true);
   });
 
   it("ungroups a group's nodes from the group's toolbar", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");
     const second = await dropKind(wrapper, "GridSampler");
-    await first.trigger("click");
-    await shiftClick(second);
-    await groupButton(second).trigger("click");
-    await flushPromises();
+    await groupTogether(first, second);
 
-    await wrapper
-      .find(
-        '.vue-flow__node-dataset-group [aria-label="Group controls"] [aria-label="Ungroup nodes"]',
-      )
-      .trigger("click");
-    await flushPromises();
+    await clickGroupControl(wrapper, "Ungroup nodes");
 
     expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(false);
-    const nodes = (wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] }).nodes;
-    expect(nodes.map((node) => [node.data.kind, node.parentNode])).toEqual([
+    expect(flow(wrapper).nodes.map((node) => [node.data.kind, node.parentNode])).toEqual([
       ["GaussianField", undefined],
       ["GridSampler", undefined],
     ]);
@@ -289,24 +297,41 @@ describe("Dataset builder", () => {
     const first = await dropKind(wrapper, "GaussianField");
     const second = await dropKind(wrapper, "GridSampler");
     await dropKind(wrapper, "Gain");
-    await first.trigger("click");
-    await shiftClick(second);
-    await groupButton(second).trigger("click");
-    await flushPromises();
+    await groupTogether(first, second);
     const titles = () =>
       wrapper.findAll('.vue-flow__node [data-slot="node-title"]').map((title) => title.text());
-    const collapse = () =>
-      wrapper.find('.vue-flow__node-dataset-group [aria-label="Collapse group"]');
 
-    await collapse().trigger("click");
-    await flushPromises();
+    await clickGroupControl(wrapper, "Collapse group");
     expect(titles()).toEqual(["Gain"]);
     expect(wrapper.find(".vue-flow__node-dataset-group").text()).toContain("2 nodes");
 
-    await collapse().trigger("click");
-    await flushPromises();
+    await clickGroupControl(wrapper, "Collapse group");
     expect(titles()).toEqual(["Gaussian field", "Grid sampler", "Gain"]);
     expect(wrapper.find(".vue-flow__node-dataset-group").text()).not.toContain("2 nodes");
+  });
+
+  it("shows a collapsed group's connections on the group, without counting them twice", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const other = await dropKind(wrapper, "GaussianField");
+    const sum = await dropKind(wrapper, "Sum");
+    await connect(wrapper, field, sum, "terms");
+    await groupTogether(field, other);
+    const group = wrapper.find(".vue-flow__node-dataset-group");
+    const shortfall = () => wrapper.find('[data-slot="port-shortfall"]').text();
+
+    await clickGroupControl(wrapper, "Collapse group");
+    expect(
+      flow(wrapper).edges.map((edge) => [edge.source, edge.sourceHandle, edge.target]),
+    ).toEqual([
+      [field.attributes("data-id"), "field", sum.attributes("data-id")],
+      [group.attributes("data-id"), "group-output", sum.attributes("data-id")],
+    ]);
+    expect(shortfall()).toBe("1/2");
+
+    await clickGroupControl(wrapper, "Collapse group");
+    expect(flow(wrapper).edges.map((edge) => edge.source)).toEqual([field.attributes("data-id")]);
+    expect(shortfall()).toBe("1/2");
   });
 
   describe("saving", () => {

@@ -17,7 +17,13 @@ import {
   requiredConnections,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
-import { DATASET_NODE, groupNodes, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
+import {
+  DATASET_NODE,
+  groupNodes,
+  isStandIn,
+  nodePreviewRequest,
+  toGraph,
+} from "@/lib/dataset-nodes/graph";
 import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
@@ -41,7 +47,11 @@ const { edges, getSelectedNodes, nodes, removeNodes, setNodes, updateNodeData } 
 const incoming = useNodeConnections({ handleType: "target" });
 
 function connectionCount(port: PortDef) {
-  return incoming.value.filter((connection) => connection.targetHandle === port.id).length;
+  return incoming.value.filter(
+    (connection) =>
+      connection.targetHandle === port.id &&
+      !isStandIn(edges.value.find((edge) => edge.id === connection.edgeId)),
+  ).length;
 }
 
 const hasPreview = computed(() => {

@@ -10,6 +10,8 @@ export type DatasetGraph = DatasetGraphOutput;
 
 export const DATASET_NODE = "dataset-node";
 export const DATASET_GROUP = "dataset-group";
+export const GROUP_INPUT = "group-input";
+export const GROUP_OUTPUT = "group-output";
 
 const GROUP_PADDING = 24;
 const GROUP_HEADER = 40;
@@ -37,13 +39,11 @@ function groupNode(
     height,
     data: { collapsed },
     style: groupStyle(collapsed),
+    deletable: false,
   };
 }
 
-function groupExtent({
-  width,
-  height,
-}: GroupNode | DatasetGraph["groups"][number]): CoordinateExtent {
+function groupExtent({ width, height }: { width: number; height: number }): CoordinateExtent {
   return [
     [0, 0],
     [width, height],
@@ -65,11 +65,13 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       position: { x, y },
       preview_hidden: data.previewHidden ?? false,
     })),
-    edges: edges.flatMap(({ id, source, sourceHandle, target, targetHandle }) =>
-      sourceHandle && targetHandle
-        ? [{ id, source, source_port: sourceHandle, target, target_port: targetHandle }]
-        : [],
-    ),
+    edges: edges
+      .filter((edge) => !isStandIn(edge))
+      .flatMap(({ id, source, sourceHandle, target, targetHandle }) =>
+        sourceHandle && targetHandle
+          ? [{ id, source, source_port: sourceHandle, target, target_port: targetHandle }]
+          : [],
+      ),
     groups: nodes
       .filter((node): node is GroupNode => node.type === DATASET_GROUP)
       .map(({ id, position: { x, y }, width, height, data }) => ({
@@ -84,6 +86,44 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
   };
 }
 
+export function isStandIn(edge: Edge | undefined) {
+  return !!edge?.data?.standsFor;
+}
+
+export function withCollapsedEdges(nodes: Node[], edges: Edge[]): Edge[] {
+  const real = edges.filter((edge) => !isStandIn(edge));
+  const collapsed = new Set(
+    nodes
+      .filter((node) => node.type === DATASET_GROUP && node.data.collapsed)
+      .map((node) => node.id),
+  );
+  const shownAs = new Map(
+    nodes.flatMap((node) =>
+      node.parentNode && collapsed.has(node.parentNode) ? [[node.id, node.parentNode]] : [],
+    ),
+  );
+  const standIns = new Map<string, Edge>();
+  for (const edge of real) {
+    const source = shownAs.get(edge.source);
+    const target = shownAs.get(edge.target);
+    if (source === target) continue;
+    const standIn = {
+      id: `${edge.id}:collapsed`,
+      source: source ?? edge.source,
+      sourceHandle: source ? GROUP_OUTPUT : edge.sourceHandle,
+      target: target ?? edge.target,
+      targetHandle: target ? GROUP_INPUT : edge.targetHandle,
+      selectable: false,
+      deletable: false,
+      focusable: false,
+      data: { standsFor: edge.id },
+    };
+    const key = [standIn.source, standIn.sourceHandle, standIn.target, standIn.targetHandle].join();
+    if (!standIns.has(key)) standIns.set(key, standIn);
+  }
+  return [...real, ...standIns.values()];
+}
+
 export function fromGraph(
   graph: DatasetGraph,
   catalog: NodeCatalog,
@@ -93,41 +133,40 @@ export function fromGraph(
     graph.groups.flatMap((group) => group.nodes.map((node) => [node, group])),
   );
 
-  return {
-    nodes: [
-      ...graph.groups.map(({ id, position: { x, y }, width, height, collapsed }) =>
-        groupNode(id, { x, y }, width, height, collapsed),
-      ),
-      ...graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
-        const def = findKind(catalog, kind);
-        const node = flowNode(
-          id,
-          { x, y },
-          { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
-        );
-        const group = groupOf.get(id);
-        return group
-          ? { ...node, parentNode: group.id, extent: groupExtent(group), hidden: group.collapsed }
-          : node;
-      }),
-    ],
-    edges: graph.edges
-      .filter((edge) =>
-        canConnect(catalog, {
-          sourceKind: kindOf.get(edge.source) ?? "",
-          sourcePort: edge.source_port,
-          targetKind: kindOf.get(edge.target) ?? "",
-          targetPort: edge.target_port,
-        }),
-      )
-      .map(({ id, source, source_port, target, target_port }) => ({
+  const nodes = [
+    ...graph.groups.map(({ id, position: { x, y }, width, height, collapsed }) =>
+      groupNode(id, { x, y }, width, height, collapsed),
+    ),
+    ...graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
+      const def = findKind(catalog, kind);
+      const node = flowNode(
         id,
-        source,
-        sourceHandle: source_port,
-        target,
-        targetHandle: target_port,
-      })),
-  };
+        { x, y },
+        { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
+      );
+      const group = groupOf.get(id);
+      return group
+        ? { ...node, parentNode: group.id, extent: groupExtent(group), hidden: group.collapsed }
+        : node;
+    }),
+  ];
+  const edges = graph.edges
+    .filter((edge) =>
+      canConnect(catalog, {
+        sourceKind: kindOf.get(edge.source) ?? "",
+        sourcePort: edge.source_port,
+        targetKind: kindOf.get(edge.target) ?? "",
+        targetPort: edge.target_port,
+      }),
+    )
+    .map(({ id, source, source_port, target, target_port }) => ({
+      id,
+      source,
+      sourceHandle: source_port,
+      target,
+      targetHandle: target_port,
+    }));
+  return { nodes, edges: withCollapsedEdges(nodes, edges) };
 }
 
 export function groupNodes(nodes: GraphNode[], memberIds: string[], groupId: string): Node[] {
@@ -166,17 +205,19 @@ export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {
   const group = nodes.find((node) => node.id === groupId)!;
   return nodes
     .filter((node) => node.id !== groupId)
-    .map(({ parentNode, extent, ...node }) =>
-      parentNode === groupId
+    .map((node) =>
+      node.parentNode === groupId
         ? {
             ...node,
+            parentNode: undefined,
+            extent: undefined,
             hidden: false,
             position: {
               x: group.position.x + node.position.x,
               y: group.position.y + node.position.y,
             },
           }
-        : { ...node, parentNode, extent },
+        : node,
     );
 }
 
