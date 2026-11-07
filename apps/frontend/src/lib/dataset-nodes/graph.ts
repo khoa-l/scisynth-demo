@@ -1,4 +1,11 @@
-import type { CoordinateExtent, Edge, GraphNode, Node, XYPosition } from "@vue-flow/core";
+import type {
+  Connection,
+  CoordinateExtent,
+  Edge,
+  GraphNode,
+  Node,
+  XYPosition,
+} from "@vue-flow/core";
 
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
@@ -10,8 +17,6 @@ export type DatasetGraph = DatasetGraphOutput;
 
 export const DATASET_NODE = "dataset-node";
 export const DATASET_GROUP = "dataset-group";
-export const GROUP_INPUT = "group-input";
-export const GROUP_OUTPUT = "group-output";
 
 const GROUP_PADDING = 24;
 const GROUP_HEADER = 40;
@@ -84,44 +89,6 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       }))
       .filter((group) => group.nodes.length),
   };
-}
-
-export function isStandIn(edge: Edge | undefined) {
-  return !!edge?.data?.standsFor;
-}
-
-export function withCollapsedEdges(nodes: Node[], edges: Edge[]): Edge[] {
-  const real = edges.filter((edge) => !isStandIn(edge));
-  const collapsed = new Set(
-    nodes
-      .filter((node) => node.type === DATASET_GROUP && node.data.collapsed)
-      .map((node) => node.id),
-  );
-  const shownAs = new Map(
-    nodes.flatMap((node) =>
-      node.parentNode && collapsed.has(node.parentNode) ? [[node.id, node.parentNode]] : [],
-    ),
-  );
-  const standIns = new Map<string, Edge>();
-  for (const edge of real) {
-    const source = shownAs.get(edge.source);
-    const target = shownAs.get(edge.target);
-    if (source === target) continue;
-    const standIn = {
-      id: `${edge.id}:collapsed`,
-      source: source ?? edge.source,
-      sourceHandle: source ? GROUP_OUTPUT : edge.sourceHandle,
-      target: target ?? edge.target,
-      targetHandle: target ? GROUP_INPUT : edge.targetHandle,
-      selectable: false,
-      deletable: false,
-      focusable: false,
-      data: { standsFor: edge.id },
-    };
-    const key = [standIn.source, standIn.sourceHandle, standIn.target, standIn.targetHandle].join();
-    if (!standIns.has(key)) standIns.set(key, standIn);
-  }
-  return [...real, ...standIns.values()];
 }
 
 export function fromGraph(
@@ -228,6 +195,99 @@ export function collapseGroup(nodes: GraphNode[], groupId: string, collapsed: bo
     }
     return node.parentNode === groupId ? { ...node, hidden: collapsed } : node;
   });
+}
+
+export function isStandIn(edge: Edge) {
+  return !!edge.data?.standsFor;
+}
+
+export function withCollapsedEdges(nodes: Node[], edges: Edge[]): Edge[] {
+  const real = edges.filter((edge) => !isStandIn(edge));
+  const collapsed = new Set(
+    nodes
+      .filter((node) => node.type === DATASET_GROUP && node.data.collapsed)
+      .map((node) => node.id),
+  );
+  const shownAs = new Map(
+    nodes.flatMap((node) =>
+      node.parentNode && collapsed.has(node.parentNode) ? [[node.id, node.parentNode]] : [],
+    ),
+  );
+  const standIns = real
+    .filter((edge) => shownAs.get(edge.source) !== shownAs.get(edge.target))
+    .map((edge) => {
+      const source = shownAs.get(edge.source);
+      const target = shownAs.get(edge.target);
+      return {
+        id: standInId(edge.id),
+        source: source ?? edge.source,
+        sourceHandle: source ? memberPort(edge.source, edge.sourceHandle) : edge.sourceHandle,
+        target: target ?? edge.target,
+        targetHandle: target ? memberPort(edge.target, edge.targetHandle) : edge.targetHandle,
+        data: { standsFor: edge.id },
+      };
+    });
+  return [...real, ...standIns];
+}
+
+export function standInId(edgeId: string) {
+  return `${edgeId}:collapsed`;
+}
+
+function memberPort(nodeId: string, portId: string | null | undefined) {
+  return `${nodeId}.${portId}`;
+}
+
+export function groupPorts(nodes: Node[], edges: Edge[], catalog: NodeCatalog, groupId: string) {
+  const members = nodes.filter((node): node is FlowNode => node.parentNode === groupId);
+  const memberIds = new Set(members.map((node) => node.id));
+  const real = edges.filter((edge) => !isStandIn(edge));
+  const onlyInside = (links: Edge[]) =>
+    links.length > 0 &&
+    links.every((edge) => memberIds.has(edge.source) && memberIds.has(edge.target));
+
+  return members.flatMap((node) => {
+    const kind = findKind(catalog, node.data.kind);
+    if (!kind) return [];
+    const inputs = kind.inputs.filter(
+      (port) =>
+        !onlyInside(
+          real.filter((edge) => edge.target === node.id && edge.targetHandle === port.id),
+        ),
+    );
+    const outputs = kind.outputs.filter(
+      (port) =>
+        !onlyInside(
+          real.filter((edge) => edge.source === node.id && edge.sourceHandle === port.id),
+        ),
+    );
+    if (!inputs.length && !outputs.length) return [];
+    return [
+      {
+        id: node.id,
+        label: kind.label,
+        inputs: inputs.map((port) => ({ ...port, id: memberPort(node.id, port.id) })),
+        outputs: outputs.map((port) => ({ ...port, id: memberPort(node.id, port.id) })),
+      },
+    ];
+  });
+}
+
+export function memberConnection(connection: Connection, nodes: Node[]): Connection {
+  const member = (nodeId: string, handle: string | null | undefined) => {
+    const node = nodes.find((node) => node.id === nodeId);
+    if (node?.type !== DATASET_GROUP || !handle) return { nodeId, handle };
+    const split = handle.lastIndexOf(".");
+    return { nodeId: handle.slice(0, split), handle: handle.slice(split + 1) };
+  };
+  const source = member(connection.source, connection.sourceHandle);
+  const target = member(connection.target, connection.targetHandle);
+  return {
+    source: source.nodeId,
+    sourceHandle: source.handle,
+    target: target.nodeId,
+    targetHandle: target.handle,
+  };
 }
 
 function loadParams(kind: NodeKindDef, saved: ParamValues): ParamValues {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Download, Eye, EyeOff, Group, ImageIcon, ImageOff, Trash2 } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
-import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
+import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
 import { computed, inject, ref } from "vue";
 
@@ -44,13 +44,9 @@ const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
 const { edges, getSelectedNodes, nodes, removeNodes, setNodes, updateNodeData } = useVueFlow();
-const incoming = useNodeConnections({ handleType: "target" });
-
 function connectionCount(port: PortDef) {
-  return incoming.value.filter(
-    (connection) =>
-      connection.targetHandle === port.id &&
-      !isStandIn(edges.value.find((edge) => edge.id === connection.edgeId)),
+  return edges.value.filter(
+    (edge) => edge.target === props.id && edge.targetHandle === port.id && !isStandIn(edge),
   ).length;
 }
 

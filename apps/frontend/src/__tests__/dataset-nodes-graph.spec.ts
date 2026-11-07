@@ -8,6 +8,8 @@ import {
   groupNodes,
   nodePreviewRequest,
   toGraph,
+  groupPorts,
+  memberConnection,
   ungroupNodes,
   withCollapsedEdges,
   type DatasetGraph,
@@ -272,7 +274,7 @@ describe("Dataset graph", () => {
       expect(edges.map((edge) => [edge.source, edge.sourceHandle, edge.target])).toEqual([
         ["field", "field", "sampler"],
         ["sampler", "observation", "quantize"],
-        ["g", "group-output", "quantize"],
+        ["g", "sampler.observation", "quantize"],
       ]);
       expect(toGraph(nodes, edges)).toEqual(collapsed);
     });
@@ -458,7 +460,7 @@ describe("Dataset graph", () => {
           ]);
       }
 
-      it("draws connections in and out of the group to the group itself", () => {
+      it("draws connections in and out of the group to the group's port for them", () => {
         const edges = [
           link("in", "outside", "a"),
           link("out", "b", "outside"),
@@ -468,17 +470,9 @@ describe("Dataset graph", () => {
         ];
 
         expect(shown(withCollapsedEdges(nodes, edges))).toEqual([
-          ["in", "outside.out", "g.group-input"],
-          ["out", "g.group-output", "outside.in"],
-          ["between", "g.group-output", "h.group-input"],
-        ]);
-      });
-
-      it("draws one line for several connections that look the same once collapsed", () => {
-        const edges = [link("first", "outside", "a"), link("second", "outside", "b")];
-
-        expect(shown(withCollapsedEdges(nodes, edges))).toEqual([
-          ["first", "outside.out", "g.group-input"],
+          ["in", "outside.out", "g.a.in"],
+          ["out", "g.b.out", "outside.in"],
+          ["between", "g.a.out", "h.c.in"],
         ]);
       });
 
@@ -491,6 +485,95 @@ describe("Dataset graph", () => {
 
         expect(withCollapsedEdges(nodes, once)).toEqual(once);
         expect(withCollapsedEdges(expanded, once)).toEqual(edges);
+      });
+    });
+
+    describe("ports of a collapsed group", () => {
+      function ports(graph: DatasetGraph) {
+        const { nodes, edges } = load(graph);
+        return groupPorts(nodes, edges, localCatalog, "g");
+      }
+
+      it("has the inputs and outputs that aren't joined up inside the group", () => {
+        expect(ports(GROUPED)).toMatchObject([
+          {
+            id: "sampler",
+            label: "Grid sampler",
+            inputs: [],
+            outputs: [{ id: "sampler.observation", label: "Observation" }],
+          },
+        ]);
+      });
+
+      it("keeps an input that is also fed from outside the group", () => {
+        const graph: DatasetGraph = {
+          version: 1,
+          nodes: [
+            savedNode("a", "GaussianField", {}),
+            savedNode("b", "GaussianField", {}),
+            savedNode("sum", "Sum", {}),
+          ],
+          edges: [
+            savedEdge("e1", "a", "field", "sum", "terms"),
+            savedEdge("e2", "b", "field", "sum", "terms"),
+          ],
+          groups: [
+            {
+              id: "g",
+              position: { x: 0, y: 0 },
+              width: 100,
+              height: 100,
+              nodes: ["a", "sum"],
+              collapsed: true,
+            },
+          ],
+        };
+
+        expect(ports(graph)).toMatchObject([
+          {
+            id: "sum",
+            label: "Sum",
+            inputs: [{ id: "sum.terms", label: "Terms", multiple: true }],
+            outputs: [{ id: "sum.field", label: "Field" }],
+          },
+        ]);
+      });
+    });
+
+    it("turns a connection to a collapsed group's port into one to the node behind it", () => {
+      const { nodes } = load(GROUPED);
+
+      expect(
+        memberConnection(
+          {
+            source: "g",
+            sourceHandle: "sampler.observation",
+            target: "quantize",
+            targetHandle: "observation",
+          },
+          nodes,
+        ),
+      ).toEqual({
+        source: "sampler",
+        sourceHandle: "observation",
+        target: "quantize",
+        targetHandle: "observation",
+      });
+      expect(
+        memberConnection(
+          {
+            source: "quantize",
+            sourceHandle: "observation",
+            target: "g",
+            targetHandle: "field.in",
+          },
+          nodes,
+        ),
+      ).toEqual({
+        source: "quantize",
+        sourceHandle: "observation",
+        target: "field",
+        targetHandle: "in",
       });
     });
   });

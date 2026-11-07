@@ -37,7 +37,10 @@ import {
   DATASET_NODE,
   flowNode,
   fromGraph,
+  memberConnection,
+  standInId,
   toGraph,
+  withCollapsedEdges,
 } from "@/lib/dataset-nodes/graph";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
@@ -62,10 +65,13 @@ const {
   addEdges,
   addNodes,
   edges,
+  findNode,
   fitView,
   nodes,
   onConnect,
+  onEdgesChange,
   onNodesInitialized,
+  removeEdges,
   screenToFlowCoordinate,
   setEdges,
   setNodes,
@@ -131,22 +137,33 @@ watch(serialized, () => saveSoon());
 onBeforeUnmount(() => saveSoon.flush());
 
 onConnect((connection) => {
-  if (!connectionExists(connection, edges.value)) {
-    addEdges({ ...connection, id: crypto.randomUUID() });
+  const real = memberConnection(connection, nodes.value);
+  if (!connectionExists(real, edges.value)) {
+    addEdges({ ...real, id: crypto.randomUUID() });
+    setEdges(withCollapsedEdges(nodes.value, edges.value));
   }
 });
 
-const isValidConnection: ValidConnectionFunc = (connection, { sourceNode, targetNode }) =>
-  sourceNode.type === DATASET_GROUP ||
-  targetNode.type === DATASET_GROUP ||
-  (!!catalog.value &&
-    connection.source !== connection.target &&
+onEdgesChange((changes) => {
+  const removed = new Set(changes.flatMap((change) => (change.type === "remove" ? change.id : [])));
+  const real = edges.value.filter((edge) => removed.has(standInId(edge.id)));
+  if (real.length) removeEdges(real);
+});
+
+const isValidConnection: ValidConnectionFunc = (connection) => {
+  const real = memberConnection(connection, nodes.value);
+  const kindOf = (id: string) => (findNode(id)?.data as DatasetNodeData | undefined)?.kind ?? "";
+  return (
+    !!catalog.value &&
+    real.source !== real.target &&
     canConnect(catalog.value, {
-      sourceKind: (sourceNode.data as DatasetNodeData).kind,
-      sourcePort: connection.sourceHandle,
-      targetKind: (targetNode.data as DatasetNodeData).kind,
-      targetPort: connection.targetHandle,
-    }));
+      sourceKind: kindOf(real.source),
+      sourcePort: real.sourceHandle,
+      targetKind: kindOf(real.target),
+      targetPort: real.targetHandle,
+    })
+  );
+};
 
 function onDragOver(event: DragEvent) {
   if (!event.dataTransfer?.types.includes(NODE_KIND_MIME)) return;

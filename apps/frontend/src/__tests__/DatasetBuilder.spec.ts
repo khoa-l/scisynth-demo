@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 
-import { VueFlow, type GraphEdge, type GraphNode } from "@vue-flow/core";
+import { VueFlow, type Connection, type GraphEdge, type GraphNode } from "@vue-flow/core";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import type { DatasetPublic } from "../client";
@@ -325,13 +325,95 @@ describe("Dataset builder", () => {
       flow(wrapper).edges.map((edge) => [edge.source, edge.sourceHandle, edge.target]),
     ).toEqual([
       [field.attributes("data-id"), "field", sum.attributes("data-id")],
-      [group.attributes("data-id"), "group-output", sum.attributes("data-id")],
+      [
+        group.attributes("data-id"),
+        `${field.attributes("data-id")}.field`,
+        sum.attributes("data-id"),
+      ],
     ]);
     expect(shortfall()).toBe("1/2");
+    expect(
+      group.findAll(".vue-flow__handle").map((handle) => handle.attributes("data-handleid")),
+    ).toEqual([`${field.attributes("data-id")}.field`, `${other.attributes("data-id")}.field`]);
 
     await clickGroupControl(wrapper, "Collapse group");
     expect(flow(wrapper).edges.map((edge) => edge.source)).toEqual([field.attributes("data-id")]);
     expect(shortfall()).toBe("1/2");
+  });
+
+  it("connects to and from a collapsed group's ports, through to the nodes inside", async () => {
+    const wrapper = await mountView();
+    const sum = await dropKind(wrapper, "Sum");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    const field = await dropKind(wrapper, "GaussianField");
+    const outsideSampler = await dropKind(wrapper, "GridSampler");
+    await groupTogether(sum, sampler);
+    await clickGroupControl(wrapper, "Collapse group");
+    const group = wrapper.find(".vue-flow__node-dataset-group");
+    const id = (node: DOMWrapper<Element>) => node.attributes("data-id")!;
+    const isValid = wrapper.findComponent(VueFlow).props("isValidConnection") as (
+      connection: Connection,
+    ) => boolean;
+
+    expect(
+      group
+        .findAll('[data-slot="group-member"]')
+        .map((member) => member.findAll(":scope > div").map((row) => row.text())),
+    ).toEqual([
+      ["Sum", "Terms", "Field"],
+      ["Grid sampler", "Latent", "Observation"],
+    ]);
+    expect(
+      isValid({
+        source: id(field),
+        sourceHandle: "field",
+        target: id(group),
+        targetHandle: `${id(sampler)}.latent`,
+      }),
+    ).toBe(true);
+    expect(
+      isValid({
+        source: id(group),
+        sourceHandle: `${id(sampler)}.observation`,
+        target: id(outsideSampler),
+        targetHandle: "latent",
+      }),
+    ).toBe(false);
+
+    await connect(wrapper, field, group, `${id(sum)}.terms`);
+    await connect(wrapper, group, outsideSampler, "latent", `${id(sum)}.field`);
+
+    expect(
+      flow(wrapper).edges.map((edge) => [
+        edge.source,
+        edge.sourceHandle,
+        edge.target,
+        edge.targetHandle,
+      ]),
+    ).toEqual([
+      [id(field), "field", id(sum), "terms"],
+      [id(sum), "field", id(outsideSampler), "latent"],
+      [id(field), "field", id(group), `${id(sum)}.terms`],
+      [id(group), `${id(sum)}.field`, id(outsideSampler), "latent"],
+    ]);
+  });
+
+  it("deletes the real connection when its line to a collapsed group is deleted", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const other = await dropKind(wrapper, "GaussianField");
+    const sum = await dropKind(wrapper, "Sum");
+    await connect(wrapper, field, sum, "terms");
+    await groupTogether(field, other);
+    await clickGroupControl(wrapper, "Collapse group");
+    const standIn = flow(wrapper).edges.find((edge) => edge.data?.standsFor)!;
+    expect(standIn.selectable).not.toBe(false);
+
+    standIn.selected = true;
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace" }));
+    await flushPromises();
+
+    expect(flow(wrapper).edges).toEqual([]);
   });
 
   describe("saving", () => {

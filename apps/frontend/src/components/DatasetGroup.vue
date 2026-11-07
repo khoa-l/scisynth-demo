@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { Maximize2, Minimize2, Ungroup } from "@lucide/vue";
+import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type Node, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
 import { computed } from "vue";
 
 import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
 import {
-  GROUP_INPUT,
-  GROUP_OUTPUT,
   collapseGroup,
+  groupPorts,
   ungroupNodes,
   withCollapsedEdges,
 } from "@/lib/dataset-nodes/graph";
 
 const props = defineProps<NodeProps<{ collapsed: boolean }>>();
 
+const { data: catalog } = useQuery(nodeCatalogQuery);
 const { edges, nodes, setEdges, setNodes } = useVueFlow();
 
 const memberCount = computed(
   () => nodes.value.filter((node) => node.parentNode === props.id).length,
+);
+const members = computed(() =>
+  catalog.value ? groupPorts(nodes.value, edges.value, catalog.value, props.id) : [],
 );
 
 function setPressed(value: unknown) {
@@ -52,20 +57,36 @@ function update(next: Node[]) {
       <div class="px-3 pb-2 text-sm text-muted-foreground">
         {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
       </div>
-      <Handle
-        :id="GROUP_INPUT"
-        type="target"
-        :position="Position.Left"
-        :connectable="false"
-        class="size-3.5!"
-      />
-      <Handle
-        :id="GROUP_OUTPUT"
-        type="source"
-        :position="Position.Right"
-        :connectable="false"
-        class="size-3.5!"
-      />
+      <div
+        v-for="member in members"
+        :key="member.id"
+        data-slot="group-member"
+        class="flex flex-col gap-1 border-t py-2 text-sm"
+      >
+        <div class="px-3 text-xs font-medium">{{ member.label }}</div>
+        <div
+          v-for="port in member.inputs"
+          :key="port.id"
+          class="relative px-3 text-muted-foreground"
+        >
+          <Handle
+            :id="port.id"
+            type="target"
+            :position="Position.Left"
+            class="size-3.5!"
+            :connectable="port.multiple ? true : 'single'"
+          />
+          {{ port.label }}
+        </div>
+        <div
+          v-for="port in member.outputs"
+          :key="port.id"
+          class="relative px-3 text-right text-muted-foreground"
+        >
+          <Handle :id="port.id" type="source" :position="Position.Right" class="size-3.5!" />
+          {{ port.label }}
+        </div>
+      </div>
     </template>
     <ToggleGroup
       type="multiple"
