@@ -221,13 +221,27 @@ describe("Dataset graph", () => {
       ],
     };
 
-    it("loads a group before its nodes, which are kept inside it", () => {
+    it("loads a group before its nodes, which are kept inside its bounds", () => {
       const { nodes } = load(GROUPED);
 
       expect(nodes.map((node) => [node.id, node.parentNode, node.extent])).toEqual([
         ["g", undefined, undefined],
-        ["field", "g", "parent"],
-        ["sampler", "g", "parent"],
+        [
+          "field",
+          "g",
+          [
+            [0, 0],
+            [400, 300],
+          ],
+        ],
+        [
+          "sampler",
+          "g",
+          [
+            [0, 0],
+            [400, 300],
+          ],
+        ],
         ["quantize", undefined, undefined],
       ]);
       expect(nodes[0]).toMatchObject({
@@ -310,8 +324,24 @@ describe("Dataset graph", () => {
         height: 364,
       });
       expect(rest.map((node) => [node.id, node.parentNode, node.extent, node.position])).toEqual([
-        ["a", "g", "parent", { x: 24, y: 40 }],
-        ["b", "g", "parent", { x: 324, y: 240 }],
+        [
+          "a",
+          "g",
+          [
+            [0, 0],
+            [604, 364],
+          ],
+          { x: 24, y: 40 },
+        ],
+        [
+          "b",
+          "g",
+          [
+            [0, 0],
+            [604, 364],
+          ],
+          { x: 324, y: 240 },
+        ],
         ["c", undefined, undefined, { x: 900, y: 900 }],
       ]);
     });
@@ -347,10 +377,19 @@ describe("Dataset graph", () => {
         {
           ...placed("a", 130, 150, "g"),
           position: { x: 30, y: 50 },
-          extent: "parent",
+          extent: [
+            [0, 0],
+            [300, 200],
+          ],
           hidden: true,
         },
-        { ...placed("b", 10, 10, "h"), extent: "parent" },
+        {
+          ...placed("b", 10, 10, "h"),
+          extent: [
+            [0, 0],
+            [300, 200],
+          ],
+        },
       ] as GraphNode[];
 
       const ungrouped = ungroupNodes(nodes, "g");
@@ -361,7 +400,15 @@ describe("Dataset graph", () => {
       ).toEqual([
         ["h", undefined, undefined, { x: 0, y: 0 }],
         ["a", undefined, undefined, { x: 130, y: 150 }],
-        ["b", "h", "parent", { x: 10, y: 10 }],
+        [
+          "b",
+          "h",
+          [
+            [0, 0],
+            [300, 200],
+          ],
+          { x: 10, y: 10 },
+        ],
       ]);
     });
   });

@@ -181,6 +181,64 @@ describe("Dataset builder", () => {
     ]);
   });
 
+  it("keeps grouped nodes where they were, through collapsing and expanding", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private callback: ResizeObserverCallback) {}
+        observe(target: Element) {
+          this.callback([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      "DOMMatrixReadOnly",
+      class {
+        m22 = 1;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(256);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(100);
+    const wrapper = await mountView();
+    const canvas = wrapper.find(".vue-flow");
+    for (const [kind, clientX, clientY] of [
+      ["GaussianField", 200, 100],
+      ["GridSampler", 600, 400],
+    ] as const) {
+      const dataTransfer = fakeDataTransfer();
+      dataTransfer.setData("application/x-scisynth-node", kind);
+      await canvas.trigger("drop", { dataTransfer, clientX, clientY });
+      await flushPromises();
+    }
+    const [first, second] = wrapper.findAll(".vue-flow__node");
+    const vm = wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] };
+    const placed = () =>
+      vm.nodes
+        .filter((node) => node.type === "dataset-node")
+        .map(({ computedPosition: { x, y } }) => ({ x, y }));
+    const before = placed();
+    expect(before).toEqual([
+      { x: 72, y: 50 },
+      { x: 472, y: 350 },
+    ]);
+
+    await first!.trigger("click");
+    await shiftClick(second!);
+    await groupButton(second!).trigger("click");
+    await flushPromises();
+    expect(placed()).toEqual(before);
+
+    const collapse = () =>
+      wrapper.find('.vue-flow__node-dataset-group [aria-label="Collapse group"]');
+    await collapse().trigger("click");
+    await flushPromises();
+    await collapse().trigger("click");
+    await flushPromises();
+    expect(placed()).toEqual(before);
+  });
+
   it("puts the selected nodes inside a new group", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");

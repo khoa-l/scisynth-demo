@@ -1,4 +1,4 @@
-import type { Edge, GraphNode, Node, XYPosition } from "@vue-flow/core";
+import type { CoordinateExtent, Edge, GraphNode, Node, XYPosition } from "@vue-flow/core";
 
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
@@ -38,6 +38,16 @@ function groupNode(
     data: { collapsed },
     style: groupStyle(collapsed),
   };
+}
+
+function groupExtent({
+  width,
+  height,
+}: GroupNode | DatasetGraph["groups"][number]): CoordinateExtent {
+  return [
+    [0, 0],
+    [width, height],
+  ];
 }
 
 function groupStyle(collapsed: boolean) {
@@ -97,7 +107,7 @@ export function fromGraph(
         );
         const group = groupOf.get(id);
         return group
-          ? { ...node, parentNode: group.id, extent: "parent" as const, hidden: group.collapsed }
+          ? { ...node, parentNode: group.id, extent: groupExtent(group), hidden: group.collapsed }
           : node;
       }),
     ],
@@ -139,7 +149,7 @@ export function groupNodes(nodes: GraphNode[], memberIds: string[], groupId: str
       ? {
           ...node,
           parentNode: groupId,
-          extent: "parent" as const,
+          extent: groupExtent(group),
           position: { x: node.computedPosition.x - left, y: node.computedPosition.y - top },
         }
       : node,
