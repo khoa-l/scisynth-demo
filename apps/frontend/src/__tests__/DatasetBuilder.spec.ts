@@ -247,6 +247,34 @@ describe("Dataset builder", () => {
     ]);
   });
 
+  it("doesn't offer to group a node that is already in a group", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    const third = await dropKind(wrapper, "Gain");
+    await groupTogether(first, second);
+
+    await first.trigger("click");
+    await shiftClick(third);
+
+    expect([first, third].map((node) => groupButton(node).exists())).toEqual([false, false]);
+  });
+
+  it("deletes a group with the nodes in it and their connections", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const other = await dropKind(wrapper, "GaussianField");
+    const sum = await dropKind(wrapper, "Sum");
+    await connect(wrapper, field, sum, "terms");
+    await groupTogether(field, other);
+    await clickGroupControl(wrapper, "Collapse group");
+
+    await clickGroupControl(wrapper, "Delete group");
+
+    expect(flow(wrapper).nodes.map((node) => node.data.kind)).toEqual(["Sum"]);
+    expect(flow(wrapper).edges).toEqual([]);
+  });
+
   it("puts the selected nodes inside a new group", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");

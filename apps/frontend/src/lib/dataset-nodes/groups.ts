@@ -15,6 +15,8 @@ export const DATASET_GROUP = "dataset-group";
 
 const GROUP_PADDING = 24;
 const GROUP_HEADER = 40;
+const NODE_TOOLBAR = 40;
+const NODE_GAP = 48;
 
 type GroupData = { collapsed: boolean };
 export type GroupNode = Node<GroupData> & { width: number; height: number; data: GroupData };
@@ -63,28 +65,35 @@ export function groupNodes(nodes: GraphNode[], memberIds: string[], groupId: str
   const bottom = Math.max(
     ...members.map((node) => node.computedPosition.y + node.dimensions.height),
   );
+  const columns = Math.ceil(Math.sqrt(members.length));
+  const rows = Math.ceil(members.length / columns);
+  const nodeWidth = Math.max(...members.map((node) => node.dimensions.width));
+  const nodeHeight = Math.max(...members.map((node) => node.dimensions.height)) + NODE_TOOLBAR;
   const group = groupNode(
     groupId,
     { x: left, y: top },
-    right - left + GROUP_PADDING,
-    bottom - top + GROUP_PADDING,
+    Math.max(
+      right - left + GROUP_PADDING,
+      2 * GROUP_PADDING + columns * nodeWidth + (columns - 1) * NODE_GAP,
+    ),
+    Math.max(
+      bottom - top + NODE_TOOLBAR + GROUP_PADDING,
+      GROUP_HEADER + GROUP_PADDING + rows * nodeHeight + (rows - 1) * NODE_GAP,
+    ),
   );
-  const regrouped = nodes.map((node) =>
-    memberIds.includes(node.id)
-      ? {
-          ...node,
-          parentNode: groupId,
-          extent: groupExtent(group),
-          position: { x: node.computedPosition.x - left, y: node.computedPosition.y - top },
-        }
-      : node,
-  );
-  const emptied = new Set(
-    members
-      .map((node) => node.parentNode)
-      .filter((id) => !regrouped.some((node) => node.parentNode === id)),
-  );
-  return [group, ...regrouped.filter((node) => !emptied.has(node.id))];
+  return [
+    group,
+    ...nodes.map((node) =>
+      memberIds.includes(node.id)
+        ? {
+            ...node,
+            parentNode: groupId,
+            extent: groupExtent(group),
+            position: { x: node.computedPosition.x - left, y: node.computedPosition.y - top },
+          }
+        : node,
+    ),
+  ];
 }
 
 export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {

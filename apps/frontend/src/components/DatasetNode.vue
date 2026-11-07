@@ -106,6 +106,11 @@ function remove() {
 const selectedDatasetNodes = computed(() =>
   getSelectedNodes.value.filter((node) => node.type === DATASET_NODE),
 );
+const canGroup = computed(
+  () =>
+    selectedDatasetNodes.value.length > 1 &&
+    selectedDatasetNodes.value.every((node) => !node.parentNode),
+);
 
 function groupSelected() {
   setNodes(
@@ -176,7 +181,7 @@ function setParam(name: string, value: ParamValue) {
         </button>
       </template>
       <button
-        v-if="selected && selectedDatasetNodes.length > 1"
+        v-if="selected && canGroup"
         type="button"
         aria-label="Group nodes"
         :class="plainButton"

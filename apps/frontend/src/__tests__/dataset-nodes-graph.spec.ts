@@ -321,7 +321,7 @@ describe("Dataset graph", () => {
       } as GraphNode;
     }
 
-    it("puts the chosen nodes in a new group that fits around them", () => {
+    it("puts the chosen nodes in a new group that fits around them, with room for their toolbars", () => {
       const nodes = [placed("a", 0, 0), placed("b", 300, 200), placed("c", 900, 900)];
 
       const [group, ...rest] = groupNodes(nodes, ["a", "b"], "g");
@@ -330,8 +330,8 @@ describe("Dataset graph", () => {
         id: "g",
         type: "dataset-group",
         position: { x: -24, y: -40 },
-        width: 604,
-        height: 364,
+        width: 608,
+        height: 404,
       });
       expect(rest.map((node) => [node.id, node.parentNode, node.extent, node.position])).toEqual([
         [
@@ -339,7 +339,7 @@ describe("Dataset graph", () => {
           "g",
           [
             [0, 0],
-            [604, 364],
+            [608, 404],
           ],
           { x: 24, y: 40 },
         ],
@@ -348,7 +348,7 @@ describe("Dataset graph", () => {
           "g",
           [
             [0, 0],
-            [604, 364],
+            [608, 404],
           ],
           { x: 324, y: 240 },
         ],
@@ -356,26 +356,12 @@ describe("Dataset graph", () => {
       ]);
     });
 
-    it("moves nodes out of their old group, dropping it once it's empty", () => {
-      const old = { ...placed("old", -24, -40), type: "dataset-group" } as GraphNode;
-      const kept = { ...placed("kept", -24, -40), type: "dataset-group" } as GraphNode;
-      const nodes = [
-        old,
-        kept,
-        placed("a", 0, 0, "old"),
-        placed("b", 300, 200, "kept"),
-        placed("c", 500, 0, "kept"),
-      ];
+    it("leaves room to spread bunched-up nodes out in a grid", () => {
+      const nodes = [placed("a", 0, 0), placed("b", 0, 0), placed("c", 0, 0)];
 
-      const grouped = groupNodes(nodes, ["a", "b"], "g");
+      const [group] = groupNodes(nodes, ["a", "b", "c"], "g");
 
-      expect(grouped.map((node) => [node.id, node.parentNode])).toEqual([
-        ["g", undefined],
-        ["kept", undefined],
-        ["a", "g"],
-        ["b", "g"],
-        ["c", "kept"],
-      ]);
+      expect(group).toMatchObject({ width: 608, height: 392 });
     });
 
     it("ungroups by removing the group and leaving its nodes where they were", () => {

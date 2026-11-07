@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Maximize2, Minimize2, Ungroup } from "@lucide/vue";
+import { Maximize2, Minimize2, Trash2, Ungroup } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type Node, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
-import { computed } from "vue";
+import { computed, inject, ref } from "vue";
 
 import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -14,17 +14,24 @@ import {
   ungroupNodes,
   withCollapsedEdges,
 } from "@/lib/dataset-nodes/groups";
+import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 
 const props = defineProps<NodeProps<{ collapsed: boolean }>>();
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const { edges, nodes, setEdges, setNodes } = useVueFlow();
+const viewed = inject(VIEWED_NODE, ref(null));
 
 const memberCount = computed(
   () => nodes.value.filter((node) => node.parentNode === props.id).length,
 );
 const members = computed(() =>
   catalog.value ? memberPorts(nodes.value, edges.value, catalog.value, props.id) : [],
+);
+
+const plainButton = cn(
+  toggleVariants({ variant: "outline" }),
+  "rounded-none border-l-0 px-2 first:rounded-l-lg first:border-l last:rounded-r-lg",
 );
 
 function setPressed(value: unknown) {
@@ -36,6 +43,16 @@ function ungroup() {
   update(ungroupNodes(nodes.value, props.id));
 }
 
+function remove() {
+  const removed = new Set([
+    props.id,
+    ...nodes.value.filter((node) => node.parentNode === props.id).map((node) => node.id),
+  ]);
+  if (viewed.value && removed.has(viewed.value)) viewed.value = null;
+  setNodes(nodes.value.filter((node) => !removed.has(node.id)));
+  setEdges(edges.value.filter((edge) => !removed.has(edge.source) && !removed.has(edge.target)));
+}
+
 function update(next: Node[]) {
   setNodes(next);
   setEdges(withCollapsedEdges(next, edges.value));
@@ -44,47 +61,61 @@ function update(next: Node[]) {
 
 <template>
   <div
-    class="relative rounded-xl border-2 border-dashed border-muted-foreground/40 bg-background/40"
+    class="relative"
     :class="[
-      data.collapsed ? 'w-64 bg-background shadow-sm' : 'size-full',
+      data.collapsed
+        ? 'w-64 rounded-lg border bg-background text-sm shadow-sm'
+        : 'size-full rounded-xl border-2 border-dashed border-muted-foreground/40 bg-background/40',
       { 'ring-2 ring-ring/50': selected },
     ]"
   >
-    <div data-slot="group-title" class="px-3 py-2 text-sm font-medium text-muted-foreground">
+    <div
+      v-if="!data.collapsed"
+      data-slot="group-title"
+      class="px-3 py-2 text-sm font-medium text-muted-foreground"
+    >
       Group
     </div>
-    <template v-if="data.collapsed">
-      <div class="px-3 pb-2 text-sm text-muted-foreground">
-        {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
-      </div>
+    <template v-else>
       <div
-        v-for="member in members"
-        :key="member.id"
-        data-slot="group-member"
-        class="flex flex-col gap-1 border-t py-2 text-sm"
+        data-slot="group-title"
+        class="flex justify-between rounded-t-[calc(var(--radius-lg)-1px)] border-b bg-muted px-3 py-2 font-medium"
       >
-        <div class="px-3 text-xs font-medium">{{ member.label }}</div>
+        Group
+        <span class="font-normal text-muted-foreground">
+          {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
+        </span>
+      </div>
+      <div class="divide-y">
         <div
-          v-for="port in member.inputs"
-          :key="port.id"
-          class="relative px-3 text-muted-foreground"
+          v-for="member in members"
+          :key="member.id"
+          data-slot="group-member"
+          class="flex flex-col gap-1 py-2"
         >
-          <Handle
-            :id="port.id"
-            type="target"
-            :position="Position.Left"
-            class="size-3.5!"
-            :connectable="port.multiple ? true : 'single'"
-          />
-          {{ port.label }}
-        </div>
-        <div
-          v-for="port in member.outputs"
-          :key="port.id"
-          class="relative px-3 text-right text-muted-foreground"
-        >
-          <Handle :id="port.id" type="source" :position="Position.Right" class="size-3.5!" />
-          {{ port.label }}
+          <div class="px-3 text-xs font-medium">{{ member.label }}</div>
+          <div
+            v-for="port in member.inputs"
+            :key="port.id"
+            class="relative px-3 text-muted-foreground"
+          >
+            <Handle
+              :id="port.id"
+              type="target"
+              :position="Position.Left"
+              class="size-3.5!"
+              :connectable="port.multiple ? true : 'single'"
+            />
+            {{ port.label }}
+          </div>
+          <div
+            v-for="port in member.outputs"
+            :key="port.id"
+            class="relative px-3 text-right text-muted-foreground"
+          >
+            <Handle :id="port.id" type="source" :position="Position.Right" class="size-3.5!" />
+            {{ port.label }}
+          </div>
         </div>
       </div>
     </template>
@@ -102,18 +133,11 @@ function update(next: Node[]) {
         <Maximize2 v-if="data.collapsed" />
         <Minimize2 v-else />
       </ToggleGroupItem>
-      <button
-        type="button"
-        aria-label="Ungroup nodes"
-        :class="
-          cn(
-            toggleVariants({ variant: 'outline' }),
-            'rounded-none border-l-0 px-2 first:rounded-l-lg first:border-l last:rounded-r-lg',
-          )
-        "
-        @click="ungroup"
-      >
+      <button type="button" aria-label="Ungroup nodes" :class="plainButton" @click="ungroup">
         <Ungroup />
+      </button>
+      <button type="button" aria-label="Delete group" :class="plainButton" @click="remove">
+        <Trash2 />
       </button>
     </ToggleGroup>
   </div>
