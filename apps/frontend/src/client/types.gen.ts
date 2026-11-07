@@ -83,7 +83,7 @@ export type DatasetGraphInput = {
     /**
      * Groups
      */
-    groups?: Array<GraphGroup>;
+    groups?: Array<GraphGroupInput>;
 };
 
 /**
@@ -105,7 +105,7 @@ export type DatasetGraphOutput = {
     /**
      * Groups
      */
-    groups: Array<GraphGroup>;
+    groups: Array<GraphGroupOutput>;
 };
 
 /**
@@ -167,7 +167,7 @@ export type GraphEdge = {
 /**
  * GraphGroup
  */
-export type GraphGroup = {
+export type GraphGroupInput = {
     /**
      * Id
      */
@@ -185,6 +185,37 @@ export type GraphGroup = {
      * Nodes
      */
     nodes: Array<string>;
+    /**
+     * Collapsed
+     */
+    collapsed?: boolean;
+};
+
+/**
+ * GraphGroup
+ */
+export type GraphGroupOutput = {
+    /**
+     * Id
+     */
+    id: string;
+    position: Position;
+    /**
+     * Width
+     */
+    width: number;
+    /**
+     * Height
+     */
+    height: number;
+    /**
+     * Nodes
+     */
+    nodes: Array<string>;
+    /**
+     * Collapsed
+     */
+    collapsed: boolean;
 };
 
 /**

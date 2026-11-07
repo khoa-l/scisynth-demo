@@ -64,6 +64,7 @@ class GraphGroup(_Strict):
     width: Annotated[FiniteFloat, Field(gt=0)]
     height: Annotated[FiniteFloat, Field(gt=0)]
     nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
+    collapsed: bool = False
 
 
 class DatasetGraph(_Strict):

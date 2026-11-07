@@ -226,6 +226,31 @@ describe("Dataset builder", () => {
     ]);
   });
 
+  it("collapses a group into a single node and expands it again", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await dropKind(wrapper, "Gain");
+    await first.trigger("click");
+    await shiftClick(second);
+    await groupButton(second).trigger("click");
+    await flushPromises();
+    const titles = () =>
+      wrapper.findAll('.vue-flow__node [data-slot="node-title"]').map((title) => title.text());
+    const collapse = () =>
+      wrapper.find('.vue-flow__node-dataset-group [aria-label="Collapse group"]');
+
+    await collapse().trigger("click");
+    await flushPromises();
+    expect(titles()).toEqual(["Gain"]);
+    expect(wrapper.find(".vue-flow__node-dataset-group").text()).toContain("2 nodes");
+
+    await collapse().trigger("click");
+    await flushPromises();
+    expect(titles()).toEqual(["Gaussian field", "Grid sampler", "Gain"]);
+    expect(wrapper.find(".vue-flow__node-dataset-group").text()).not.toContain("2 nodes");
+  });
+
   describe("saving", () => {
     const SAVED: DatasetPublic = {
       ...DATASET,

@@ -15,14 +15,33 @@ const GROUP_PADDING = 24;
 const GROUP_HEADER = 40;
 
 type FlowNode = Node<DatasetNodeData> & { data: DatasetNodeData };
-type GroupNode = Node & { width: number; height: number };
+type GroupData = { collapsed: boolean };
+type GroupNode = Node<GroupData> & { width: number; height: number; data: GroupData };
 
 export function flowNode(id: string, position: XYPosition, data: DatasetNodeData): FlowNode {
   return { id, type: DATASET_NODE, position, data };
 }
 
-function groupNode(id: string, position: XYPosition, width: number, height: number): GroupNode {
-  return { id, type: DATASET_GROUP, position, width, height, data: {} };
+function groupNode(
+  id: string,
+  position: XYPosition,
+  width: number,
+  height: number,
+  collapsed = false,
+): GroupNode {
+  return {
+    id,
+    type: DATASET_GROUP,
+    position,
+    width,
+    height,
+    data: { collapsed },
+    style: groupStyle(collapsed),
+  };
+}
+
+function groupStyle(collapsed: boolean) {
+  return collapsed ? { width: "auto", height: "auto" } : undefined;
 }
 
 export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
@@ -43,12 +62,13 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
     ),
     groups: nodes
       .filter((node): node is GroupNode => node.type === DATASET_GROUP)
-      .map(({ id, position: { x, y }, width, height }) => ({
+      .map(({ id, position: { x, y }, width, height, data }) => ({
         id,
         position: { x, y },
         width,
         height,
         nodes: datasetNodes.filter((node) => node.parentNode === id).map((node) => node.id),
+        collapsed: data.collapsed,
       }))
       .filter((group) => group.nodes.length),
   };
@@ -57,16 +77,16 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
 export function fromGraph(
   graph: DatasetGraph,
   catalog: NodeCatalog,
-): { nodes: (FlowNode | GroupNode)[]; edges: Edge[] } {
+): { nodes: Node[]; edges: Edge[] } {
   const kindOf = new Map(graph.nodes.map((node) => [node.id, node.kind]));
-  const parentOf = new Map(
-    graph.groups.flatMap((group) => group.nodes.map((node) => [node, group.id])),
+  const groupOf = new Map(
+    graph.groups.flatMap((group) => group.nodes.map((node) => [node, group])),
   );
 
   return {
     nodes: [
-      ...graph.groups.map(({ id, position: { x, y }, width, height }) =>
-        groupNode(id, { x, y }, width, height),
+      ...graph.groups.map(({ id, position: { x, y }, width, height, collapsed }) =>
+        groupNode(id, { x, y }, width, height, collapsed),
       ),
       ...graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
         const def = findKind(catalog, kind);
@@ -75,8 +95,10 @@ export function fromGraph(
           { x, y },
           { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
         );
-        const parentNode = parentOf.get(id);
-        return parentNode ? { ...node, parentNode, extent: "parent" as const } : node;
+        const group = groupOf.get(id);
+        return group
+          ? { ...node, parentNode: group.id, extent: "parent" as const, hidden: group.collapsed }
+          : node;
       }),
     ],
     edges: graph.edges
@@ -131,13 +153,30 @@ export function groupNodes(nodes: GraphNode[], memberIds: string[], groupId: str
 }
 
 export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {
+  const group = nodes.find((node) => node.id === groupId)!;
   return nodes
     .filter((node) => node.id !== groupId)
     .map(({ parentNode, extent, ...node }) =>
       parentNode === groupId
-        ? { ...node, position: { x: node.computedPosition.x, y: node.computedPosition.y } }
+        ? {
+            ...node,
+            hidden: false,
+            position: {
+              x: group.position.x + node.position.x,
+              y: group.position.y + node.position.y,
+            },
+          }
         : { ...node, parentNode, extent },
     );
+}
+
+export function collapseGroup(nodes: GraphNode[], groupId: string, collapsed: boolean): Node[] {
+  return nodes.map((node) => {
+    if (node.id === groupId) {
+      return { ...node, data: { ...node.data, collapsed }, style: groupStyle(collapsed) };
+    }
+    return node.parentNode === groupId ? { ...node, hidden: collapsed } : node;
+  });
 }
 
 function loadParams(kind: NodeKindDef, saved: ParamValues): ParamValues {

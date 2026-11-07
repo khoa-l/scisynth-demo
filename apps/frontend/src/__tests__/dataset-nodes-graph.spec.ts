@@ -3,6 +3,7 @@ import { describe, it, expect } from "vite-plus/test";
 import type { GraphNode } from "@vue-flow/core";
 
 import {
+  collapseGroup,
   fromGraph,
   groupNodes,
   nodePreviewRequest,
@@ -215,6 +216,7 @@ describe("Dataset graph", () => {
           width: 400,
           height: 300,
           nodes: ["field", "sampler"],
+          collapsed: false,
         },
       ],
     };
@@ -239,6 +241,42 @@ describe("Dataset graph", () => {
     it("saves back exactly the groups it loaded", () => {
       const { nodes, edges } = load(GROUPED);
       expect(toGraph(nodes, edges)).toEqual(GROUPED);
+    });
+
+    it("loads a collapsed group with its nodes hidden, and saves it collapsed", () => {
+      const collapsed = { ...GROUPED, groups: [{ ...GROUPED.groups[0]!, collapsed: true }] };
+      const { nodes, edges } = load(collapsed);
+
+      expect(nodes.map((node) => [node.id, node.hidden])).toEqual([
+        ["g", undefined],
+        ["field", true],
+        ["sampler", true],
+        ["quantize", undefined],
+      ]);
+      expect(nodes[0]!.style).toEqual({ width: "auto", height: "auto" });
+      expect(toGraph(nodes, edges)).toEqual(collapsed);
+    });
+
+    it("collapses a group into one node and expands it again", () => {
+      const { nodes } = load(GROUPED);
+
+      const collapsed = collapseGroup(nodes as GraphNode[], "g", true);
+      expect(collapsed.map((node) => [node.id, node.hidden])).toEqual([
+        ["g", undefined],
+        ["field", true],
+        ["sampler", true],
+        ["quantize", undefined],
+      ]);
+      expect(collapsed[0]).toMatchObject({
+        data: { collapsed: true },
+        style: { width: "auto", height: "auto" },
+        width: 400,
+        height: 300,
+      });
+
+      const expanded = collapseGroup(collapsed as GraphNode[], "g", false);
+      expect(expanded.map((node) => node.hidden)).toEqual([undefined, false, false, undefined]);
+      expect(expanded[0]).toMatchObject({ data: { collapsed: false }, style: undefined });
     });
 
     it("doesn't save a group with no nodes left in it", () => {
@@ -306,12 +344,18 @@ describe("Dataset graph", () => {
       const nodes = [
         group,
         other,
-        { ...placed("a", 130, 150, "g"), position: { x: 30, y: 50 }, extent: "parent" },
+        {
+          ...placed("a", 130, 150, "g"),
+          position: { x: 30, y: 50 },
+          extent: "parent",
+          hidden: true,
+        },
         { ...placed("b", 10, 10, "h"), extent: "parent" },
       ] as GraphNode[];
 
       const ungrouped = ungroupNodes(nodes, "g");
 
+      expect(ungrouped.find((node) => node.id === "a")!.hidden).toBe(false);
       expect(
         ungrouped.map((node) => [node.id, node.parentNode, node.extent, node.position]),
       ).toEqual([

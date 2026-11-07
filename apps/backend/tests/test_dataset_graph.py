@@ -208,6 +208,7 @@ def group(group_id: str, *nodes: str) -> dict:
         "width": 300,
         "height": 200,
         "nodes": list(nodes),
+        "collapsed": False,
     }
 
 
@@ -217,6 +218,24 @@ def test_saves_groups_of_nodes(client: TestClient, dataset_url: str) -> None:
     client.patch(dataset_url, json={"content": grouped})
 
     assert client.get(dataset_url).json()["content"] == grouped
+
+
+def test_remembers_which_groups_are_collapsed(
+    client: TestClient, dataset_url: str
+) -> None:
+    collapsed = {**group("g", "a"), "collapsed": True}
+    client.patch(dataset_url, json={"content": {**GRAPH, "groups": [collapsed]}})
+
+    assert client.get(dataset_url).json()["content"]["groups"][0]["collapsed"]
+
+
+def test_expands_groups_saved_before_they_could_be_collapsed(
+    client: TestClient, dataset_url: str
+) -> None:
+    saved = {k: v for k, v in group("g", "a").items() if k != "collapsed"}
+    client.patch(dataset_url, json={"content": {**GRAPH, "groups": [saved]}})
+
+    assert client.get(dataset_url).json()["content"]["groups"][0]["collapsed"] is False
 
 
 @pytest.mark.parametrize(
