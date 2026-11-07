@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vite-plus/test";
 
+import type { GraphNode } from "@vue-flow/core";
+
 import {
   fromGraph,
+  groupNodes,
   nodePreviewRequest,
   toGraph,
+  ungroupNodes,
   type DatasetGraph,
 } from "../lib/dataset-nodes/graph";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
@@ -40,6 +44,7 @@ const GRAPH: DatasetGraph = {
     savedEdge("e1", "field", "field", "sampler", "latent"),
     savedEdge("e2", "sampler", "observation", "quantize", "observation"),
   ],
+  groups: [],
 };
 
 function load(graph: DatasetGraph) {
@@ -81,6 +86,7 @@ describe("Dataset graph", () => {
         },
       ],
       edges: [savedEdge("e", "a", "observation", "b", "observation")],
+      groups: [],
     });
   });
 
@@ -125,6 +131,7 @@ describe("Dataset graph", () => {
         savedNode("w", "PCA", { whiten: true, seed: true }),
       ],
       edges: [],
+      groups: [],
     });
 
     expect(nodes.map((node) => node.data.params)).toEqual([
@@ -140,6 +147,7 @@ describe("Dataset graph", () => {
       version: 1,
       nodes: [savedNode("old", "RemovedStage", { strength: 3 }), ...GRAPH.nodes],
       edges: [savedEdge("e", "sampler", "observation", "old", "in"), ...GRAPH.edges],
+      groups: [],
     });
 
     expect(nodes[0]!.data).toEqual({
@@ -178,6 +186,7 @@ describe("Dataset graph", () => {
         savedEdge("e2", "b", "field", "sum", "terms"),
         savedEdge("e3", "sum", "field", "sampler", "latent"),
       ],
+      groups: [],
     };
 
     expect(nodePreviewRequest(graph, "sum")).toEqual({
@@ -193,6 +202,123 @@ describe("Dataset graph", () => {
       node: "other",
       nodes: [{ id: "other", kind: "GaussianField", params: { seed: 3 } }],
       edges: [],
+    });
+  });
+
+  describe("groups", () => {
+    const GROUPED: DatasetGraph = {
+      ...GRAPH,
+      groups: [
+        {
+          id: "g",
+          position: { x: 100, y: 200 },
+          width: 400,
+          height: 300,
+          nodes: ["field", "sampler"],
+        },
+      ],
+    };
+
+    it("loads a group before its nodes, which are kept inside it", () => {
+      const { nodes } = load(GROUPED);
+
+      expect(nodes.map((node) => [node.id, node.parentNode, node.extent])).toEqual([
+        ["g", undefined, undefined],
+        ["field", "g", "parent"],
+        ["sampler", "g", "parent"],
+        ["quantize", undefined, undefined],
+      ]);
+      expect(nodes[0]).toMatchObject({
+        type: "dataset-group",
+        position: { x: 100, y: 200 },
+        width: 400,
+        height: 300,
+      });
+    });
+
+    it("saves back exactly the groups it loaded", () => {
+      const { nodes, edges } = load(GROUPED);
+      expect(toGraph(nodes, edges)).toEqual(GROUPED);
+    });
+
+    it("doesn't save a group with no nodes left in it", () => {
+      const { nodes, edges } = load(GROUPED);
+      const ungrouped = nodes.map((node) => ({ ...node, parentNode: undefined }));
+      expect(toGraph(ungrouped, edges).groups).toEqual([]);
+    });
+
+    function placed(id: string, x: number, y: number, parentNode?: string) {
+      return {
+        id,
+        type: "dataset-node",
+        position: { x, y },
+        computedPosition: { x, y, z: 0 },
+        dimensions: { width: 256, height: 100 },
+        data: { kind: "Gain", params: {} },
+        parentNode,
+      } as GraphNode;
+    }
+
+    it("puts the chosen nodes in a new group that fits around them", () => {
+      const nodes = [placed("a", 0, 0), placed("b", 300, 200), placed("c", 900, 900)];
+
+      const [group, ...rest] = groupNodes(nodes, ["a", "b"], "g");
+
+      expect(group).toMatchObject({
+        id: "g",
+        type: "dataset-group",
+        position: { x: -24, y: -40 },
+        width: 604,
+        height: 364,
+      });
+      expect(rest.map((node) => [node.id, node.parentNode, node.extent, node.position])).toEqual([
+        ["a", "g", "parent", { x: 24, y: 40 }],
+        ["b", "g", "parent", { x: 324, y: 240 }],
+        ["c", undefined, undefined, { x: 900, y: 900 }],
+      ]);
+    });
+
+    it("moves nodes out of their old group, dropping it once it's empty", () => {
+      const old = { ...placed("old", -24, -40), type: "dataset-group" } as GraphNode;
+      const kept = { ...placed("kept", -24, -40), type: "dataset-group" } as GraphNode;
+      const nodes = [
+        old,
+        kept,
+        placed("a", 0, 0, "old"),
+        placed("b", 300, 200, "kept"),
+        placed("c", 500, 0, "kept"),
+      ];
+
+      const grouped = groupNodes(nodes, ["a", "b"], "g");
+
+      expect(grouped.map((node) => [node.id, node.parentNode])).toEqual([
+        ["g", undefined],
+        ["kept", undefined],
+        ["a", "g"],
+        ["b", "g"],
+        ["c", "kept"],
+      ]);
+    });
+
+    it("ungroups by removing the group and leaving its nodes where they were", () => {
+      const group = { ...placed("g", 100, 100), type: "dataset-group" } as GraphNode;
+      const other = { ...placed("h", 0, 0), type: "dataset-group" } as GraphNode;
+      const nodes = [
+        group,
+        other,
+        { ...placed("a", 130, 150, "g"), position: { x: 30, y: 50 }, extent: "parent" },
+        { ...placed("b", 10, 10, "h"), extent: "parent" },
+      ] as GraphNode[];
+
+      const ungrouped = ungroupNodes(nodes, "g");
+
+      expect(
+        ungrouped.map((node) => [node.id, node.parentNode, node.extent, node.position]),
+      ).toEqual([
+        ["h", undefined, undefined, { x: 0, y: 0 }],
+        ["a", undefined, undefined, { x: 130, y: 150 }],
+        ["b", "h", "parent", { x: 10, y: 10 }],
+      ]);
     });
   });
 });

@@ -58,10 +58,19 @@ class GraphEdge(_Strict):
     target_port: Ref
 
 
+class GraphGroup(_Strict):
+    id: Ref
+    position: Position
+    width: Annotated[FiniteFloat, Field(gt=0)]
+    height: Annotated[FiniteFloat, Field(gt=0)]
+    nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
+
+
 class DatasetGraph(_Strict):
     version: Literal[1] = 1
     nodes: list[GraphNode] = Field(default_factory=list, max_length=MAX_NODES)
     edges: list[GraphEdge] = Field(default_factory=list, max_length=MAX_EDGES)
+    groups: list[GraphGroup] = Field(default_factory=list, max_length=MAX_NODES)
 
     @model_validator(mode="after")
     def check_references(self) -> Self:
@@ -75,4 +84,12 @@ class DatasetGraph(_Strict):
                 raise ValueError(f"Edge {edge.id} connects a node that doesn't exist")
             if edge.source == edge.target:
                 raise ValueError(f"Edge {edge.id} connects a node to itself")
+        group_ids = {group.id for group in self.groups}
+        if len(group_ids) != len(self.groups) or group_ids & node_ids:
+            raise ValueError("Group ids must be unique")
+        members = [member for group in self.groups for member in group.nodes]
+        if len(set(members)) != len(members):
+            raise ValueError("A node can only be in one group")
+        if not set(members) <= node_ids:
+            raise ValueError("A group contains a node that doesn't exist")
         return self

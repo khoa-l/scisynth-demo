@@ -21,7 +21,7 @@ export const DATASET: DatasetPublic = {
   id: "Eq-OvCTLPC6Urz_TXE8eJ",
   name: "Raw reads",
   created_at: "2026-11-02T00:00:00Z",
-  content: { version: 1, nodes: [], edges: [] },
+  content: { version: 1, nodes: [], edges: [], groups: [] },
 };
 
 export const SURVEY = {

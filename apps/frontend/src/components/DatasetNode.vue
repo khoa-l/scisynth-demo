@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, Eye, EyeOff, ImageIcon, ImageOff, Trash2 } from "@lucide/vue";
+import { Download, Eye, EyeOff, Group, ImageIcon, ImageOff, Trash2 } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useNodeConnections, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
@@ -17,7 +17,7 @@ import {
   requiredConnections,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
-import { nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
+import { DATASET_NODE, groupNodes, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
 import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
@@ -37,7 +37,7 @@ const PREVIEWED_FROM_INPUTS = new Set([
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
-const { edges, nodes, removeNodes, updateNodeData } = useVueFlow();
+const { edges, getSelectedNodes, nodes, removeNodes, setNodes, updateNodeData } = useVueFlow();
 const incoming = useNodeConnections({ handleType: "target" });
 
 function connectionCount(port: PortDef) {
@@ -102,6 +102,20 @@ function remove() {
   removeNodes(props.id);
 }
 
+const selectedDatasetNodes = computed(() =>
+  getSelectedNodes.value.filter((node) => node.type === DATASET_NODE),
+);
+
+function group() {
+  setNodes(
+    groupNodes(
+      nodes.value,
+      selectedDatasetNodes.value.map((node) => node.id),
+      crypto.randomUUID(),
+    ),
+  );
+}
+
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
 }
@@ -160,6 +174,15 @@ function setParam(name: string, value: ParamValue) {
           <Download />
         </button>
       </template>
+      <button
+        v-if="selected && selectedDatasetNodes.length > 1"
+        type="button"
+        aria-label="Group nodes"
+        :class="plainButton"
+        @click="group"
+      >
+        <Group />
+      </button>
       <button type="button" aria-label="Delete node" :class="plainButton" @click="remove">
         <Trash2 />
       </button>

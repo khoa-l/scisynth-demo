@@ -20,6 +20,7 @@ import {
   datasetsGetDatasetQueryKey,
   datasetsUpdateDatasetMutation,
 } from "@/client/@tanstack/vue-query.gen";
+import DatasetGroup from "@/components/DatasetGroup.vue";
 import DatasetNode from "@/components/DatasetNode.vue";
 import GraphSettings from "@/components/GraphSettings.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
@@ -31,14 +32,23 @@ import {
   nodeCatalogQuery,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
-import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
+import {
+  DATASET_GROUP,
+  DATASET_NODE,
+  flowNode,
+  fromGraph,
+  toGraph,
+} from "@/lib/dataset-nodes/graph";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 
-const nodeTypes = { [DATASET_NODE]: markRaw(DatasetNode) };
+const nodeTypes = {
+  [DATASET_NODE]: markRaw(DatasetNode),
+  [DATASET_GROUP]: markRaw(DatasetGroup),
+};
 const lineStyle = { strokeWidth: 3 };
 const lineType = useLocalStorage<LineType>("dataset-builder-line-type", ConnectionLineType.Bezier);
 if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Bezier;

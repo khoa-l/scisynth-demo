@@ -11,7 +11,7 @@ from app.dataset_graph import MAX_NODES
 from tests.helpers import sign_up
 from tests.surveys import DROPPED
 
-EMPTY = {"version": 1, "nodes": [], "edges": []}
+EMPTY = {"version": 1, "nodes": [], "edges": [], "groups": []}
 
 
 def node(node_id: str, kind: str = "GaussianNoise", **params: Any) -> dict:
@@ -42,6 +42,7 @@ GRAPH = {
         node("c", "InterpolatedField", mode="grid-wrap"),
     ],
     "edges": [edge("e1", "a", "b")],
+    "groups": [],
 }
 
 
@@ -198,6 +199,43 @@ def test_shows_previews_of_nodes_saved_before_they_could_be_hidden(
 
     loaded = client.get(dataset_url).json()["content"]["nodes"][0]
     assert loaded["preview_hidden"] is False
+
+
+def group(group_id: str, *nodes: str) -> dict:
+    return {
+        "id": group_id,
+        "position": {"x": 10, "y": 20},
+        "width": 300,
+        "height": 200,
+        "nodes": list(nodes),
+    }
+
+
+def test_saves_groups_of_nodes(client: TestClient, dataset_url: str) -> None:
+    grouped = {**GRAPH, "groups": [group("g", "a", "b")]}
+
+    client.patch(dataset_url, json={"content": grouped})
+
+    assert client.get(dataset_url).json()["content"] == grouped
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [
+        [group("g", "missing")],
+        [group("g", "a"), group("h", "a")],
+        [group("g", "a"), group("g", "b")],
+        [group("a", "b")],
+        [group("g")],
+        [{**group("g", "a"), "width": 0}],
+    ],
+)
+def test_rejects_groups_that_dont_fit_the_graph(
+    client: TestClient, dataset_url: str, groups: list
+) -> None:
+    response = client.patch(dataset_url, json={"content": {**GRAPH, "groups": groups}})
+
+    assert response.status_code == 422
 
 
 def test_renaming_keeps_the_graph(client: TestClient, dataset_url: str) -> None:

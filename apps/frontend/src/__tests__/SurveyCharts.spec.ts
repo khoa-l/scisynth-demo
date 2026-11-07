@@ -38,6 +38,7 @@ const DATASET: DatasetPublic = {
       node("other", "GaussianField"),
     ],
     edges: [],
+    groups: [],
   },
 };
 

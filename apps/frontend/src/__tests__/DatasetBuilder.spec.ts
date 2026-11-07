@@ -1,7 +1,7 @@
 import { afterEach, describe, it, expect, vi } from "vite-plus/test";
 
-import { VueFlow, type GraphEdge } from "@vue-flow/core";
-import { flushPromises } from "@vue/test-utils";
+import { VueFlow, type GraphEdge, type GraphNode } from "@vue-flow/core";
+import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import type { DatasetPublic } from "../client";
 import {
@@ -14,6 +14,18 @@ import {
   type Wrapper,
 } from "./dataset-view";
 import { DATASET, fakeDataTransfer, fetchMock, jsonResponse, requests } from "./helpers";
+
+async function shiftClick(node: DOMWrapper<Element>) {
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", code: "ShiftLeft" }));
+  await flushPromises();
+  await node.trigger("click", { shiftKey: true });
+  document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", code: "ShiftLeft" }));
+  await flushPromises();
+}
+
+function groupButton(node: DOMWrapper<Element>) {
+  return node.find('[aria-label="Node controls"] [aria-label="Group nodes"]');
+}
 
 function flow(wrapper: Wrapper) {
   return wrapper.findComponent(VueFlow).vm as unknown as { edges: GraphEdge[] };
@@ -144,16 +156,74 @@ describe("Dataset builder", () => {
       wrapper.findAll(".vue-flow__node.selected").map((node) => node.attributes("data-id"));
 
     await first.trigger("click");
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", code: "ShiftLeft" }));
-    await flushPromises();
-    await second.trigger("click", { shiftKey: true });
-    document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", code: "ShiftLeft" }));
-    await flushPromises();
+    await shiftClick(second);
     expect(selected()).toEqual([first.attributes("data-id"), second.attributes("data-id")]);
 
     await third.trigger("click");
     await flushPromises();
     expect(selected()).toEqual([third.attributes("data-id")]);
+  });
+
+  it("offers to group nodes only on the selected ones, once there are several", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    const third = await dropKind(wrapper, "Gain");
+
+    await first.trigger("click");
+    expect(groupButton(first).exists()).toBe(false);
+
+    await shiftClick(second);
+    expect([first, second, third].map((node) => groupButton(node).exists())).toEqual([
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it("puts the selected nodes inside a new group", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await dropKind(wrapper, "Gain");
+
+    await first.trigger("click");
+    await shiftClick(second);
+    await groupButton(second).trigger("click");
+    await flushPromises();
+
+    const group = wrapper.find(".vue-flow__node-dataset-group");
+    expect(group.find('[data-slot="group-title"]').text()).toBe("Group");
+    const nodes = (wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] }).nodes;
+    expect(
+      nodes
+        .filter((node) => node.parentNode === group.attributes("data-id"))
+        .map((node) => node.data.kind),
+    ).toEqual(["GaussianField", "GridSampler"]);
+  });
+
+  it("ungroups a group's nodes from the group's toolbar", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await first.trigger("click");
+    await shiftClick(second);
+    await groupButton(second).trigger("click");
+    await flushPromises();
+
+    await wrapper
+      .find(
+        '.vue-flow__node-dataset-group [aria-label="Group controls"] [aria-label="Ungroup nodes"]',
+      )
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(false);
+    const nodes = (wrapper.findComponent(VueFlow).vm as unknown as { nodes: GraphNode[] }).nodes;
+    expect(nodes.map((node) => [node.data.kind, node.parentNode])).toEqual([
+      ["GaussianField", undefined],
+      ["GridSampler", undefined],
+    ]);
   });
 
   describe("saving", () => {
@@ -193,6 +263,7 @@ describe("Dataset builder", () => {
             target_port: "latent",
           },
         ],
+        groups: [],
       },
     };
 
