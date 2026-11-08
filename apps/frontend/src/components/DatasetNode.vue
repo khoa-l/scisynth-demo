@@ -18,7 +18,7 @@ import {
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
 import { DATASET_NODE, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
-import { groupNodes, isStandIn } from "@/lib/dataset-nodes/groups";
+import { groupNodes, isStandIn, withGroupEdges } from "@/lib/dataset-nodes/groups";
 import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
@@ -38,7 +38,8 @@ const PREVIEWED_FROM_INPUTS = new Set([
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 
-const { edges, getSelectedNodes, nodes, removeNodes, setNodes, updateNodeData } = useVueFlow();
+const { edges, getSelectedNodes, nodes, removeNodes, setEdges, setNodes, updateNodeData } =
+  useVueFlow();
 function connectionCount(port: PortDef) {
   return edges.value.filter(
     (edge) => edge.target === props.id && edge.targetHandle === port.id && !isStandIn(edge),
@@ -106,20 +107,15 @@ function remove() {
 const selectedDatasetNodes = computed(() =>
   getSelectedNodes.value.filter((node) => node.type === DATASET_NODE),
 );
-const canGroup = computed(
-  () =>
-    selectedDatasetNodes.value.length > 1 &&
-    selectedDatasetNodes.value.every((node) => !node.parentNode),
-);
 
 function groupSelected() {
-  setNodes(
-    groupNodes(
-      nodes.value,
-      selectedDatasetNodes.value.map((node) => node.id),
-      crypto.randomUUID(),
-    ),
+  const grouped = groupNodes(
+    nodes.value,
+    selectedDatasetNodes.value.map((node) => node.id),
+    crypto.randomUUID(),
   );
+  setNodes(grouped);
+  setEdges(withGroupEdges(grouped, edges.value));
 }
 
 function setParam(name: string, value: ParamValue) {
@@ -181,7 +177,7 @@ function setParam(name: string, value: ParamValue) {
         </button>
       </template>
       <button
-        v-if="selected && canGroup"
+        v-if="selected && selectedDatasetNodes.length > 1"
         type="button"
         aria-label="Group nodes"
         :class="plainButton"

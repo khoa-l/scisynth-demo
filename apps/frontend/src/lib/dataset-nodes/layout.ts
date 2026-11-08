@@ -2,8 +2,9 @@ import { Graph, layout } from "@dagrejs/dagre";
 import type { Edge, GraphNode, Node } from "@vue-flow/core";
 
 import { DATASET_NODE } from "./graph";
-import { NODE_GAP, NODE_TOOLBAR } from "./groups";
 
+const NODE_TOOLBAR = 40;
+const NODE_GAP = 48;
 const RANK_GAP = 96;
 const PREVIEW_GAP = 8;
 

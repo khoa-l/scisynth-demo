@@ -244,7 +244,7 @@ describe("Dataset builder", () => {
     ]);
   });
 
-  it("keeps grouped nodes where they were, through collapsing and expanding", async () => {
+  it("puts grouped nodes back where they were when they are ungrouped", async () => {
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -278,32 +278,13 @@ describe("Dataset builder", () => {
     ]);
 
     await groupTogether(first, second);
-    expect(placed()).toEqual(before);
-
-    await clickGroupControl(wrapper, "Collapse group");
-    await clickGroupControl(wrapper, "Collapse group");
-    expect(placed()).toEqual(before);
-
-    await clickGroupControl(wrapper, "Collapse group");
     await clickGroupControl(wrapper, "Ungroup nodes");
+
     expect(placed()).toEqual(before);
-    expect(flow(wrapper).nodes.map((node) => [node.parentNode, node.extent, node.hidden])).toEqual([
-      [undefined, undefined, false],
-      [undefined, undefined, false],
+    expect(flow(wrapper).nodes.map((node) => [node.parentNode, node.hidden])).toEqual([
+      [undefined, false],
+      [undefined, false],
     ]);
-  });
-
-  it("doesn't offer to group a node that is already in a group", async () => {
-    const wrapper = await mountView();
-    const first = await dropKind(wrapper, "GaussianField");
-    const second = await dropKind(wrapper, "GridSampler");
-    const third = await dropKind(wrapper, "Gain");
-    await groupTogether(first, second);
-
-    await first.trigger("click");
-    await shiftClick(third);
-
-    expect([first, third].map((node) => groupButton(node).exists())).toEqual([false, false]);
   });
 
   it("deletes a group with the nodes in it and their connections", async () => {
@@ -313,7 +294,6 @@ describe("Dataset builder", () => {
     const sum = await dropKind(wrapper, "Sum");
     await connect(wrapper, field, sum, "terms");
     await groupTogether(field, other);
-    await clickGroupControl(wrapper, "Collapse group");
 
     await clickGroupControl(wrapper, "Delete group");
 
@@ -321,7 +301,7 @@ describe("Dataset builder", () => {
     expect(flow(wrapper).edges).toEqual([]);
   });
 
-  it("puts the selected nodes inside a new group", async () => {
+  it("puts the selected nodes inside a new group, shown as a single node", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");
     const second = await dropKind(wrapper, "GridSampler");
@@ -330,7 +310,10 @@ describe("Dataset builder", () => {
     await groupTogether(first, second);
 
     const group = wrapper.find(".vue-flow__node-dataset-group");
-    expect(group.find('[data-slot="group-title"]').text()).toBe("Group");
+    expect(group.find('[data-slot="group-title"]').text()).toBe("Group 2 nodes");
+    expect(
+      wrapper.findAll('.vue-flow__node [data-slot="node-title"]').map((title) => title.text()),
+    ).toEqual(["Gain"]);
     expect(
       flow(wrapper)
         .nodes.filter((node) => node.parentNode === group.attributes("data-id"))
@@ -366,25 +349,7 @@ describe("Dataset builder", () => {
     ]);
   });
 
-  it("collapses a group into a single node and expands it again", async () => {
-    const wrapper = await mountView();
-    const first = await dropKind(wrapper, "GaussianField");
-    const second = await dropKind(wrapper, "GridSampler");
-    await dropKind(wrapper, "Gain");
-    await groupTogether(first, second);
-    const titles = () =>
-      wrapper.findAll('.vue-flow__node [data-slot="node-title"]').map((title) => title.text());
-
-    await clickGroupControl(wrapper, "Collapse group");
-    expect(titles()).toEqual(["Gain"]);
-    expect(wrapper.find(".vue-flow__node-dataset-group").text()).toContain("2 nodes");
-
-    await clickGroupControl(wrapper, "Collapse group");
-    expect(titles()).toEqual(["Gaussian field", "Grid sampler", "Gain"]);
-    expect(wrapper.find(".vue-flow__node-dataset-group").text()).not.toContain("2 nodes");
-  });
-
-  it("shows a collapsed group's connections on the group, without counting them twice", async () => {
+  it("shows a group's connections on the group, without counting them twice", async () => {
     const wrapper = await mountView();
     const field = await dropKind(wrapper, "GaussianField");
     const other = await dropKind(wrapper, "GaussianField");
@@ -392,9 +357,7 @@ describe("Dataset builder", () => {
     await connect(wrapper, field, sum, "terms");
     await groupTogether(field, other);
     const group = wrapper.find(".vue-flow__node-dataset-group");
-    const shortfall = () => wrapper.find('[data-slot="port-shortfall"]').text();
 
-    await clickGroupControl(wrapper, "Collapse group");
     expect(
       flow(wrapper).edges.map((edge) => [edge.source, edge.sourceHandle, edge.target]),
     ).toEqual([
@@ -405,24 +368,19 @@ describe("Dataset builder", () => {
         sum.attributes("data-id"),
       ],
     ]);
-    expect(shortfall()).toBe("1/2");
+    expect(wrapper.find('[data-slot="port-shortfall"]').text()).toBe("1/2");
     expect(
       group.findAll(".vue-flow__handle").map((handle) => handle.attributes("data-handleid")),
     ).toEqual([`${field.attributes("data-id")}.field`, `${other.attributes("data-id")}.field`]);
-
-    await clickGroupControl(wrapper, "Collapse group");
-    expect(flow(wrapper).edges.map((edge) => edge.source)).toEqual([field.attributes("data-id")]);
-    expect(shortfall()).toBe("1/2");
   });
 
-  it("connects to and from a collapsed group's ports, through to the nodes inside", async () => {
+  it("connects to and from a group's ports, through to the nodes inside", async () => {
     const wrapper = await mountView();
     const sum = await dropKind(wrapper, "Sum");
     const sampler = await dropKind(wrapper, "GridSampler");
     const field = await dropKind(wrapper, "GaussianField");
     const outsideSampler = await dropKind(wrapper, "GridSampler");
     await groupTogether(sum, sampler);
-    await clickGroupControl(wrapper, "Collapse group");
     const group = wrapper.find(".vue-flow__node-dataset-group");
     const id = (node: DOMWrapper<Element>) => node.attributes("data-id")!;
     const isValid = wrapper.findComponent(VueFlow).props("isValidConnection") as (
@@ -472,14 +430,13 @@ describe("Dataset builder", () => {
     ]);
   });
 
-  it("deletes the real connection when its line to a collapsed group is deleted", async () => {
+  it("deletes the real connection when its line to a group is deleted", async () => {
     const wrapper = await mountView();
     const field = await dropKind(wrapper, "GaussianField");
     const other = await dropKind(wrapper, "GaussianField");
     const sum = await dropKind(wrapper, "Sum");
     await connect(wrapper, field, sum, "terms");
     await groupTogether(field, other);
-    await clickGroupControl(wrapper, "Collapse group");
     const standIn = flow(wrapper).edges.find((edge) => edge.data?.standsFor)!;
     expect(standIn.selectable).not.toBe(false);
 

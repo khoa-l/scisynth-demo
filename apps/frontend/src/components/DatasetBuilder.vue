@@ -37,7 +37,7 @@ import {
   DATASET_GROUP,
   memberConnection,
   standInId,
-  withCollapsedEdges,
+  withGroupEdges,
 } from "@/lib/dataset-nodes/groups";
 import { autoLayout } from "@/lib/dataset-nodes/layout";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
@@ -142,7 +142,7 @@ onConnect((connection) => {
   const real = memberConnection(connection, nodes.value);
   if (!connectionExists(real, edges.value)) {
     addEdges({ ...real, id: crypto.randomUUID() });
-    setEdges(withCollapsedEdges(nodes.value, edges.value));
+    setEdges(withGroupEdges(nodes.value, edges.value));
   }
 });
 

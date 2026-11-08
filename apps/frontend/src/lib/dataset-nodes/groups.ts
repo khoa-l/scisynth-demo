@@ -1,11 +1,4 @@
-import type {
-  Connection,
-  CoordinateExtent,
-  Edge,
-  GraphNode,
-  Node,
-  XYPosition,
-} from "@vue-flow/core";
+import type { Connection, Edge, GraphNode, Node, XYPosition } from "@vue-flow/core";
 
 import { findKind } from "./catalog";
 import type { FlowNode } from "./graph";
@@ -13,82 +6,29 @@ import type { NodeCatalog } from "./types";
 
 export const DATASET_GROUP = "dataset-group";
 
-const GROUP_PADDING = 24;
-const GROUP_HEADER = 40;
-export const NODE_TOOLBAR = 40;
-export const NODE_GAP = 48;
+type GroupData = { width: number; height: number };
+export type GroupNode = Node<GroupData> & { data: GroupData };
 
-type GroupData = { collapsed: boolean };
-export type GroupNode = Node<GroupData> & { width: number; height: number; data: GroupData };
-
-export function groupNode(
-  id: string,
-  position: XYPosition,
-  width: number,
-  height: number,
-  collapsed = false,
-): GroupNode {
-  return {
-    id,
-    type: DATASET_GROUP,
-    position,
-    width,
-    height,
-    data: { collapsed },
-    style: groupStyle(collapsed),
-    deletable: false,
-  };
-}
-
-export function groupExtent({
-  width,
-  height,
-}: {
-  width: number;
-  height: number;
-}): CoordinateExtent {
-  return [
-    [0, 0],
-    [width, height],
-  ];
-}
-
-function groupStyle(collapsed: boolean) {
-  return collapsed ? { width: "auto", height: "auto" } : undefined;
+export function groupNode(id: string, position: XYPosition, data: GroupData): GroupNode {
+  return { id, type: DATASET_GROUP, position, data, deletable: false };
 }
 
 export function groupNodes(nodes: GraphNode[], memberIds: string[], groupId: string): Node[] {
   const members = nodes.filter((node) => memberIds.includes(node.id));
-  const left = Math.min(...members.map((node) => node.computedPosition.x)) - GROUP_PADDING;
-  const top = Math.min(...members.map((node) => node.computedPosition.y)) - GROUP_HEADER;
+  const left = Math.min(...members.map((node) => node.computedPosition.x));
+  const top = Math.min(...members.map((node) => node.computedPosition.y));
   const right = Math.max(...members.map((node) => node.computedPosition.x + node.dimensions.width));
   const bottom = Math.max(
     ...members.map((node) => node.computedPosition.y + node.dimensions.height),
   );
-  const columns = Math.ceil(Math.sqrt(members.length));
-  const rows = Math.ceil(members.length / columns);
-  const nodeWidth = Math.max(...members.map((node) => node.dimensions.width));
-  const nodeHeight = Math.max(...members.map((node) => node.dimensions.height)) + NODE_TOOLBAR;
-  const group = groupNode(
-    groupId,
-    { x: left, y: top },
-    Math.max(
-      right - left + GROUP_PADDING,
-      2 * GROUP_PADDING + columns * nodeWidth + (columns - 1) * NODE_GAP,
-    ),
-    Math.max(
-      bottom - top + NODE_TOOLBAR + GROUP_PADDING,
-      GROUP_HEADER + GROUP_PADDING + rows * nodeHeight + (rows - 1) * NODE_GAP,
-    ),
-  );
   return [
-    group,
+    groupNode(groupId, { x: left, y: top }, { width: right - left, height: bottom - top }),
     ...nodes.map((node) =>
       memberIds.includes(node.id)
         ? {
             ...node,
             parentNode: groupId,
-            extent: groupExtent(group),
+            hidden: true,
             position: { x: node.computedPosition.x - left, y: node.computedPosition.y - top },
           }
         : node,
@@ -105,7 +45,6 @@ export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {
         ? {
             ...node,
             parentNode: undefined,
-            extent: undefined,
             hidden: false,
             position: {
               x: group.position.x + node.position.x,
@@ -116,30 +55,14 @@ export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {
     );
 }
 
-export function setGroupCollapsed(nodes: GraphNode[], groupId: string, collapsed: boolean): Node[] {
-  return nodes.map((node) => {
-    if (node.id === groupId) {
-      return { ...node, data: { ...node.data, collapsed }, style: groupStyle(collapsed) };
-    }
-    return node.parentNode === groupId ? { ...node, hidden: collapsed } : node;
-  });
-}
-
 export function isStandIn(edge: Edge) {
   return !!edge.data?.standsFor;
 }
 
-export function withCollapsedEdges(nodes: Node[], edges: Edge[]): Edge[] {
+export function withGroupEdges(nodes: Node[], edges: Edge[]): Edge[] {
   const real = edges.filter((edge) => !isStandIn(edge));
-  const collapsed = new Set(
-    nodes
-      .filter((node) => node.type === DATASET_GROUP && node.data.collapsed)
-      .map((node) => node.id),
-  );
   const shownAs = new Map(
-    nodes.flatMap((node) =>
-      node.parentNode && collapsed.has(node.parentNode) ? [[node.id, node.parentNode]] : [],
-    ),
+    nodes.flatMap((node) => (node.parentNode ? [[node.id, node.parentNode]] : [])),
   );
   const standIns = real
     .filter((edge) => shownAs.get(edge.source) !== shownAs.get(edge.target))
@@ -159,7 +82,7 @@ export function withCollapsedEdges(nodes: Node[], edges: Edge[]): Edge[] {
 }
 
 export function standInId(edgeId: string) {
-  return `${edgeId}:collapsed`;
+  return `${edgeId}:group`;
 }
 
 function memberHandle(nodeId: string, portId: string | null | undefined) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vite-plus/test";
 
-import type { GraphNode } from "@vue-flow/core";
+import type { Edge, GraphNode } from "@vue-flow/core";
 
 import {
   fromGraph,
@@ -12,9 +12,8 @@ import {
   groupNodes,
   memberConnection,
   memberPorts,
-  setGroupCollapsed,
   ungroupNodes,
-  withCollapsedEdges,
+  withGroupEdges,
 } from "../lib/dataset-nodes/groups";
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
@@ -221,86 +220,43 @@ describe("Dataset graph", () => {
           width: 400,
           height: 300,
           nodes: ["field", "sampler"],
-          collapsed: false,
+          collapsed: true,
         },
       ],
     };
 
-    it("loads a group before its nodes, which are kept inside its bounds", () => {
-      const { nodes } = load(GROUPED);
+    it("loads a group before its nodes, which are hidden inside it", () => {
+      const { nodes, edges } = load(GROUPED);
 
-      expect(nodes.map((node) => [node.id, node.parentNode, node.extent])).toEqual([
+      expect(nodes.map((node) => [node.id, node.parentNode, node.hidden])).toEqual([
         ["g", undefined, undefined],
-        [
-          "field",
-          "g",
-          [
-            [0, 0],
-            [400, 300],
-          ],
-        ],
-        [
-          "sampler",
-          "g",
-          [
-            [0, 0],
-            [400, 300],
-          ],
-        ],
+        ["field", "g", true],
+        ["sampler", "g", true],
         ["quantize", undefined, undefined],
       ]);
       expect(nodes[0]).toMatchObject({
         type: "dataset-group",
         position: { x: 100, y: 200 },
-        width: 400,
-        height: 300,
+        data: { width: 400, height: 300 },
       });
-    });
-
-    it("saves back exactly the groups it loaded", () => {
-      const { nodes, edges } = load(GROUPED);
-      expect(toGraph(nodes, edges)).toEqual(GROUPED);
-    });
-
-    it("loads a collapsed group with its nodes hidden, and saves it collapsed", () => {
-      const collapsed = { ...GROUPED, groups: [{ ...GROUPED.groups[0]!, collapsed: true }] };
-      const { nodes, edges } = load(collapsed);
-
-      expect(nodes.map((node) => [node.id, node.hidden])).toEqual([
-        ["g", undefined],
-        ["field", true],
-        ["sampler", true],
-        ["quantize", undefined],
-      ]);
-      expect(nodes[0]!.style).toEqual({ width: "auto", height: "auto" });
       expect(edges.map((edge) => [edge.source, edge.sourceHandle, edge.target])).toEqual([
         ["field", "field", "sampler"],
         ["sampler", "observation", "quantize"],
         ["g", "sampler.observation", "quantize"],
       ]);
-      expect(toGraph(nodes, edges)).toEqual(collapsed);
     });
 
-    it("collapses a group into one node and expands it again", () => {
-      const { nodes } = load(GROUPED);
+    it("saves back exactly the groups it loaded, without the lines drawn to them", () => {
+      const { nodes, edges } = load(GROUPED);
+      expect(toGraph(nodes, edges)).toEqual(GROUPED);
+    });
 
-      const collapsed = setGroupCollapsed(nodes as GraphNode[], "g", true);
-      expect(collapsed.map((node) => [node.id, node.hidden])).toEqual([
-        ["g", undefined],
-        ["field", true],
-        ["sampler", true],
-        ["quantize", undefined],
-      ]);
-      expect(collapsed[0]).toMatchObject({
-        data: { collapsed: true },
-        style: { width: "auto", height: "auto" },
-        width: 400,
-        height: 300,
-      });
+    it("shows a group saved expanded as one node", () => {
+      const expanded = { ...GROUPED, groups: [{ ...GROUPED.groups[0]!, collapsed: false }] };
+      const { nodes, edges } = load(expanded);
 
-      const expanded = setGroupCollapsed(collapsed as GraphNode[], "g", false);
-      expect(expanded.map((node) => node.hidden)).toEqual([undefined, false, false, undefined]);
-      expect(expanded[0]).toMatchObject({ data: { collapsed: false }, style: undefined });
+      expect(nodes.map((node) => node.hidden)).toEqual([undefined, true, true, undefined]);
+      expect(toGraph(nodes, edges)).toEqual(GROUPED);
     });
 
     it("doesn't save a group with no nodes left in it", () => {
@@ -321,7 +277,7 @@ describe("Dataset graph", () => {
       } as GraphNode;
     }
 
-    it("puts the chosen nodes in a new group that fits around them, with room for their toolbars", () => {
+    it("puts the chosen nodes in a new group where they were, hiding them inside it", () => {
       const nodes = [placed("a", 0, 0), placed("b", 300, 200), placed("c", 900, 900)];
 
       const [group, ...rest] = groupNodes(nodes, ["a", "b"], "g");
@@ -329,97 +285,44 @@ describe("Dataset graph", () => {
       expect(group).toMatchObject({
         id: "g",
         type: "dataset-group",
-        position: { x: -24, y: -40 },
-        width: 608,
-        height: 404,
+        position: { x: 0, y: 0 },
+        data: { width: 556, height: 300 },
       });
-      expect(rest.map((node) => [node.id, node.parentNode, node.extent, node.position])).toEqual([
-        [
-          "a",
-          "g",
-          [
-            [0, 0],
-            [608, 404],
-          ],
-          { x: 24, y: 40 },
-        ],
-        [
-          "b",
-          "g",
-          [
-            [0, 0],
-            [608, 404],
-          ],
-          { x: 324, y: 240 },
-        ],
+      expect(rest.map((node) => [node.id, node.parentNode, node.hidden, node.position])).toEqual([
+        ["a", "g", true, { x: 0, y: 0 }],
+        ["b", "g", true, { x: 300, y: 200 }],
         ["c", undefined, undefined, { x: 900, y: 900 }],
       ]);
     });
 
-    it("leaves room to spread bunched-up nodes out in a grid", () => {
-      const nodes = [placed("a", 0, 0), placed("b", 0, 0), placed("c", 0, 0)];
-
-      const [group] = groupNodes(nodes, ["a", "b", "c"], "g");
-
-      expect(group).toMatchObject({ width: 608, height: 392 });
-    });
-
-    it("ungroups by removing the group and leaving its nodes where they were", () => {
+    it("ungroups by removing the group and putting its nodes back where they were", () => {
       const group = { ...placed("g", 100, 100), type: "dataset-group" } as GraphNode;
       const other = { ...placed("h", 0, 0), type: "dataset-group" } as GraphNode;
       const nodes = [
         group,
         other,
-        {
-          ...placed("a", 130, 150, "g"),
-          position: { x: 30, y: 50 },
-          extent: [
-            [0, 0],
-            [300, 200],
-          ],
-          hidden: true,
-        },
-        {
-          ...placed("b", 10, 10, "h"),
-          extent: [
-            [0, 0],
-            [300, 200],
-          ],
-        },
-      ] as GraphNode[];
+        { ...placed("a", 130, 150, "g"), position: { x: 30, y: 50 }, hidden: true },
+        { ...placed("b", 10, 10, "h"), hidden: true },
+      ];
 
       const ungrouped = ungroupNodes(nodes, "g");
 
-      expect(ungrouped.find((node) => node.id === "a")!.hidden).toBe(false);
       expect(
-        ungrouped.map((node) => [node.id, node.parentNode, node.extent, node.position]),
+        ungrouped.map((node) => [node.id, node.parentNode, node.hidden, node.position]),
       ).toEqual([
         ["h", undefined, undefined, { x: 0, y: 0 }],
-        ["a", undefined, undefined, { x: 130, y: 150 }],
-        [
-          "b",
-          "h",
-          [
-            [0, 0],
-            [300, 200],
-          ],
-          { x: 10, y: 10 },
-        ],
+        ["a", undefined, false, { x: 130, y: 150 }],
+        ["b", "h", true, { x: 10, y: 10 }],
       ]);
     });
 
-    describe("connections of a collapsed group", () => {
+    describe("connections of a group", () => {
       const member = (id: string, parentNode: string) => ({
         id,
         position: { x: 0, y: 0 },
         parentNode,
       });
-      const groupOf = (id: string, collapsed: boolean) => ({
-        id,
-        type: "dataset-group",
-        position: { x: 0, y: 0 },
-        data: { collapsed },
-      });
+      const groupOf = (id: string) => ({ id, type: "dataset-group", position: { x: 0, y: 0 } });
       const link = (id: string, source: string, target: string) => ({
         id,
         source,
@@ -428,17 +331,15 @@ describe("Dataset graph", () => {
         targetHandle: "in",
       });
       const nodes = [
-        groupOf("g", true),
-        groupOf("h", true),
-        groupOf("open", false),
+        groupOf("g"),
+        groupOf("h"),
         member("a", "g"),
         member("b", "g"),
         member("c", "h"),
-        member("d", "open"),
         { id: "outside", position: { x: 0, y: 0 } },
       ];
 
-      function shown(edges: ReturnType<typeof withCollapsedEdges>) {
+      function shown(edges: Edge[]) {
         return edges
           .filter((edge) => edge.data?.standsFor)
           .map((edge) => [
@@ -454,10 +355,9 @@ describe("Dataset graph", () => {
           link("out", "b", "outside"),
           link("inside", "a", "b"),
           link("between", "a", "c"),
-          link("open", "d", "outside"),
         ];
 
-        expect(shown(withCollapsedEdges(nodes, edges))).toEqual([
+        expect(shown(withGroupEdges(nodes, edges))).toEqual([
           ["in", "outside.out", "g.a.in"],
           ["out", "g.b.out", "outside.in"],
           ["between", "g.a.out", "h.c.in"],
@@ -466,17 +366,15 @@ describe("Dataset graph", () => {
 
       it("replaces the lines it drew before, keeping the real connections", () => {
         const edges = [link("in", "outside", "a")];
-        const once = withCollapsedEdges(nodes, edges);
-        const expanded = nodes.map((node) =>
-          node.id === "g" ? { ...node, data: { collapsed: false } } : node,
-        );
+        const once = withGroupEdges(nodes, edges);
+        const ungrouped = nodes.map(({ id, position }) => ({ id, position }));
 
-        expect(withCollapsedEdges(nodes, once)).toEqual(once);
-        expect(withCollapsedEdges(expanded, once)).toEqual(edges);
+        expect(withGroupEdges(nodes, once)).toEqual(once);
+        expect(withGroupEdges(ungrouped, once)).toEqual(edges);
       });
     });
 
-    describe("ports of a collapsed group", () => {
+    describe("ports of a group", () => {
       function ports(graph: DatasetGraph) {
         const { nodes, edges } = load(graph);
         return memberPorts(nodes, edges, localCatalog, "g");
@@ -528,7 +426,7 @@ describe("Dataset graph", () => {
       });
     });
 
-    it("turns a connection to a collapsed group's port into one to the node behind it", () => {
+    it("turns a connection to a group's port into one to the node behind it", () => {
       const { nodes } = load(GROUPED);
 
       expect(

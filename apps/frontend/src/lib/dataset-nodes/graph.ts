@@ -3,14 +3,7 @@ import type { Edge, Node, XYPosition } from "@vue-flow/core";
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
 import { canConnect, findKind, type DatasetNodeData } from "./catalog";
-import {
-  DATASET_GROUP,
-  groupExtent,
-  groupNode,
-  isStandIn,
-  withCollapsedEdges,
-  type GroupNode,
-} from "./groups";
+import { DATASET_GROUP, groupNode, isStandIn, withGroupEdges, type GroupNode } from "./groups";
 import { isValidParam } from "./params";
 import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 
@@ -44,13 +37,13 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       ),
     groups: nodes
       .filter((node): node is GroupNode => node.type === DATASET_GROUP)
-      .map(({ id, position: { x, y }, width, height, data }) => ({
+      .map(({ id, position: { x, y }, data: { width, height } }) => ({
         id,
         position: { x, y },
         width,
         height,
         nodes: datasetNodes.filter((node) => node.parentNode === id).map((node) => node.id),
-        collapsed: data.collapsed,
+        collapsed: true,
       }))
       .filter((group) => group.nodes.length),
   };
@@ -61,13 +54,13 @@ export function fromGraph(
   catalog: NodeCatalog,
 ): { nodes: Node[]; edges: Edge[] } {
   const kindOf = new Map(graph.nodes.map((node) => [node.id, node.kind]));
-  const groupOf = new Map(
-    graph.groups.flatMap((group) => group.nodes.map((node) => [node, group])),
+  const parentOf = new Map(
+    graph.groups.flatMap((group) => group.nodes.map((node) => [node, group.id])),
   );
 
   const nodes = [
-    ...graph.groups.map(({ id, position: { x, y }, width, height, collapsed }) =>
-      groupNode(id, { x, y }, width, height, collapsed),
+    ...graph.groups.map(({ id, position: { x, y }, width, height }) =>
+      groupNode(id, { x, y }, { width, height }),
     ),
     ...graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
       const def = findKind(catalog, kind);
@@ -76,10 +69,8 @@ export function fromGraph(
         { x, y },
         { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
       );
-      const group = groupOf.get(id);
-      return group
-        ? { ...node, parentNode: group.id, extent: groupExtent(group), hidden: group.collapsed }
-        : node;
+      const parentNode = parentOf.get(id);
+      return parentNode ? { ...node, parentNode, hidden: true } : node;
     }),
   ];
   const edges = graph.edges
@@ -98,7 +89,7 @@ export function fromGraph(
       target,
       targetHandle: target_port,
     }));
-  return { nodes, edges: withCollapsedEdges(nodes, edges) };
+  return { nodes, edges: withGroupEdges(nodes, edges) };
 }
 
 function loadParams(kind: NodeKindDef, saved: ParamValues): ParamValues {
