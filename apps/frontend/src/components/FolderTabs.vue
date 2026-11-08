@@ -1,7 +1,8 @@
 <script setup lang="ts" generic="Tab extends { label: string }">
+import { cn } from "cn";
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "reka-ui";
 
-defineProps<{ tabs: Tab[]; label: string }>();
+defineProps<{ tabs: Tab[]; label: string; contentClass?: string }>();
 
 defineSlots<{ default?: (props: { tab: Tab }) => unknown }>();
 </script>
@@ -25,7 +26,7 @@ defineSlots<{ default?: (props: { tab: Tab }) => unknown }>();
       v-for="tab in tabs"
       :key="tab.label"
       :value="tab.label"
-      class="h-full overflow-y-auto border-t bg-background p-4 outline-none"
+      :class="cn('h-full overflow-y-auto border-t bg-background p-4 outline-none', contentClass)"
     >
       <slot :tab="tab" />
     </TabsContent>

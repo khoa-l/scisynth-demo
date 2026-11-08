@@ -25,7 +25,13 @@ function startDrag(event: DragEvent, name: string) {
 </script>
 
 <template>
-  <FolderTabs v-if="tabs.length" v-slot="{ tab: category }" :tabs="tabs" label="Node categories">
+  <FolderTabs
+    v-if="tabs.length"
+    v-slot="{ tab: category }"
+    :tabs="tabs"
+    label="Node categories"
+    content-class="rounded-tr-lg border-r"
+  >
     <ul :class="paletteListClass">
       <li
         v-for="kind in category.kinds"

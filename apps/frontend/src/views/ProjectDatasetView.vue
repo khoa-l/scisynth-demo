@@ -79,8 +79,15 @@ async function downloadData() {
             :dataset="dataset"
           />
         </div>
-        <div role="group" aria-label="Dataset details" class="min-h-0 flex-1">
-          <DatasetNodePalette />
+        <div
+          role="group"
+          aria-label="Dataset details"
+          class="grid min-h-0 flex-1 grid-cols-[2fr_1fr]"
+        >
+          <div class="min-h-0">
+            <DatasetNodePalette />
+          </div>
+          <div class="-ml-px rounded-tl-lg border-t border-l bg-background" />
         </div>
       </div>
     </template>
