@@ -138,8 +138,7 @@ describe("Dataset builder", () => {
     });
   });
 
-  it("draws every connection with the chosen line type, and remembers it", async () => {
-    localStorage.clear();
+  it("draws every connection with the chosen line type, and remembers it for the dataset", async () => {
     const wrapper = await mountView();
     const field = await dropKind(wrapper, "GaussianField");
     const sampler = await dropKind(wrapper, "GridSampler");
@@ -161,7 +160,54 @@ describe("Dataset builder", () => {
     const sampler2 = await dropKind(reopened, "GridSampler");
     await connect(reopened, field2, sampler2, "latent");
     expect(flow(reopened).edges[0]!.type).toBe("step");
-    localStorage.clear();
+
+    reopened.unmount();
+    const other = await mountView({ ...DATASET, id: "other-dataset" });
+    const field3 = await dropKind(other, "GaussianField");
+    const sampler3 = await dropKind(other, "GridSampler");
+    await connect(other, field3, sampler3, "latent");
+    expect(flow(other).edges[0]!.type).toBe("default");
+  });
+
+  it("lays the graph out in the order it flows from the graph settings", async () => {
+    const wrapper = await mountView();
+    const sampler = await dropKind(wrapper, "GridSampler");
+    const field = await dropKind(wrapper, "GaussianField");
+    await connect(wrapper, field, sampler, "latent");
+
+    await wrapper
+      .find('[role="group"][aria-label="Graph settings"]')
+      .findAll("button")
+      .find((button) => button.text() === "Auto-layout")!
+      .trigger("click");
+    await flushPromises();
+
+    const [samplerNode, fieldNode] = flow(wrapper).nodes;
+    expect(fieldNode!.position.x).toBeLessThan(samplerNode!.position.x);
+    expect(fieldNode!.position.y).toBe(samplerNode!.position.y);
+  });
+
+  it("shows the graph settings until they are hidden, and remembers it for the dataset", async () => {
+    const settingsShown = (wrapper: Wrapper) =>
+      wrapper.find('[role="group"][aria-label="Graph settings"]').exists();
+    const toggle = (wrapper: Wrapper) =>
+      wrapper.find('[aria-label="Show graph settings"]').trigger("click");
+    const wrapper = await mountView();
+    expect(settingsShown(wrapper)).toBe(true);
+
+    await toggle(wrapper);
+    expect(settingsShown(wrapper)).toBe(false);
+
+    wrapper.unmount();
+    const reopened = await mountView();
+    expect(settingsShown(reopened)).toBe(false);
+
+    await toggle(reopened);
+    expect(settingsShown(reopened)).toBe(true);
+
+    await toggle(reopened);
+    reopened.unmount();
+    expect(settingsShown(await mountView({ ...DATASET, id: "other-dataset" }))).toBe(true);
   });
 
   it("adds to the selection when a node is clicked with shift held", async () => {

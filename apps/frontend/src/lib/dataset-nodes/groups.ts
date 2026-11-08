@@ -15,8 +15,8 @@ export const DATASET_GROUP = "dataset-group";
 
 const GROUP_PADDING = 24;
 const GROUP_HEADER = 40;
-const NODE_TOOLBAR = 40;
-const NODE_GAP = 48;
+export const NODE_TOOLBAR = 40;
+export const NODE_GAP = 48;
 
 type GroupData = { collapsed: boolean };
 export type GroupNode = Node<GroupData> & { width: number; height: number; data: GroupData };

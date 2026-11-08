@@ -29,6 +29,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
+  localStorage.clear();
 });
 
 enableAutoUnmount(afterEach);

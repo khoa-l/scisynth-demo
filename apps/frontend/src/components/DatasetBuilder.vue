@@ -13,7 +13,7 @@ import {
   type ValidConnectionFunc,
 } from "@vue-flow/core";
 import { useDebounceFn, useLocalStorage, useMounted, whenever } from "@vueuse/core";
-import { computed, markRaw, onBeforeUnmount, provide, ref, watch } from "vue";
+import { computed, markRaw, nextTick, onBeforeUnmount, provide, ref, watch } from "vue";
 
 import type { DatasetPublic } from "@/client";
 import {
@@ -39,6 +39,7 @@ import {
   standInId,
   withCollapsedEdges,
 } from "@/lib/dataset-nodes/groups";
+import { autoLayout } from "@/lib/dataset-nodes/layout";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
@@ -50,9 +51,13 @@ const nodeTypes = {
   [DATASET_GROUP]: markRaw(DatasetGroup),
 };
 const lineStyle = { strokeWidth: 3 };
-const lineType = useLocalStorage<LineType>("dataset-builder-line-type", ConnectionLineType.Bezier);
+const lineType = useLocalStorage<LineType>(
+  `dataset-builder-line-type:${props.dataset.id}`,
+  ConnectionLineType.Bezier,
+);
 if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Bezier;
 const defaultEdgeOptions = computed(() => ({ type: lineType.value, style: lineStyle }));
+const settingsShown = useLocalStorage(`dataset-builder-settings-shown:${props.dataset.id}`, true);
 
 provide(VIEWED_NODE, ref(null));
 
@@ -162,6 +167,11 @@ const isValidConnection: ValidConnectionFunc = (connection) => {
   );
 };
 
+function layOut() {
+  setNodes(autoLayout(nodes.value, edges.value));
+  nextTick(() => fitView({ maxZoom: 1 }));
+}
+
 function onDragOver(event: DragEvent) {
   if (!event.dataTransfer?.types.includes(NODE_KIND_MIME)) return;
   event.preventDefault();
@@ -214,7 +224,11 @@ function onDrop(event: DragEvent) {
       <SaveFailedAlert @retry="save" />
     </Panel>
     <Panel position="top-right">
-      <GraphSettings v-model:line-type="lineType" />
+      <GraphSettings
+        v-model:line-type="lineType"
+        v-model:shown="settingsShown"
+        @auto-layout="layOut"
+      />
     </Panel>
   </VueFlow>
 </template>

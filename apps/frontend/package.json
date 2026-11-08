@@ -13,6 +13,7 @@
     "openapi-ts": "openapi-ts"
   },
   "dependencies": {
+    "@dagrejs/dagre": "catalog:",
     "@fontsource-variable/inclusive-sans": "catalog:",
     "@lucide/vue": "catalog:",
     "@tanstack/vue-form": "catalog:",

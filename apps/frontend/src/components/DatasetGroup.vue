@@ -22,8 +22,8 @@ const { data: catalog } = useQuery(nodeCatalogQuery);
 const { edges, nodes, setEdges, setNodes } = useVueFlow();
 const viewed = inject(VIEWED_NODE, ref(null));
 
-const memberCount = computed(
-  () => nodes.value.filter((node) => node.parentNode === props.id).length,
+const memberIds = computed(() =>
+  nodes.value.filter((node) => node.parentNode === props.id).map((node) => node.id),
 );
 const members = computed(() =>
   catalog.value ? memberPorts(nodes.value, edges.value, catalog.value, props.id) : [],
@@ -44,10 +44,7 @@ function ungroup() {
 }
 
 function remove() {
-  const removed = new Set([
-    props.id,
-    ...nodes.value.filter((node) => node.parentNode === props.id).map((node) => node.id),
-  ]);
+  const removed = new Set([props.id, ...memberIds.value]);
   if (viewed.value && removed.has(viewed.value)) viewed.value = null;
   setNodes(nodes.value.filter((node) => !removed.has(node.id)));
   setEdges(edges.value.filter((edge) => !removed.has(edge.source) && !removed.has(edge.target)));
@@ -83,7 +80,7 @@ function update(next: Node[]) {
       >
         Group
         <span class="font-normal text-muted-foreground">
-          {{ memberCount }} {{ memberCount === 1 ? "node" : "nodes" }}
+          {{ memberIds.length }} {{ memberIds.length === 1 ? "node" : "nodes" }}
         </span>
       </div>
       <div class="divide-y">
