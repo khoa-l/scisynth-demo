@@ -1,6 +1,7 @@
 import type { InjectionKey, ShallowRef } from "vue";
 
-export const surveyPanelKey: InjectionKey<Readonly<ShallowRef<HTMLElement | null>>> = Symbol();
+export const SURVEY_PANEL: InjectionKey<Readonly<ShallowRef<HTMLElement | null>>> =
+  Symbol("survey panel");
 
 export const SURVEY_BLOCK_GROUP = "survey-blocks";
 

@@ -90,4 +90,15 @@ describe("Dataset node palette", () => {
       SAVED_GROUP.content,
     );
   });
+
+  it("drops a renamed saved group under its new name", async () => {
+    const wrapper = await mountView(undefined, [{ ...SAVED_GROUP, name: "Renamed" }]);
+    await openTab(wrapper, "Saved groups");
+
+    const dataTransfer = fakeDataTransfer();
+    await visiblePanel(wrapper).find("li").trigger("dragstart", { dataTransfer });
+
+    const dropped = JSON.parse(dataTransfer.getData("application/x-scisynth-group"));
+    expect(dropped.groups[0].name).toBe("Renamed");
+  });
 });

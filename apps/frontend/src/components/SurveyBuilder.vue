@@ -24,7 +24,7 @@ import {
   blockLabels,
   surveyBlocks,
   surveyColumnClass,
-  surveyPanelKey,
+  SURVEY_PANEL,
   type ChartBlock,
   type LabelBlock,
   type SurveyBlock,
@@ -58,7 +58,7 @@ function save(next: SurveyBlock[]) {
 
 const LIST_ID = "survey-builder";
 const zone = useTemplateRef<HTMLElement>("zone");
-provide(surveyPanelKey, zone);
+provide(SURVEY_PANEL, zone);
 const list = useTemplateRef<HTMLElement>("list");
 const { items } = makeSortableList(list, {
   id: LIST_ID,

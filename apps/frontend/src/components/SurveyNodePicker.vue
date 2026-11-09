@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import { surveyPanelKey, type ChartSource } from "@/lib/survey-blocks";
+import { SURVEY_PANEL, type ChartSource } from "@/lib/survey-blocks";
 
 const props = defineProps<{ id: string; projectId: string; source: ChartSource | null }>();
 const emit = defineEmits<{ choose: [datasetId: string, nodeId: string] }>();
@@ -42,7 +42,7 @@ const chosen = computed(() => {
   return section && option && { dataset: section.dataset.name, node: option.label };
 });
 
-const panel = inject(surveyPanelKey, null);
+const panel = inject(SURVEY_PANEL, null);
 const open = ref(false);
 const expanded = ref<string[]>([]);
 

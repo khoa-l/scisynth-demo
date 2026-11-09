@@ -55,7 +55,6 @@ const { open: saveOpen, pending: isSaving, error: saveError, run } = useDialogAc
 
 function save(name: string) {
   const content = groupGraph(toGraph(nodes.value, edges.value), props.id);
-  content.groups[0]!.name = name;
   void run(() => saveGroup({ body: { name, content } }));
 }
 

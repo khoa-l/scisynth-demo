@@ -455,6 +455,17 @@ describe("Dataset graph", () => {
       ]);
     });
 
+    it("lists a named node's ports under its name", () => {
+      const { nodes } = load({
+        ...GROUPED,
+        nodes: GROUPED.nodes.map((node) =>
+          node.id === "sampler" ? { ...node, name: "Coarse grid" } : node,
+        ),
+      });
+
+      expect(memberPorts(nodes, localCatalog, "g")).toMatchObject([{ label: "Coarse grid" }]);
+    });
+
     it("opens a group by showing only its nodes, joined to a group input and a group output", () => {
       const { nodes, edges } = load(GROUPED);
 

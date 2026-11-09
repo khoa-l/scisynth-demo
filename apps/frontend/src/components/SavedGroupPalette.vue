@@ -42,7 +42,8 @@ const { mutateAsync: remove } = useMutation({
 
 function startDrag(event: DragEvent, group: SavedGroupPublic) {
   if (!event.dataTransfer) return;
-  event.dataTransfer.setData(SAVED_GROUP_MIME, JSON.stringify(group.content));
+  const groups = group.content.groups.map((saved) => ({ ...saved, name: group.name }));
+  event.dataTransfer.setData(SAVED_GROUP_MIME, JSON.stringify({ ...group.content, groups }));
   event.dataTransfer.effectAllowed = "copy";
 }
 </script>

@@ -272,7 +272,7 @@ export function memberPorts(nodes: Node[], catalog: NodeCatalog, groupId: string
     const inputs = exposed("inputs");
     const outputs = exposed("outputs");
     if (!inputs.length && !outputs.length) return [];
-    return [{ id: node.id, label: kind.label, inputs, outputs }];
+    return [{ id: node.id, label: node.data.name || kind.label, inputs, outputs }];
   });
 }
 
