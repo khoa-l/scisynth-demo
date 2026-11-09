@@ -83,9 +83,9 @@ function choose(datasetId: string, nodeId: string) {
     </PopoverTrigger>
     <PopoverContent
       align="start"
-      class="max-h-80 w-(--reka-popover-trigger-width) gap-0.5 overflow-y-auto p-1"
+      class="max-h-80 w-(--reka-popover-trigger-width) gap-0 divide-y overflow-y-auto p-0"
     >
-      <p v-if="!sections.length" class="px-1.5 py-1 text-muted-foreground">
+      <p v-if="!sections.length" class="px-3 py-2 text-muted-foreground">
         No datasets with nodes yet.
       </p>
       <Collapsible
@@ -95,7 +95,7 @@ function choose(datasetId: string, nodeId: string) {
         @update:open="setExpanded(dataset.id, $event)"
       >
         <CollapsibleTrigger
-          class="group flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left font-medium outline-none hover:bg-accent focus-visible:bg-accent"
+          class="group flex w-full items-center gap-1.5 px-3 py-2 text-left outline-none hover:bg-accent focus-visible:bg-accent"
         >
           <ChevronRight
             class="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90"
@@ -103,12 +103,12 @@ function choose(datasetId: string, nodeId: string) {
           <span class="truncate">{{ dataset.name }}</span>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <ul :aria-label="dataset.name" class="flex flex-col gap-0.5">
+          <ul :aria-label="dataset.name" class="pb-1">
             <li v-for="option in options" :key="option.id">
               <button
                 type="button"
                 :aria-current="isChosen(dataset.id, option.id)"
-                class="flex w-full items-center gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-left outline-none hover:bg-accent focus-visible:bg-accent"
+                class="flex w-full items-center gap-1.5 py-1.5 pr-3 pl-8.5 text-left outline-none hover:bg-accent focus-visible:bg-accent"
                 @click="choose(dataset.id, option.id)"
               >
                 <span class="flex-1 truncate">{{ option.label }}</span>
