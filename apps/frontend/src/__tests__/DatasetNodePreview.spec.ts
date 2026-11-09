@@ -285,6 +285,38 @@ describe("Dataset node preview", () => {
     expect(sampler.find('[aria-label="Plot type"]').exists()).toBe(false);
   });
 
+  it("shows the range of each axis of a preview, leaving out dropped points", async () => {
+    const wrapper = await mountView();
+    const typed = (values: number[]) => ({
+      ...AXIS,
+      bdata: btoa(String.fromCharCode(...new Uint8Array(new Float32Array(values).buffer))),
+      shape: String(values.length),
+    });
+    answerPreviews(() =>
+      jsonResponse({
+        layout: "points",
+        axes: ["x", "time"],
+        x: typed([NaN, -2, 3.5]),
+        y: typed([0.12345, 1, NaN]),
+        channels: [typed([1, 2, 3])],
+      }),
+    );
+    const sampler = await dropKind(wrapper, "PointSampler");
+    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
+    await flushPromises();
+
+    await sampler.find('[aria-label="Show domain"]').trigger("click");
+    await flushPromises();
+
+    const popover = document.querySelector('[data-slot="popover-content"]')!;
+    expect([...popover.querySelectorAll("dt, dd")].map((item) => item.textContent)).toEqual([
+      "x",
+      "-2 – 3.5",
+      "time",
+      "0.1235 – 1",
+    ]);
+  });
+
   it("draws scatters of more than a thousand points with WebGL", async () => {
     const wrapper = await mountView();
     const bytes = new Uint8Array(new Float32Array(1001).buffer);
@@ -485,6 +517,21 @@ describe("Dataset node preview", () => {
     const alert = field.find('[role="alert"]');
     expect(alert.text()).toBe("Couldn't preview this node.resolution is over the limit");
     expect(alert.classes()).toContain("text-destructive");
+  });
+
+  it("has no preview for a domain, and still previews the latent it is plugged into", async () => {
+    const wrapper = await mountView();
+    answerPreviews(() => jsonResponse(PREVIEW));
+
+    const domain = await dropKind(wrapper, "Domain");
+    const field = await dropKind(wrapper, "GaussianField");
+    await connect(wrapper, domain, field, "domain", "domain");
+
+    expect(thumbnail(domain).exists()).toBe(false);
+    expect(domain.find('[aria-label="View preview"]').exists()).toBe(false);
+    expect(thumbnail(field).exists()).toBe(true);
+    const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+    expect(bodies.every((body) => body.node === field.attributes("data-id"))).toBe(true);
   });
 
   it("draws thumbnails for every kind of latent", async () => {

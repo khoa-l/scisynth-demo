@@ -196,6 +196,22 @@ describe("Chart blocks", () => {
       ]);
     });
 
+    it("doesn't offer domains, which have no data", async () => {
+      const withDomain = {
+        ...DATASET,
+        content: { ...DATASET.content, nodes: [node("d", "Domain"), ...DATASET.content.nodes] },
+      };
+      const wrapper = await mountBuilder(chart({ source: null }), [withDomain]);
+
+      const options = await openData(wrapper);
+
+      expect(options.map((option) => option.text())).toEqual([
+        "Gaussian Field",
+        "Grid Sampler",
+        "Gaussian Field 2",
+      ]);
+    });
+
     it("lets the author pick the channels to show, but not none", async () => {
       const wrapper = await mountBuilder(chart());
       const channel = (n: number) => row(wrapper).find(`[aria-label="Channel ${n}"]`);

@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import type { DomainAxis } from "@/client";
+import DomainAxes from "@/components/DomainAxes.vue";
 import type {
   IntegerParam,
   NumberParam,
@@ -49,62 +51,72 @@ function restoreIfBlank(name: string, def: NumberParam | IntegerParam, event: Fo
 <template>
   <div class="nodrag grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-x-2 gap-y-2">
     <template v-for="(def, name) in params" :key="name">
-      <Label :for="`${uid}-${name}`" class="text-muted-foreground">{{ def.label }}</Label>
-      <Select
-        v-if="def.type === 'enum'"
-        :model-value="values[name] as string"
-        @update:model-value="emit('update', name, String($event))"
-      >
-        <SelectTrigger :id="`${uid}-${name}`" class="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in def.options" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-      <Switch
-        v-else-if="def.type === 'boolean'"
-        :id="`${uid}-${name}`"
-        :model-value="values[name] as boolean"
-        class="justify-self-end"
-        @update:model-value="emit('update', name, $event)"
-      />
-      <NumberField
-        v-else
-        :id="`${uid}-${name}`"
-        :model-value="values[name] as number | null"
-        :min="def.min"
+      <DomainAxes
+        v-if="def.type === 'axes'"
+        :label="def.label"
+        :axes="values[name] as DomainAxis[]"
         :max="def.max"
-        :step="def.type === 'integer' ? 1 : (def.step ?? 1)"
-        :step-snapping="def.type === 'integer'"
-        :format-options="formatOptions"
-        class="nowheel"
-        @update:model-value="commitNumber(name, def, $event)"
-      >
-        <NumberFieldContent>
-          <NumberFieldInput
-            :placeholder="def.optional ? 'Auto' : undefined"
-            class="pl-1.5 text-left"
-            @blur="restoreIfBlank(name, def, $event)"
-          />
-          <div
-            class="absolute inset-y-px right-px flex w-5 flex-col overflow-hidden rounded-r-[calc(var(--radius-lg)-1px)] border-l border-input"
-          >
-            <NumberFieldIncrement
-              class="static flex flex-1 translate-y-0 items-center justify-center border-b border-input p-0 hover:bg-muted"
+        class="col-span-2"
+        @update="emit('update', name, $event)"
+      />
+      <template v-else>
+        <Label :for="`${uid}-${name}`" class="text-muted-foreground">{{ def.label }}</Label>
+        <Select
+          v-if="def.type === 'enum'"
+          :model-value="values[name] as string"
+          @update:model-value="emit('update', name, String($event))"
+        >
+          <SelectTrigger :id="`${uid}-${name}`" class="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="option in def.options" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Switch
+          v-else-if="def.type === 'boolean'"
+          :id="`${uid}-${name}`"
+          :model-value="values[name] as boolean"
+          class="justify-self-end"
+          @update:model-value="emit('update', name, $event)"
+        />
+        <NumberField
+          v-else
+          :id="`${uid}-${name}`"
+          :model-value="values[name] as number | null"
+          :min="def.min"
+          :max="def.max"
+          :step="def.type === 'integer' ? 1 : (def.step ?? 1)"
+          :step-snapping="def.type === 'integer'"
+          :format-options="formatOptions"
+          class="nowheel"
+          @update:model-value="commitNumber(name, def, $event)"
+        >
+          <NumberFieldContent>
+            <NumberFieldInput
+              :placeholder="def.optional ? 'Auto' : undefined"
+              class="pl-1.5 text-left"
+              @blur="restoreIfBlank(name, def, $event)"
+            />
+            <div
+              class="absolute inset-y-px right-px flex w-5 flex-col overflow-hidden rounded-r-[calc(var(--radius-lg)-1px)] border-l border-input"
             >
-              <ChevronUp class="size-3" />
-            </NumberFieldIncrement>
-            <NumberFieldDecrement
-              class="static flex flex-1 translate-y-0 items-center justify-center p-0 hover:bg-muted"
-            >
-              <ChevronDown class="size-3" />
-            </NumberFieldDecrement>
-          </div>
-        </NumberFieldContent>
-      </NumberField>
+              <NumberFieldIncrement
+                class="static flex flex-1 translate-y-0 items-center justify-center border-b border-input p-0 hover:bg-muted"
+              >
+                <ChevronUp class="size-3" />
+              </NumberFieldIncrement>
+              <NumberFieldDecrement
+                class="static flex flex-1 translate-y-0 items-center justify-center p-0 hover:bg-muted"
+              >
+                <ChevronDown class="size-3" />
+              </NumberFieldDecrement>
+            </div>
+          </NumberFieldContent>
+        </NumberField>
+      </template>
     </template>
   </div>
 </template>

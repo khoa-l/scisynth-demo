@@ -442,6 +442,21 @@ describe("Dataset graph", () => {
       });
     });
 
+    it("only exposes a latent's domain when it is plugged in from outside the group", () => {
+      const nodes = [
+        placed("d", 0, 0, undefined, "Domain"),
+        placed("a", 0, 200, undefined, "GaussianField"),
+        placed("b", 0, 400, undefined, "GaussianField"),
+      ];
+      const edges = [
+        { id: "e", source: "d", sourceHandle: "domain", target: "a", targetHandle: "domain" },
+      ];
+
+      const [group] = groupNodes(nodes, edges, localCatalog, ["a", "b"], "g");
+
+      expect(group!.data.inputs).toEqual([{ node: "a", port: "domain" }]);
+    });
+
     it("lists the ports a group exposes under the node they belong to", () => {
       const { nodes } = load(GROUPED);
 

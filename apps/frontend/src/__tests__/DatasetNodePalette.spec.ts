@@ -64,7 +64,7 @@ describe("Dataset node palette", () => {
     expect(items.every((item) => item.attributes("draggable") === "true")).toBe(true);
     const dataTransfer = fakeDataTransfer();
     await items[0]!.trigger("dragstart", { dataTransfer });
-    expect(dataTransfer.getData("application/x-scisynth-node")).toBe("GaussianField");
+    expect(dataTransfer.getData("application/x-scisynth-node")).toBe("Domain");
     expect(dataTransfer.effectAllowed).toBe("copy");
   });
 

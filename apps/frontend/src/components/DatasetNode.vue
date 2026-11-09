@@ -47,6 +47,7 @@ function connectionCount(port: PortDef) {
 const hasPreview = computed(
   () =>
     !!kind.value &&
+    kind.value.family !== "domain" &&
     kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port)),
 );
 

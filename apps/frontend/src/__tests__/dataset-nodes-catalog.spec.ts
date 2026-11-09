@@ -49,7 +49,12 @@ describe("Node catalog", () => {
     expect(link("GaussianNoise", "observation", "PCA", "observation")).toBe(true);
     expect(link("Downsample", "observation", "UMAP", "observation")).toBe(true);
 
+    expect(link("Domain", "domain", "GaussianField", "domain")).toBe(true);
+    expect(link("Domain", "domain", "VoronoiRegions", "domain")).toBe(true);
+
     expect(link("GaussianField", "field", "GaussianNoise", "observation")).toBe(false);
+    expect(link("Domain", "domain", "GridSampler", "latent")).toBe(false);
+    expect(link("GaussianField", "field", "GaussianBumps", "domain")).toBe(false);
     expect(link("GridSampler", "observation", "Sum", "terms")).toBe(false);
     expect(link("GaussianField", "nope", "Sum", "terms")).toBe(false);
   });
@@ -70,6 +75,7 @@ describe("Node catalog", () => {
       findKind(localCatalog, name)!.inputs.map((port) => requiredConnections(port));
 
     expect(required("GridSampler")).toEqual([1]);
+    expect(required("GaussianField")).toEqual([0]);
     expect(required("GaussianNoise")).toEqual([1]);
     expect(required("PCA")).toEqual([1]);
     expect(required("UMAP")).toEqual([1]);

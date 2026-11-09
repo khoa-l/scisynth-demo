@@ -1,6 +1,7 @@
 import { hueBackground } from "@/lib/gradient";
 
 export const familyHues: Record<string, number> = {
+  domain: 120,
   latent: 250,
   composite: 300,
   sampler: 170,

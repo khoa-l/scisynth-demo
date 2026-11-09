@@ -127,6 +127,8 @@ def export_dataset_data(dataset: Dataset) -> bytes:
     }
     skipped = {}
     for node in graph.nodes:
+        if node.kind == "Domain":
+            continue
         request = NodePreviewRequest(
             node=node.id, nodes=[*graph.nodes], edges=graph.edges
         )

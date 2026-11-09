@@ -42,7 +42,11 @@ def find_node(body: NodePreviewRequest, node_id: str) -> NodeSpec:
 
 
 def inputs(body: NodePreviewRequest, node_id: str) -> list[str]:
-    return [edge.source for edge in body.edges if edge.target == node_id]
+    return [
+        edge.source
+        for edge in body.edges
+        if edge.target == node_id and edge.target_port != "domain"
+    ]
 
 
 def split_seed(node: NodeSpec) -> tuple[dict, int]:

@@ -97,6 +97,41 @@ def test_rejects_blank_or_long_names(
     assert response.status_code == 422
 
 
+def axis(name: str, lo: float = 0, hi: float = 1) -> dict:
+    return {"name": name, "extent": [lo, hi]}
+
+
+def test_saves_the_axes_of_a_domain(client: TestClient, dataset_url: str) -> None:
+    axes = [axis("x"), axis("y"), axis("time", -1, 2.5)]
+    domain = {**GRAPH, "nodes": [*NODES, node("d", "Domain", axes=axes)]}
+
+    client.patch(dataset_url, json={"content": domain})
+
+    assert client.get(dataset_url).json()["content"]["nodes"][-1]["params"] == {
+        "axes": axes
+    }
+
+
+@pytest.mark.parametrize(
+    "axes",
+    [
+        [],
+        [axis("x", 1, 1)],
+        [axis("x", 2, 1)],
+        [axis("x"), axis("x")],
+        [axis("   ")],
+        [{"name": "x", "extent": [0, 1, 2]}],
+        [axis(f"a{i}") for i in range(9)],
+    ],
+)
+def test_rejects_domains_with_bad_axes(
+    client: TestClient, dataset_url: str, axes: list
+) -> None:
+    domain = {**GRAPH, "nodes": [*NODES, node("d", "Domain", axes=axes)]}
+
+    assert client.patch(dataset_url, json={"content": domain}).status_code == 422
+
+
 def test_exports_the_graph_as_a_file(client: TestClient, dataset_url: str) -> None:
     client.patch(dataset_url, json={"content": GRAPH})
 
@@ -119,9 +154,20 @@ def test_downloads_the_generated_data_of_every_node(
     client: TestClient, dataset_url: str
 ) -> None:
     lonely = node("lonely", "GridSampler", shape=8)
-    client.patch(
-        dataset_url, json={"content": {**DROPPED, "nodes": [*DROPPED["nodes"], lonely]}}
-    )
+    domain = node("d", "Domain")
+    to_field = {
+        "id": "d-a",
+        "source": "d",
+        "source_port": "domain",
+        "target": "a",
+        "target_port": "domain",
+    }
+    content = {
+        **DROPPED,
+        "nodes": [*DROPPED["nodes"], lonely, domain],
+        "edges": [*DROPPED["edges"], to_field],
+    }
+    client.patch(dataset_url, json={"content": content})
 
     response = client.get(f"{dataset_url}/data")
 

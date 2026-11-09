@@ -31,6 +31,28 @@ describe("Node parameters", () => {
     expect(isValidParam(probability, undefined)).toBe(false);
   });
 
+  it("accepts one to the most axes, each named once and ending after it starts", () => {
+    const axes: ParamDef = { type: "axes", label: "Axes", default: [], max: 2 };
+    const axis = (name: string, extent: unknown = [0, 1]) => ({ name, extent });
+
+    expect(isValidParam(axes, [axis("x")])).toBe(true);
+    expect(isValidParam(axes, [axis("x", [-1, 2.5]), axis("y")])).toBe(true);
+    for (const value of [
+      [],
+      [axis("x"), axis("y"), axis("z")],
+      [axis("x"), axis("x")],
+      [axis(" ")],
+      [axis("x", [1, 1])],
+      [axis("x", [0])],
+      [axis("x", [0, Infinity])],
+      [{ name: "x" }],
+      "x",
+      null,
+    ]) {
+      expect(isValidParam(axes, value), JSON.stringify(value)).toBe(false);
+    }
+  });
+
   it("accepts only an enum's own options", () => {
     expect(isValidParam(mode, "grid-wrap")).toBe(true);
     expect(isValidParam(mode, "wrap")).toBe(false);

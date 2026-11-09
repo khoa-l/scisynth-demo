@@ -2,7 +2,7 @@ import type { Connection, Edge, GraphNode, Node, XYPosition } from "@vue-flow/co
 
 import type { GroupPort } from "@/client";
 
-import { findKind } from "./catalog";
+import { findKind, requiredConnections } from "./catalog";
 import { DATASET_NODE, type DatasetGraph, type FlowNode } from "./graph";
 import type { NodeCatalog } from "./types";
 
@@ -50,16 +50,15 @@ export function groupNodes(
   const exposed = (side: GroupSide) =>
     members.flatMap((node) =>
       (findKind(catalog, node.data.kind)?.[side] ?? [])
-        .filter(
-          (port) =>
-            !onlyInside(
-              real.filter((edge) =>
-                side === "inputs"
-                  ? edge.target === node.id && edge.targetHandle === port.id
-                  : edge.source === node.id && edge.sourceHandle === port.id,
-              ),
-            ),
-        )
+        .filter((port) => {
+          const links = real.filter((edge) =>
+            side === "inputs"
+              ? edge.target === node.id && edge.targetHandle === port.id
+              : edge.source === node.id && edge.sourceHandle === port.id,
+          );
+          if (!links.length && requiredConnections(port) === 0) return false;
+          return !onlyInside(links);
+        })
         .map((port) => ({ node: node.id, port: port.id })),
     );
 

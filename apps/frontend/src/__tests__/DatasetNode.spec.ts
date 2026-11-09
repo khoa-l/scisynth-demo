@@ -18,8 +18,12 @@ describe("Dataset node", () => {
   it("draws a node's input and output ports from the catalog", async () => {
     const wrapper = await mountView();
 
+    const domain = await dropKind(wrapper, "Domain");
+    expect(handles(domain, "target")).toEqual([]);
+    expect(handles(domain, "source")).toEqual([["domain", "Domain"]]);
+
     const field = await dropKind(wrapper, "GaussianField");
-    expect(handles(field, "target")).toEqual([]);
+    expect(handles(field, "target")).toEqual([["domain", "Domain"]]);
     expect(handles(field, "source")).toEqual([["field", "Field"]]);
 
     const sampler = await dropKind(wrapper, "GridSampler");

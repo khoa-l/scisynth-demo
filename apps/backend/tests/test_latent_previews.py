@@ -26,6 +26,19 @@ def test_field_preview_follows_its_parameters_and_seed(signed_in: TestClient) ->
     assert not np.array_equal(values(seed=1), values(seed=2))
 
 
+def test_previews_a_field_the_same_with_a_domain_plugged_in(
+    signed_in: TestClient,
+) -> None:
+    domain = {"id": "d", "kind": "Domain", "params": {}}
+    to_field = {**link("d", "a", "domain"), "source_port": "domain"}
+
+    with_domain = preview(signed_in, "a", [domain, field("a")], [to_field])
+
+    assert np.array_equal(
+        grid(with_domain), grid(preview(signed_in, "a", [field("a")]))
+    )
+
+
 def bumps(node_id: str, **params: object) -> dict:
     defaults = {"count": 10, "width": 0.1, "height": 1, "seed": 0}
     return {"id": node_id, "kind": "GaussianBumps", "params": {**defaults, **params}}

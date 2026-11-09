@@ -3,6 +3,7 @@ import type { IntegerParam, NodeCatalog, NodeKindDef, NumberParam, PortDef } fro
 const field: PortDef = { id: "field", label: "Field", type: "field" };
 const observation: PortDef = { id: "observation", label: "Observation", type: "observation" };
 const latent: PortDef = { id: "latent", label: "Latent", type: "field" };
+const domain: PortDef = { id: "domain", label: "Domain", type: "domain", min: 0 };
 const fields = (id: string, label: string, min?: number): PortDef => ({
   id,
   label,
@@ -71,11 +72,30 @@ export const localCatalog: NodeCatalog = {
   ],
   kinds: [
     {
+      name: "Domain",
+      label: "Domain",
+      category: "latent",
+      family: "domain",
+      inputs: [],
+      outputs: [domain],
+      params: {
+        axes: {
+          type: "axes",
+          label: "Axes",
+          default: [
+            { name: "x", extent: [0, 1] },
+            { name: "y", extent: [0, 1] },
+          ],
+          max: 8,
+        },
+      },
+    },
+    {
       name: "GaussianField",
       label: "Gaussian Field",
       category: "latent",
       family: "latent",
-      inputs: [],
+      inputs: [domain],
       outputs: [field],
       params: {
         length_scale: num("Length scale", 0.1, { min: 0, step: 0.01 }),
@@ -91,7 +111,7 @@ export const localCatalog: NodeCatalog = {
       label: "Gaussian Bumps",
       category: "latent",
       family: "latent",
-      inputs: [],
+      inputs: [domain],
       outputs: [field],
       params: {
         count: int("Bumps", 10, { min: 0, max: 100 }),
@@ -105,7 +125,7 @@ export const localCatalog: NodeCatalog = {
       label: "Voronoi Regions",
       category: "latent",
       family: "latent",
-      inputs: [],
+      inputs: [domain],
       outputs: [field],
       params: {
         count: int("Regions", 10, { min: 1, max: 10000 }),

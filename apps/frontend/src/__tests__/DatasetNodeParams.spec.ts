@@ -104,4 +104,73 @@ describe("Dataset node parameters", () => {
     await whiten.trigger("click");
     expect(lastNodeData(wrapper).params.whiten).toBe(false);
   });
+
+  describe("domain axes", () => {
+    const axis = (name: string, start = 0, end = 1) => ({ name, extent: [start, end] });
+
+    async function change(input: DOMWrapper<Element>, value: string) {
+      (input.element as HTMLInputElement).value = value;
+      await input.trigger("change");
+      await flushPromises();
+    }
+
+    function field(node: DOMWrapper<Element>, label: string) {
+      return node.find(`[aria-label="${label}"]`);
+    }
+
+    function addButton(node: DOMWrapper<Element>) {
+      return node.findAll("button").find((button) => button.text() === "Add axis")!;
+    }
+
+    it("starts a domain as the unit square and edits its axes", async () => {
+      const wrapper = await mountView();
+      const domain = await dropKind(wrapper, "Domain");
+      expect(lastNodeData(wrapper).params.axes).toEqual([axis("x"), axis("y")]);
+
+      await addButton(domain).trigger("click");
+      await change(field(domain, "Name of axis y"), " lat ");
+      await change(field(domain, "End of x"), "10");
+      await change(field(domain, "Start of z"), "-2.5");
+
+      expect(lastNodeData(wrapper).params.axes).toEqual([
+        axis("x", 0, 10),
+        axis("lat"),
+        axis("z", -2.5, 1),
+      ]);
+    });
+
+    it("keeps an axis as it was when its name is blank or taken, or it would end before it starts", async () => {
+      const wrapper = await mountView();
+      const domain = await dropKind(wrapper, "Domain");
+
+      for (const name of ["", "  ", "y"]) {
+        await change(field(domain, "Name of axis x"), name);
+        expect(inputValue(field(domain, "Name of axis x"))).toBe("x");
+      }
+      await change(field(domain, "Start of x"), "1");
+      expect(inputValue(field(domain, "Start of x"))).toBe("0");
+      await change(field(domain, "End of x"), "");
+      expect(inputValue(field(domain, "End of x"))).toBe("1");
+
+      expect(lastNodeData(wrapper).params.axes).toEqual([axis("x"), axis("y")]);
+    });
+
+    it("adds axes up to eight, and removes them down to one", async () => {
+      const wrapper = await mountView();
+      const domain = await dropKind(wrapper, "Domain");
+      for (let i = 0; i < 6; i++) await addButton(domain).trigger("click");
+
+      expect(lastNodeData(wrapper).params.axes).toEqual(
+        ["x", "y", "z", "t", "axis 5", "axis 6", "axis 7", "axis 8"].map((name) => axis(name)),
+      );
+      expect(addButton(domain).attributes("disabled")).toBeDefined();
+
+      for (const name of ["axis 8", "axis 7", "axis 6", "axis 5", "t", "z", "x"]) {
+        await field(domain, `Remove ${name}`).trigger("click");
+      }
+
+      expect(lastNodeData(wrapper).params.axes).toEqual([axis("y")]);
+      expect(field(domain, "Remove y").attributes("disabled")).toBeDefined();
+    });
+  });
 });

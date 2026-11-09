@@ -3,6 +3,7 @@ from importlib.metadata import distribution, version
 from typing import Annotated, Literal, Self
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Field,
@@ -22,6 +23,7 @@ GENERATOR = {"scisynth": scisynth_version(), "numpy": version("numpy")}
 
 MAX_NODES = 500
 MAX_EDGES = 2000
+MAX_AXES = 8
 
 NAME_MAX_LENGTH = 40
 
@@ -30,15 +32,44 @@ NodeName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=NAME_MAX_LENGTH),
 ]
-ParamValue = (
-    StrictBool | int | FiniteFloat | Annotated[str, Field(max_length=200)] | None
-)
 
 
 class _Strict(BaseModel):
     model_config = ConfigDict(
         extra="forbid", json_schema_serialization_defaults_required=True
     )
+
+
+class DomainAxis(_Strict):
+    name: NodeName
+    extent: tuple[FiniteFloat, FiniteFloat]
+
+    @model_validator(mode="after")
+    def check_extent(self) -> Self:
+        if self.extent[0] >= self.extent[1]:
+            raise ValueError(f"Axis {self.name} must end after it starts")
+        return self
+
+
+def unique_axis_names(axes: list[DomainAxis]) -> list[DomainAxis]:
+    if len({axis.name for axis in axes}) != len(axes):
+        raise ValueError("Axis names must be unique")
+    return axes
+
+
+DomainAxes = Annotated[
+    list[DomainAxis],
+    Field(min_length=1, max_length=MAX_AXES),
+    AfterValidator(unique_axis_names),
+]
+ParamValue = (
+    StrictBool
+    | int
+    | FiniteFloat
+    | Annotated[str, Field(max_length=200)]
+    | DomainAxes
+    | None
+)
 
 
 class Position(_Strict):

@@ -1,3 +1,5 @@
+import type { DomainAxis } from "@/client";
+
 export interface NodeCatalog {
   categories: NodeCategory[];
   kinds: NodeKindDef[];
@@ -18,7 +20,7 @@ export interface NodeKindDef {
   params: Record<string, ParamDef>;
 }
 
-type PortType = "field" | "observation";
+type PortType = "field" | "observation" | "domain";
 
 export interface PortDef {
   id: string;
@@ -59,8 +61,14 @@ interface BooleanParam extends BaseParam {
   default: boolean;
 }
 
-export type ParamDef = NumberParam | IntegerParam | EnumParam | BooleanParam;
+interface AxesParam extends BaseParam {
+  type: "axes";
+  default: DomainAxis[];
+  max: number;
+}
 
-export type ParamValue = boolean | number | string | null;
+export type ParamDef = NumberParam | IntegerParam | EnumParam | BooleanParam | AxesParam;
+
+export type ParamValue = boolean | number | string | DomainAxis[] | null;
 
 export type ParamValues = Record<string, ParamValue>;
