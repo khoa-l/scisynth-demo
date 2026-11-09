@@ -3,6 +3,7 @@ import { describe, it, expect } from "vite-plus/test";
 import { flushPromises } from "@vue/test-utils";
 
 import { details, mountView, visiblePanel, type Wrapper } from "./dataset-view";
+import { SAVED_GROUP } from "./saved-groups";
 import { fakeDataTransfer } from "./helpers";
 
 async function openTab(wrapper: Wrapper, label: string) {
@@ -20,7 +21,13 @@ describe("Dataset node palette", () => {
     const tablist = details(wrapper).find('[role="tablist"]');
     expect(tablist.attributes("aria-label")).toBe("Node categories");
     const tabs = tablist.findAll('[role="tab"]');
-    expect(tabs.map((tab) => tab.text())).toEqual(["Latent", "Sampler", "Stages", "Projection"]);
+    expect(tabs.map((tab) => tab.text())).toEqual([
+      "Latent",
+      "Sampler",
+      "Stages",
+      "Projection",
+      "Saved groups",
+    ]);
     expect(tabs[0]!.attributes("aria-selected")).toBe("true");
     expect(visiblePanel(wrapper).text()).toContain("Gaussian field");
   });
@@ -59,5 +66,28 @@ describe("Dataset node palette", () => {
     await items[0]!.trigger("dragstart", { dataTransfer });
     expect(dataTransfer.getData("application/x-scisynth-node")).toBe("GaussianField");
     expect(dataTransfer.effectAllowed).toBe("copy");
+  });
+
+  it("says how to save a group when none are saved yet", async () => {
+    const wrapper = await mountView();
+
+    await openTab(wrapper, "Saved groups");
+
+    expect(visiblePanel(wrapper).text()).toContain("Save a group from its toolbar");
+  });
+
+  it("lists the account's saved groups and puts a group's graph on the drag", async () => {
+    const wrapper = await mountView(undefined, [SAVED_GROUP]);
+
+    await openTab(wrapper, "Saved groups");
+
+    const item = visiblePanel(wrapper).find("li");
+    expect(item.text()).toBe("Smoothed noise");
+    expect(item.attributes("draggable")).toBe("true");
+    const dataTransfer = fakeDataTransfer();
+    await item.trigger("dragstart", { dataTransfer });
+    expect(JSON.parse(dataTransfer.getData("application/x-scisynth-group"))).toEqual(
+      SAVED_GROUP.content,
+    );
   });
 });

@@ -3,7 +3,7 @@ import type { Connection, Edge, GraphNode, Node, XYPosition } from "@vue-flow/co
 import type { GroupPort } from "@/client";
 
 import { findKind } from "./catalog";
-import { DATASET_NODE, type FlowNode } from "./graph";
+import { DATASET_NODE, type DatasetGraph, type FlowNode } from "./graph";
 import type { NodeCatalog } from "./types";
 
 export const DATASET_GROUP = "dataset-group";
@@ -85,6 +85,43 @@ export function groupNodes(
         : node,
     ),
   ];
+}
+
+export function groupGraph(graph: DatasetGraph, groupId: string): DatasetGraph {
+  const group = graph.groups.find((group) => group.id === groupId)!;
+  const members = new Set(group.nodes);
+  return {
+    version: 1,
+    nodes: graph.nodes.filter((node) => members.has(node.id)),
+    edges: graph.edges.filter((edge) => members.has(edge.source) && members.has(edge.target)),
+    groups: [{ ...group, position: { x: 0, y: 0 } }],
+  };
+}
+
+export function copyGroupGraph(graph: DatasetGraph, position: XYPosition): DatasetGraph {
+  const ids = new Map(
+    [...graph.nodes, ...graph.groups].map((item) => [item.id, crypto.randomUUID()]),
+  );
+  const copied = (id: string) => ids.get(id)!;
+  const copiedPort = (port: GroupPort) => ({ ...port, node: copied(port.node) });
+  return {
+    version: 1,
+    nodes: graph.nodes.map((node) => ({ ...node, id: copied(node.id) })),
+    edges: graph.edges.map((edge) => ({
+      ...edge,
+      id: crypto.randomUUID(),
+      source: copied(edge.source),
+      target: copied(edge.target),
+    })),
+    groups: graph.groups.map((group) => ({
+      ...group,
+      id: copied(group.id),
+      position,
+      nodes: group.nodes.map(copied),
+      inputs: group.inputs.map(copiedPort),
+      outputs: group.outputs.map(copiedPort),
+    })),
+  };
 }
 
 export function ungroupNodes(nodes: GraphNode[], groupId: string): Node[] {

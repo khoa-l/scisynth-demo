@@ -69,7 +69,6 @@ class GraphGroup(_Strict):
     width: Annotated[FiniteFloat, Field(gt=0)]
     height: Annotated[FiniteFloat, Field(gt=0)]
     nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
-    collapsed: bool = False
     inputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
     outputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
 
@@ -107,4 +106,14 @@ class DatasetGraph(_Strict):
                 raise ValueError(
                     f"Group {group.id} exposes a port of a node outside it"
                 )
+        return self
+
+
+class GroupGraph(DatasetGraph):
+    @model_validator(mode="after")
+    def check_one_group(self) -> Self:
+        if len(self.groups) != 1 or set(self.groups[0].nodes) != {
+            node.id for node in self.nodes
+        }:
+            raise ValueError("A saved group holds one group with all of its nodes")
         return self

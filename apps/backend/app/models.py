@@ -49,6 +49,18 @@ class Dataset(SQLModel, table=True):
     content: dict[str, Any] = json_column()
 
 
+class SavedGroup(SQLModel, table=True):
+    __tablename__ = "saved_group"
+
+    id: str = Field(default_factory=new_id, primary_key=True, max_length=ID_LENGTH)
+    name: str = Field(max_length=200)
+    owner_id: str = Field(
+        foreign_key="user.id", index=True, ondelete="CASCADE", max_length=ID_LENGTH
+    )
+    created_at: datetime = Field(default_factory=utcnow)
+    content: dict[str, Any] = json_column()
+
+
 class Survey(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True, max_length=ID_LENGTH)
     name: str = Field(max_length=200)

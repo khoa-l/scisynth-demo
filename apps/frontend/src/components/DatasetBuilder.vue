@@ -29,6 +29,7 @@ import GroupPortsNode from "@/components/GroupPortsNode.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import {
   NODE_KIND_MIME,
+  SAVED_GROUP_MIME,
   canConnect,
   defaultParams,
   findKind,
@@ -39,6 +40,7 @@ import {
   flowNode,
   fromGraph,
   toGraph,
+  type DatasetGraph,
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/graph";
 import {
@@ -46,6 +48,7 @@ import {
   GROUP_INPUT,
   GROUP_OUTPUT,
   closeGroup,
+  copyGroupGraph,
   groupPortEdge,
   memberConnection,
   openGroup,
@@ -255,31 +258,49 @@ function layOut() {
   nextTick(() => fitView({ maxZoom: 1 }));
 }
 
+function droppable(types: readonly string[]) {
+  return types.includes(NODE_KIND_MIME) || (!viewedGroup.value && types.includes(SAVED_GROUP_MIME));
+}
+
 function onDragOver(event: DragEvent) {
-  if (!event.dataTransfer?.types.includes(NODE_KIND_MIME)) return;
+  if (!event.dataTransfer || !droppable(event.dataTransfer.types)) return;
   event.preventDefault();
   event.dataTransfer.dropEffect = "copy";
 }
 
-function onDrop(event: DragEvent) {
-  const name = event.dataTransfer?.getData(NODE_KIND_MIME) ?? "";
-  const kind = catalog.value && findKind(catalog.value, name);
-  if (!kind) return;
-  event.preventDefault();
-  const id = crypto.randomUUID();
+function centerOnDrop(id: string, title: string) {
   const { off } = onNodesInitialized(() => {
     off();
-    const title = vueFlowRef.value?.querySelector<HTMLElement>(
-      `[data-id="${id}"] [data-slot="node-title"]`,
-    );
+    const height =
+      vueFlowRef.value?.querySelector<HTMLElement>(`[data-id="${id}"] [data-slot="${title}"]`)
+        ?.offsetHeight ?? 0;
     updateNode(id, (node) => ({
       position: {
         x: node.position.x - node.dimensions.width / 2,
-        y: node.position.y - (title?.offsetHeight ?? 0) / 2,
+        y: node.position.y - height / 2,
       },
     }));
   });
+}
+
+function onDrop(event: DragEvent) {
+  const transfer = event.dataTransfer;
+  if (!transfer || !catalog.value || !droppable(transfer.types)) return;
+  event.preventDefault();
   const point = screenToFlowCoordinate({ x: event.clientX, y: event.clientY });
+  if (transfer.types.includes(SAVED_GROUP_MIME)) {
+    const saved: DatasetGraph = JSON.parse(transfer.getData(SAVED_GROUP_MIME));
+    const copy = copyGroupGraph(saved, point);
+    const placed = fromGraph(copy, catalog.value);
+    centerOnDrop(copy.groups[0]!.id, "group-title");
+    addNodes(placed.nodes);
+    addEdges(placed.edges);
+    return;
+  }
+  const kind = findKind(catalog.value, transfer.getData(NODE_KIND_MIME));
+  if (!kind) return;
+  const id = crypto.randomUUID();
+  centerOnDrop(id, "node-title");
   const group = viewedGroup.value && findNode(viewedGroup.value);
   const node = flowNode(
     id,

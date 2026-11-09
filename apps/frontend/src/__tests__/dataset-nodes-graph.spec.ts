@@ -10,6 +10,8 @@ import {
 } from "../lib/dataset-nodes/graph";
 import {
   closeGroup,
+  copyGroupGraph,
+  groupGraph,
   groupNodes,
   memberConnection,
   memberPorts,
@@ -218,7 +220,6 @@ describe("Dataset graph", () => {
           width: 400,
           height: 300,
           nodes: ["field", "sampler"],
-          collapsed: true,
           inputs: [],
           outputs: [{ node: "sampler", port: "observation" }],
         },
@@ -251,18 +252,39 @@ describe("Dataset graph", () => {
       expect(toGraph(nodes, edges)).toEqual(GROUPED);
     });
 
-    it("shows a group saved expanded as one node", () => {
-      const expanded = { ...GROUPED, groups: [{ ...GROUPED.groups[0]!, collapsed: false }] };
-      const { nodes, edges } = load(expanded);
-
-      expect(nodes.map((node) => node.hidden)).toEqual([undefined, true, true, undefined]);
-      expect(toGraph(nodes, edges)).toEqual(GROUPED);
-    });
-
     it("doesn't save a group with no nodes left in it", () => {
       const { nodes, edges } = load(GROUPED);
       const ungrouped = nodes.map((node) => ({ ...node, parentNode: undefined }));
       expect(toGraph(ungrouped, edges).groups).toEqual([]);
+    });
+
+    it("saves a group as its own graph, with only the lines inside it", () => {
+      expect(groupGraph(GROUPED, "g")).toEqual({
+        version: 1,
+        nodes: GROUPED.nodes.slice(0, 2),
+        edges: [GROUPED.edges[0]],
+        groups: [{ ...GROUPED.groups[0], position: { x: 0, y: 0 } }],
+      });
+    });
+
+    it("copies a saved group with new ids, placed where it is dropped", () => {
+      const saved = groupGraph(GROUPED, "g");
+
+      const copy = copyGroupGraph(saved, { x: 5, y: 6 });
+
+      const [group] = copy.groups;
+      const [field, sampler] = copy.nodes;
+      expect([group!.id, field!.id, sampler!.id, copy.edges[0]!.id]).not.toContain("g");
+      expect(new Set([group!.id, field!.id, sampler!.id, copy.edges[0]!.id]).size).toBe(4);
+      expect(group).toMatchObject({
+        position: { x: 5, y: 6 },
+        nodes: [field!.id, sampler!.id],
+        outputs: [{ node: sampler!.id, port: "observation" }],
+      });
+      expect(copy.edges[0]).toMatchObject({ source: field!.id, target: sampler!.id });
+      expect(copy.nodes.map(({ kind, params }) => ({ kind, params }))).toEqual(
+        saved.nodes.map(({ kind, params }) => ({ kind, params })),
+      );
     });
 
     function placed(id: string, x: number, y: number, parentNode?: string, kind = "Gain") {

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/vue-query";
 import { computed } from "vue";
 
 import FolderTabs from "@/components/FolderTabs.vue";
+import SavedGroupPalette from "@/components/SavedGroupPalette.vue";
 import { NODE_KIND_MIME, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
 import { familyBackground } from "@/lib/dataset-nodes/family-colors";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
@@ -11,10 +12,13 @@ const { data: catalog } = useQuery(nodeCatalogQuery);
 
 const tabs = computed(() => {
   const { categories = [], kinds = [] } = catalog.value ?? {};
-  return categories.map((category) => ({
-    label: category.label,
-    kinds: kinds.filter((kind) => kind.category === category.id),
-  }));
+  return [
+    ...categories.map((category) => ({
+      label: category.label,
+      kinds: kinds.filter((kind) => kind.category === category.id),
+    })),
+    { label: "Saved groups", kinds: null },
+  ];
 });
 
 function startDrag(event: DragEvent, name: string) {
@@ -26,13 +30,13 @@ function startDrag(event: DragEvent, name: string) {
 
 <template>
   <FolderTabs
-    v-if="tabs.length"
+    v-if="catalog"
     v-slot="{ tab: category }"
     :tabs="tabs"
     label="Node categories"
     content-class="rounded-tr-lg border-r"
   >
-    <ul :class="paletteListClass">
+    <ul v-if="category.kinds" :class="paletteListClass">
       <li
         v-for="kind in category.kinds"
         :key="kind.name"
@@ -45,5 +49,6 @@ function startDrag(event: DragEvent, name: string) {
         {{ kind.label }}
       </li>
     </ul>
+    <SavedGroupPalette v-else />
   </FolderTabs>
 </template>

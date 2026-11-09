@@ -1,7 +1,7 @@
 import { VueFlow, type Connection } from "@vue-flow/core";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
-import type { DatasetPublic } from "../client";
+import type { DatasetPublic, SavedGroupPublic } from "../client";
 import ProjectDatasetView from "../views/ProjectDatasetView.vue";
 import {
   DATASET,
@@ -15,16 +15,22 @@ import {
 export const AXIS = { dtype: "f4", bdata: "AAAAAAAAgD8=", shape: "2" };
 const NO_PREVIEW = { layout: "grid", axes: ["x", "y"], x: AXIS, y: AXIS, channels: [] };
 
-export function answerWith(dataset: DatasetPublic) {
-  fetchMock.mockImplementation(async (input) =>
-    new URL((input as Request).url).pathname === "/api/previews/nodes"
-      ? jsonResponse(NO_PREVIEW)
-      : jsonResponse(dataset),
-  );
+export function answerWith(dataset: DatasetPublic, savedGroups: SavedGroupPublic[] = []) {
+  fetchMock.mockImplementation(async (input) => {
+    const { method, url } = input as Request;
+    const path = new URL(url).pathname;
+    if (path === "/api/previews/nodes") return jsonResponse(NO_PREVIEW);
+    if (path === "/api/saved-groups" && method === "GET") return jsonResponse(savedGroups);
+    if (path === "/api/saved-groups") return jsonResponse({}, 201);
+    return jsonResponse(dataset);
+  });
 }
 
-export async function mountView(dataset: DatasetPublic = DATASET) {
-  answerWith(dataset);
+export async function mountView(
+  dataset: DatasetPublic = DATASET,
+  savedGroups: SavedGroupPublic[] = [],
+) {
+  answerWith(dataset, savedGroups);
   const { wrapper } = await mountPage(ProjectDatasetView, {
     props: { projectId: PROJECT_ID, datasetId: DATASET.id },
   });

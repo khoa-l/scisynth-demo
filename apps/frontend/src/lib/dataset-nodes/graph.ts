@@ -50,7 +50,6 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
         width,
         height,
         nodes: datasetNodes.filter((node) => node.parentNode === id).map((node) => node.id),
-        collapsed: true,
         inputs,
         outputs,
       }))

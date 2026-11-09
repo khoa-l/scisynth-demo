@@ -4,6 +4,7 @@ import { localCatalog } from "./local-catalog";
 import type { NodeCatalog, NodeKindDef, ParamValues, PortDef } from "./types";
 
 export const NODE_KIND_MIME = "application/x-scisynth-node";
+export const SAVED_GROUP_MIME = "application/x-scisynth-group";
 
 export const nodeCatalogQuery = queryOptions({
   queryKey: ["node-catalog"],

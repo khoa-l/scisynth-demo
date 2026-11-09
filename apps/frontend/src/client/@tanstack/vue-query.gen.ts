@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/vue-query';
 
 import { client } from '../client.gen.js';
-import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsDownloadDatasetData, datasetsExportDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, datasetsUploadDataset, healthGetHealth, type Options, previewsDownloadNodeData, previewsPreviewNode, previewsPreviewStage, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicGetPublishedChart, publicSubmitResponse, surveysCreateSurvey, surveysDeleteSurvey, surveysExportSurveyResponses, surveysGetSurvey, surveysGetSurveyChart, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
-import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataError, DatasetsDownloadDatasetDataResponse, DatasetsExportDatasetData, DatasetsExportDatasetError, DatasetsExportDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, DatasetsUploadDatasetData, DatasetsUploadDatasetError, DatasetsUploadDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataError, PreviewsDownloadNodeDataResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, PreviewsPreviewStageData, PreviewsPreviewStageError, PreviewsPreviewStageResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedChartData, PublicGetPublishedChartError, PublicGetPublishedChartResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesError, SurveysExportSurveyResponsesResponse, SurveysGetSurveyChartData, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
+import { authLogin, authLogout, authMe, authRegister, datasetsCreateDataset, datasetsDeleteDataset, datasetsDownloadDatasetData, datasetsExportDataset, datasetsGetDataset, datasetsGetDatasets, datasetsUpdateDataset, datasetsUploadDataset, healthGetHealth, type Options, previewsDownloadNodeData, previewsPreviewNode, projectsCreateProject, projectsDeleteProject, projectsGetProject, projectsGetProjects, projectsUpdateProject, publicGetPublished, publicGetPublishedChart, publicSubmitResponse, savedGroupsDeleteSavedGroup, savedGroupsGetSavedGroups, savedGroupsSaveGroup, savedGroupsUpdateSavedGroup, surveysCreateSurvey, surveysDeleteSurvey, surveysExportSurveyResponses, surveysGetSurvey, surveysGetSurveyChart, surveysGetSurveyResponses, surveysGetSurveys, surveysGetSurveyVersions, surveysPublishSurvey, surveysUnpublishSurvey, surveysUpdateSurvey } from '../sdk.gen.js';
+import type { AuthLoginData, AuthLoginError, AuthLoginResponse, AuthLogoutData, AuthLogoutResponse, AuthMeData, AuthMeResponse, AuthRegisterData, AuthRegisterError, AuthRegisterResponse, DatasetsCreateDatasetData, DatasetsCreateDatasetError, DatasetsCreateDatasetResponse, DatasetsDeleteDatasetData, DatasetsDeleteDatasetError, DatasetsDeleteDatasetResponse, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataError, DatasetsDownloadDatasetDataResponse, DatasetsExportDatasetData, DatasetsExportDatasetError, DatasetsExportDatasetResponse, DatasetsGetDatasetData, DatasetsGetDatasetError, DatasetsGetDatasetResponse, DatasetsGetDatasetsData, DatasetsGetDatasetsError, DatasetsGetDatasetsResponse, DatasetsUpdateDatasetData, DatasetsUpdateDatasetError, DatasetsUpdateDatasetResponse, DatasetsUploadDatasetData, DatasetsUploadDatasetError, DatasetsUploadDatasetResponse, HealthGetHealthData, HealthGetHealthResponse, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataError, PreviewsDownloadNodeDataResponse, PreviewsPreviewNodeData, PreviewsPreviewNodeError, PreviewsPreviewNodeResponse, ProjectsCreateProjectData, ProjectsCreateProjectError, ProjectsCreateProjectResponse, ProjectsDeleteProjectData, ProjectsDeleteProjectError, ProjectsDeleteProjectResponse, ProjectsGetProjectData, ProjectsGetProjectError, ProjectsGetProjectResponse, ProjectsGetProjectsData, ProjectsGetProjectsResponse, ProjectsUpdateProjectData, ProjectsUpdateProjectError, ProjectsUpdateProjectResponse, PublicGetPublishedChartData, PublicGetPublishedChartError, PublicGetPublishedChartResponse, PublicGetPublishedData, PublicGetPublishedError, PublicGetPublishedResponse, PublicSubmitResponseData, PublicSubmitResponseError, PublicSubmitResponseResponse, SavedGroupsDeleteSavedGroupData, SavedGroupsDeleteSavedGroupError, SavedGroupsDeleteSavedGroupResponse, SavedGroupsGetSavedGroupsData, SavedGroupsGetSavedGroupsResponse, SavedGroupsSaveGroupData, SavedGroupsSaveGroupError, SavedGroupsSaveGroupResponse, SavedGroupsUpdateSavedGroupData, SavedGroupsUpdateSavedGroupError, SavedGroupsUpdateSavedGroupResponse, SurveysCreateSurveyData, SurveysCreateSurveyError, SurveysCreateSurveyResponse, SurveysDeleteSurveyData, SurveysDeleteSurveyError, SurveysDeleteSurveyResponse, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesError, SurveysExportSurveyResponsesResponse, SurveysGetSurveyChartData, SurveysGetSurveyChartError, SurveysGetSurveyChartResponse, SurveysGetSurveyData, SurveysGetSurveyError, SurveysGetSurveyResponse, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesError, SurveysGetSurveyResponsesResponse, SurveysGetSurveysData, SurveysGetSurveysError, SurveysGetSurveysResponse, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsError, SurveysGetSurveyVersionsResponse, SurveysPublishSurveyData, SurveysPublishSurveyError, SurveysPublishSurveyResponse, SurveysUnpublishSurveyData, SurveysUnpublishSurveyError, SurveysUnpublishSurveyResponse, SurveysUpdateSurveyData, SurveysUpdateSurveyError, SurveysUpdateSurveyResponse } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -353,6 +353,75 @@ export const datasetsDownloadDatasetDataOptions = (options: Options<DatasetsDown
     queryKey: datasetsDownloadDatasetDataQueryKey(options)
 });
 
+export const savedGroupsGetSavedGroupsQueryKey = (options?: Options<SavedGroupsGetSavedGroupsData>) => createQueryKey('savedGroupsGetSavedGroups', options);
+
+/**
+ * Get Saved Groups
+ */
+export const savedGroupsGetSavedGroupsOptions = (options?: Options<SavedGroupsGetSavedGroupsData>) => queryOptions<SavedGroupsGetSavedGroupsResponse, DefaultError, SavedGroupsGetSavedGroupsResponse, ReturnType<typeof savedGroupsGetSavedGroupsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await savedGroupsGetSavedGroups({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: savedGroupsGetSavedGroupsQueryKey(options)
+});
+
+/**
+ * Save Group
+ */
+export const savedGroupsSaveGroupMutation = (options?: Partial<Options<SavedGroupsSaveGroupData>>): UseMutationOptions<SavedGroupsSaveGroupResponse, SavedGroupsSaveGroupError, Options<SavedGroupsSaveGroupData>> => {
+    const mutationOptions: UseMutationOptions<SavedGroupsSaveGroupResponse, SavedGroupsSaveGroupError, Options<SavedGroupsSaveGroupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await savedGroupsSaveGroup({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete Saved Group
+ */
+export const savedGroupsDeleteSavedGroupMutation = (options?: Partial<Options<SavedGroupsDeleteSavedGroupData>>): UseMutationOptions<SavedGroupsDeleteSavedGroupResponse, SavedGroupsDeleteSavedGroupError, Options<SavedGroupsDeleteSavedGroupData>> => {
+    const mutationOptions: UseMutationOptions<SavedGroupsDeleteSavedGroupResponse, SavedGroupsDeleteSavedGroupError, Options<SavedGroupsDeleteSavedGroupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await savedGroupsDeleteSavedGroup({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Update Saved Group
+ */
+export const savedGroupsUpdateSavedGroupMutation = (options?: Partial<Options<SavedGroupsUpdateSavedGroupData>>): UseMutationOptions<SavedGroupsUpdateSavedGroupResponse, SavedGroupsUpdateSavedGroupError, Options<SavedGroupsUpdateSavedGroupData>> => {
+    const mutationOptions: UseMutationOptions<SavedGroupsUpdateSavedGroupResponse, SavedGroupsUpdateSavedGroupError, Options<SavedGroupsUpdateSavedGroupData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await savedGroupsUpdateSavedGroup({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const surveysGetSurveysQueryKey = (options: Options<SurveysGetSurveysData>) => createQueryKey('surveysGetSurveys', options);
 
 /**
@@ -589,23 +658,6 @@ export const publicSubmitResponseMutation = (options?: Partial<Options<PublicSub
     const mutationOptions: UseMutationOptions<PublicSubmitResponseResponse, PublicSubmitResponseError, Options<PublicSubmitResponseData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await publicSubmitResponse({
-                ...options,
-                ...fnOptions,
-                throwOnError: true
-            });
-            return data;
-        }
-    };
-    return mutationOptions;
-};
-
-/**
- * Preview Stage
- */
-export const previewsPreviewStageMutation = (options?: Partial<Options<PreviewsPreviewStageData>>): UseMutationOptions<PreviewsPreviewStageResponse, PreviewsPreviewStageError, Options<PreviewsPreviewStageData>> => {
-    const mutationOptions: UseMutationOptions<PreviewsPreviewStageResponse, PreviewsPreviewStageError, Options<PreviewsPreviewStageData>> = {
-        mutationFn: async (fnOptions) => {
-            const { data } = await previewsPreviewStage({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

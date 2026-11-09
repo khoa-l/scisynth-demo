@@ -16,8 +16,8 @@ from app.dataset_graph import (
     MAX_NODES,
     DatasetGraph,
     GraphEdge,
+    GroupGraph,
     NodeSpec,
-    ParamValue,
     Ref,
 )
 
@@ -88,6 +88,24 @@ class DatasetFile(BaseModel):
     graph: DatasetGraph
 
 
+class SavedGroupPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    created_at: datetime
+    content: GroupGraph
+
+
+class SavedGroupCreate(BaseModel):
+    name: Name
+    content: GroupGraph
+
+
+class SavedGroupUpdate(BaseModel):
+    name: Name
+
+
 class SurveyPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -148,16 +166,6 @@ class SurveyResponseReceipt(BaseModel):
 
     id: str
     submitted_at: datetime
-
-
-class StagePreviewRequest(BaseModel):
-    kind: Ref
-    params: dict[Ref, ParamValue] = Field(default_factory=dict, max_length=50)
-
-
-class PlotFigure(BaseModel):
-    data: list[dict[str, Any]]
-    layout: dict[str, Any]
 
 
 class NodePreviewRequest(BaseModel):

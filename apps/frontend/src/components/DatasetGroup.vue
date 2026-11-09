@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { Eye, Trash2, Ungroup } from "@lucide/vue";
-import { useQuery } from "@tanstack/vue-query";
+import { BookmarkPlus, Maximize2, Trash2, Ungroup } from "@lucide/vue";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
 import { computed, inject, ref } from "vue";
 
+import {
+  savedGroupsGetSavedGroupsQueryKey,
+  savedGroupsSaveGroupMutation,
+} from "@/client/@tanstack/vue-query.gen";
+import NameDialog from "@/components/NameDialog.vue";
 import { toggleVariants } from "@/components/ui/toggle";
 import { nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import { memberPorts, ungroupNodes, withGroupEdges } from "@/lib/dataset-nodes/groups";
+import { toGraph } from "@/lib/dataset-nodes/graph";
+import { groupGraph, memberPorts, ungroupNodes, withGroupEdges } from "@/lib/dataset-nodes/groups";
 import { VIEWED_GROUP, VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
+import { useDialogAction } from "@/lib/dialog-action";
 
 const props = defineProps<NodeProps>();
 
@@ -28,6 +35,20 @@ const plainButton = cn(
   toggleVariants({ variant: "outline" }),
   "rounded-none border-l-0 px-2 first:rounded-l-lg first:border-l last:rounded-r-lg",
 );
+
+const queryClient = useQueryClient();
+const { mutateAsync: saveGroup } = useMutation({
+  ...savedGroupsSaveGroupMutation(),
+  onSuccess: () => {
+    void queryClient.invalidateQueries({ queryKey: savedGroupsGetSavedGroupsQueryKey() });
+  },
+});
+const { open: saveOpen, pending: isSaving, error: saveError, run } = useDialogAction();
+
+function save(name: string) {
+  const content = groupGraph(toGraph(nodes.value, edges.value), props.id);
+  void run(() => saveGroup({ body: { name, content } }));
+}
 
 function ungroup() {
   const ungrouped = ungroupNodes(nodes.value, props.id);
@@ -96,8 +117,21 @@ function remove() {
       @click.stop
     >
       <button type="button" aria-label="View group" :class="plainButton" @click="viewedGroup = id">
-        <Eye />
+        <Maximize2 />
       </button>
+      <NameDialog
+        v-model:open="saveOpen"
+        title="Save group"
+        description="Saves a copy of this group to your account, to reuse in any dataset."
+        initial-name="untitled-group"
+        :pending="isSaving"
+        :error="saveError"
+        @submit="save"
+      >
+        <button type="button" aria-label="Save group" :class="plainButton">
+          <BookmarkPlus />
+        </button>
+      </NameDialog>
       <button type="button" aria-label="Ungroup nodes" :class="plainButton" @click="ungroup">
         <Ungroup />
       </button>

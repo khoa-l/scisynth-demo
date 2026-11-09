@@ -5,7 +5,16 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import APIRoute
 
 from app.frontend import SinglePageApp
-from app.routers import auth, datasets, health, previews, projects, public, surveys
+from app.routers import (
+    auth,
+    datasets,
+    health,
+    previews,
+    projects,
+    public,
+    saved_groups,
+    surveys,
+)
 
 
 def generate_unique_id(route: APIRoute) -> str:
@@ -19,6 +28,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 app.include_router(datasets.router, prefix="/api")
+app.include_router(saved_groups.router, prefix="/api")
 app.include_router(surveys.router, prefix="/api")
 app.include_router(public.router, prefix="/api")
 app.include_router(previews.router, prefix="/api")

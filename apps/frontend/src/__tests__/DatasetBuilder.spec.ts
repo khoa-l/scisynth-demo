@@ -13,7 +13,16 @@ import {
   paletteItem,
   type Wrapper,
 } from "./dataset-view";
-import { DATASET, fakeDataTransfer, fetchMock, jsonResponse, requests } from "./helpers";
+import {
+  DATASET,
+  dialog,
+  fakeDataTransfer,
+  fetchMock,
+  jsonResponse,
+  requests,
+  submitName,
+} from "./helpers";
+import { SAVED_GROUP } from "./saved-groups";
 
 async function shiftClick(node: DOMWrapper<Element>) {
   document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", code: "ShiftLeft" }));
@@ -296,6 +305,79 @@ describe("Dataset builder", () => {
         .nodes.filter((node) => node.parentNode === group.attributes("data-id"))
         .map((node) => node.data.kind),
     ).toEqual(["GaussianField", "GridSampler"]);
+  });
+
+  it("saves a copy of a group, and only what's inside it, to the account", async () => {
+    const wrapper = await mountView();
+    const noise = await dropKind(wrapper, "GaussianNoise");
+    const gain = await dropKind(wrapper, "Gain");
+    const quantize = await dropKind(wrapper, "Quantize");
+    await connect(wrapper, noise, gain, "observation", "observation");
+    await connect(wrapper, gain, quantize, "observation", "observation");
+    await groupTogether(noise, gain);
+
+    await clickGroupControl(wrapper, "Save group");
+    expect(dialog()?.textContent).toContain("Save group");
+    await submitName("Smoothed noise");
+
+    const save = requests().find((sent) => sent.url.endsWith("/api/saved-groups"))!;
+    const { name, content } = await save.json();
+    const groupId = wrapper.find(".vue-flow__node-dataset-group").attributes("data-id");
+    expect(name).toBe("Smoothed noise");
+    expect(content.nodes.map((node: { kind: string }) => node.kind)).toEqual([
+      "GaussianNoise",
+      "Gain",
+    ]);
+    expect(content.edges).toHaveLength(1);
+    expect(content.groups).toMatchObject([
+      { id: groupId, position: { x: 0, y: 0 }, outputs: [{ port: "observation" }] },
+    ]);
+    expect(dialog()).toBeNull();
+  });
+
+  async function dropSavedGroup(wrapper: Wrapper, clientX = 0, clientY = 0) {
+    const dataTransfer = fakeDataTransfer();
+    dataTransfer.setData("application/x-scisynth-group", JSON.stringify(SAVED_GROUP.content));
+    await wrapper.find(".vue-flow").trigger("dragover", { dataTransfer });
+    await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX, clientY });
+    await flushPromises();
+    return dataTransfer;
+  }
+
+  it("adds a dropped saved group as a new group with its own copy of the nodes", async () => {
+    const wrapper = await mountView();
+
+    const dataTransfer = await dropSavedGroup(wrapper);
+    await dropSavedGroup(wrapper);
+
+    expect(dataTransfer.dropEffect).toBe("copy");
+    const groups = wrapper.findAll(".vue-flow__node-dataset-group");
+    expect(groups).toHaveLength(2);
+    expect(groups[0]!.find('[data-slot="group-title"]').text()).toBe("Group 2 nodes");
+    const { nodes, edges } = flow(wrapper);
+    const ids = new Set(nodes.map((node) => node.id));
+    expect(ids.size).toBe(6);
+    expect(ids.has("saved") || ids.has("noise")).toBe(false);
+    expect(nodes.filter((node) => node.parentNode).map((node) => node.data.kind)).toEqual([
+      "GaussianNoise",
+      "Gain",
+      "GaussianNoise",
+      "Gain",
+    ]);
+    expect(edges.filter((edge) => !edge.data?.standsFor)).toHaveLength(2);
+  });
+
+  it("doesn't drop a saved group into an open group", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await groupTogether(first, second);
+    await clickGroupControl(wrapper, "View group");
+
+    const dataTransfer = await dropSavedGroup(wrapper);
+
+    expect(dataTransfer.dropEffect).toBe("none");
+    expect(flow(wrapper).nodes.filter((node) => node.type === "dataset-group")).toHaveLength(1);
   });
 
   it("keeps a selected group when the delete key is pressed", async () => {

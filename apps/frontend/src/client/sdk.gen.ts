@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataErrors, DatasetsDownloadDatasetDataResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, DatasetsUploadDatasetData, DatasetsUploadDatasetErrors, DatasetsUploadDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataErrors, PreviewsDownloadNodeDataResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, PreviewsPreviewStageData, PreviewsPreviewStageErrors, PreviewsPreviewStageResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesErrors, SurveysExportSurveyResponsesResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
+import type { AuthLoginData, AuthLoginErrors, AuthLoginResponses, AuthLogoutData, AuthLogoutResponses, AuthMeData, AuthMeResponses, AuthRegisterData, AuthRegisterErrors, AuthRegisterResponses, DatasetsCreateDatasetData, DatasetsCreateDatasetErrors, DatasetsCreateDatasetResponses, DatasetsDeleteDatasetData, DatasetsDeleteDatasetErrors, DatasetsDeleteDatasetResponses, DatasetsDownloadDatasetDataData, DatasetsDownloadDatasetDataErrors, DatasetsDownloadDatasetDataResponses, DatasetsExportDatasetData, DatasetsExportDatasetErrors, DatasetsExportDatasetResponses, DatasetsGetDatasetData, DatasetsGetDatasetErrors, DatasetsGetDatasetResponses, DatasetsGetDatasetsData, DatasetsGetDatasetsErrors, DatasetsGetDatasetsResponses, DatasetsUpdateDatasetData, DatasetsUpdateDatasetErrors, DatasetsUpdateDatasetResponses, DatasetsUploadDatasetData, DatasetsUploadDatasetErrors, DatasetsUploadDatasetResponses, HealthGetHealthData, HealthGetHealthResponses, PreviewsDownloadNodeDataData, PreviewsDownloadNodeDataErrors, PreviewsDownloadNodeDataResponses, PreviewsPreviewNodeData, PreviewsPreviewNodeErrors, PreviewsPreviewNodeResponses, ProjectsCreateProjectData, ProjectsCreateProjectErrors, ProjectsCreateProjectResponses, ProjectsDeleteProjectData, ProjectsDeleteProjectErrors, ProjectsDeleteProjectResponses, ProjectsGetProjectData, ProjectsGetProjectErrors, ProjectsGetProjectResponses, ProjectsGetProjectsData, ProjectsGetProjectsResponses, ProjectsUpdateProjectData, ProjectsUpdateProjectErrors, ProjectsUpdateProjectResponses, PublicGetPublishedChartData, PublicGetPublishedChartErrors, PublicGetPublishedChartResponses, PublicGetPublishedData, PublicGetPublishedErrors, PublicGetPublishedResponses, PublicSubmitResponseData, PublicSubmitResponseErrors, PublicSubmitResponseResponses, SavedGroupsDeleteSavedGroupData, SavedGroupsDeleteSavedGroupErrors, SavedGroupsDeleteSavedGroupResponses, SavedGroupsGetSavedGroupsData, SavedGroupsGetSavedGroupsResponses, SavedGroupsSaveGroupData, SavedGroupsSaveGroupErrors, SavedGroupsSaveGroupResponses, SavedGroupsUpdateSavedGroupData, SavedGroupsUpdateSavedGroupErrors, SavedGroupsUpdateSavedGroupResponses, SurveysCreateSurveyData, SurveysCreateSurveyErrors, SurveysCreateSurveyResponses, SurveysDeleteSurveyData, SurveysDeleteSurveyErrors, SurveysDeleteSurveyResponses, SurveysExportSurveyResponsesData, SurveysExportSurveyResponsesErrors, SurveysExportSurveyResponsesResponses, SurveysGetSurveyChartData, SurveysGetSurveyChartErrors, SurveysGetSurveyChartResponses, SurveysGetSurveyData, SurveysGetSurveyErrors, SurveysGetSurveyResponses, SurveysGetSurveyResponsesData, SurveysGetSurveyResponsesErrors, SurveysGetSurveyResponsesResponses, SurveysGetSurveysData, SurveysGetSurveysErrors, SurveysGetSurveysResponses, SurveysGetSurveyVersionsData, SurveysGetSurveyVersionsErrors, SurveysGetSurveyVersionsResponses, SurveysPublishSurveyData, SurveysPublishSurveyErrors, SurveysPublishSurveyResponses, SurveysUnpublishSurveyData, SurveysUnpublishSurveyErrors, SurveysUnpublishSurveyResponses, SurveysUpdateSurveyData, SurveysUpdateSurveyErrors, SurveysUpdateSurveyResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -263,6 +263,66 @@ export const datasetsDownloadDatasetData = <ThrowOnError extends boolean = false
 });
 
 /**
+ * Get Saved Groups
+ */
+export const savedGroupsGetSavedGroups = <ThrowOnError extends boolean = false>(options?: Options<SavedGroupsGetSavedGroupsData, ThrowOnError>): RequestResult<SavedGroupsGetSavedGroupsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<SavedGroupsGetSavedGroupsResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/saved-groups',
+    ...options
+});
+
+/**
+ * Save Group
+ */
+export const savedGroupsSaveGroup = <ThrowOnError extends boolean = false>(options: Options<SavedGroupsSaveGroupData, ThrowOnError>): RequestResult<SavedGroupsSaveGroupResponses, SavedGroupsSaveGroupErrors, ThrowOnError> => (options.client ?? client).post<SavedGroupsSaveGroupResponses, SavedGroupsSaveGroupErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/saved-groups',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete Saved Group
+ */
+export const savedGroupsDeleteSavedGroup = <ThrowOnError extends boolean = false>(options: Options<SavedGroupsDeleteSavedGroupData, ThrowOnError>): RequestResult<SavedGroupsDeleteSavedGroupResponses, SavedGroupsDeleteSavedGroupErrors, ThrowOnError> => (options.client ?? client).delete<SavedGroupsDeleteSavedGroupResponses, SavedGroupsDeleteSavedGroupErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/saved-groups/{group_id}',
+    ...options
+});
+
+/**
+ * Update Saved Group
+ */
+export const savedGroupsUpdateSavedGroup = <ThrowOnError extends boolean = false>(options: Options<SavedGroupsUpdateSavedGroupData, ThrowOnError>): RequestResult<SavedGroupsUpdateSavedGroupResponses, SavedGroupsUpdateSavedGroupErrors, ThrowOnError> => (options.client ?? client).patch<SavedGroupsUpdateSavedGroupResponses, SavedGroupsUpdateSavedGroupErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session',
+            type: 'apiKey'
+        }],
+    url: '/api/saved-groups/{group_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Get Surveys
  */
 export const surveysGetSurveys = <ThrowOnError extends boolean = false>(options: Options<SurveysGetSurveysData, ThrowOnError>): RequestResult<SurveysGetSurveysResponses, SurveysGetSurveysErrors, ThrowOnError> => (options.client ?? client).get<SurveysGetSurveysResponses, SurveysGetSurveysErrors, ThrowOnError>({
@@ -428,23 +488,6 @@ export const publicGetPublishedChart = <ThrowOnError extends boolean = false>(op
  */
 export const publicSubmitResponse = <ThrowOnError extends boolean = false>(options: Options<PublicSubmitResponseData, ThrowOnError>): RequestResult<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError> => (options.client ?? client).post<PublicSubmitResponseResponses, PublicSubmitResponseErrors, ThrowOnError>({
     url: '/api/public/surveys/{public_id}/responses',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Preview Stage
- */
-export const previewsPreviewStage = <ThrowOnError extends boolean = false>(options: Options<PreviewsPreviewStageData, ThrowOnError>): RequestResult<PreviewsPreviewStageResponses, PreviewsPreviewStageErrors, ThrowOnError> => (options.client ?? client).post<PreviewsPreviewStageResponses, PreviewsPreviewStageErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'session',
-            type: 'apiKey'
-        }],
-    url: '/api/previews/stages',
     ...options,
     headers: {
         'Content-Type': 'application/json',
