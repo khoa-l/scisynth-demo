@@ -50,6 +50,11 @@ async function clickGroupControl(wrapper: Wrapper, label: string) {
   await flushPromises();
 }
 
+function titleText(title: DOMWrapper<Element>) {
+  const parts = title.findAll(":scope > *");
+  return parts.length ? parts.map((part) => part.text()).join(" ") : title.text();
+}
+
 function flow(wrapper: Wrapper) {
   return wrapper.findComponent(VueFlow).vm as unknown as {
     edges: GraphEdge[];
@@ -296,7 +301,7 @@ describe("Dataset builder", () => {
     await groupTogether(first, second);
 
     const group = wrapper.find(".vue-flow__node-dataset-group");
-    expect(group.find('[data-slot="group-title"]').text()).toBe("Group 2 nodes");
+    expect(titleText(group.find('[data-slot="group-title"]'))).toBe("Group 2 nodes");
     expect(
       wrapper.findAll('.vue-flow__node [data-slot="node-title"]').map((title) => title.text()),
     ).toEqual(["Gain"]);
@@ -335,6 +340,28 @@ describe("Dataset builder", () => {
     expect(dialog()).toBeNull();
   });
 
+  it("names a group, shows the name when the group is open, and offers it when saving", async () => {
+    const wrapper = await mountView();
+    const first = await dropKind(wrapper, "GaussianField");
+    const second = await dropKind(wrapper, "GridSampler");
+    await groupTogether(first, second);
+
+    await clickGroupControl(wrapper, "Rename group");
+    const input = wrapper.find('[data-slot="group-title"] input');
+    (input.element as HTMLInputElement).value = "Sampling";
+    await input.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(titleText(wrapper.find('[data-slot="group-title"]'))).toBe("Sampling 2 nodes");
+    expect(flow(wrapper).nodes[0]!.data.name).toBe("Sampling");
+    await clickGroupControl(wrapper, "Save group");
+    expect(document.querySelector<HTMLInputElement>('input[name="name"]')!.value).toBe("Sampling");
+    document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="button"]')!.click();
+    await flushPromises();
+    await clickGroupControl(wrapper, "View group");
+    expect(wrapper.find('[data-slot="group-view-title"]').text()).toBe("Sampling");
+  });
+
   async function dropSavedGroup(wrapper: Wrapper, clientX = 0, clientY = 0) {
     const dataTransfer = fakeDataTransfer();
     dataTransfer.setData("application/x-scisynth-group", JSON.stringify(SAVED_GROUP.content));
@@ -353,7 +380,7 @@ describe("Dataset builder", () => {
     expect(dataTransfer.dropEffect).toBe("copy");
     const groups = wrapper.findAll(".vue-flow__node-dataset-group");
     expect(groups).toHaveLength(2);
-    expect(groups[0]!.find('[data-slot="group-title"]').text()).toBe("Group 2 nodes");
+    expect(titleText(groups[0]!.find('[data-slot="group-title"]'))).toBe("Smoothed noise 2 nodes");
     const { nodes, edges } = flow(wrapper);
     const ids = new Set(nodes.map((node) => node.id));
     expect(ids.size).toBe(6);
@@ -404,7 +431,7 @@ describe("Dataset builder", () => {
   function shownTitles(wrapper: Wrapper) {
     return wrapper
       .findAll(".vue-flow__node")
-      .map((node) => node.find('[data-slot="node-title"], [data-slot="group-title"]').text());
+      .map((node) => titleText(node.find('[data-slot="node-title"], [data-slot="group-title"]')));
   }
 
   it("opens a group to show only its nodes, and goes back to the main graph", async () => {
@@ -422,8 +449,8 @@ describe("Dataset builder", () => {
     expect(shownTitles(wrapper)).toEqual([
       "Gaussian field",
       "Grid sampler",
-      "Group Input",
-      "Group Output",
+      "Group input",
+      "Group output",
     ]);
 
     await backToMainGraph(wrapper);
@@ -432,7 +459,34 @@ describe("Dataset builder", () => {
     expect(shownTitles(wrapper)).toEqual(["Group 2 nodes", "Gain"]);
   });
 
-  it("exposes ports on the group through the Group Input and Output, and hides them again", async () => {
+  it("keeps the group input and output where auto-layout put them after leaving the group", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, field, sampler, "latent");
+    await groupTogether(field, sampler);
+    const portPositions = () =>
+      flow(wrapper)
+        .nodes.filter((node) => node.id === "group-input" || node.id === "group-output")
+        .map((node) => ({ ...node.position }));
+
+    await clickGroupControl(wrapper, "View group");
+    const opened = portPositions();
+    await wrapper
+      .find('[role="group"][aria-label="Graph settings"]')
+      .findAll("button")
+      .find((button) => button.text() === "Auto-layout")!
+      .trigger("click");
+    await flushPromises();
+    const laidOut = portPositions();
+    await backToMainGraph(wrapper);
+    await clickGroupControl(wrapper, "View group");
+
+    expect(laidOut).not.toEqual(opened);
+    expect(portPositions()).toEqual(laidOut);
+  });
+
+  it("exposes ports on the group through the group input and output, and hides them again", async () => {
     const wrapper = await mountView();
     const field = await dropKind(wrapper, "GaussianField");
     const sampler = await dropKind(wrapper, "GridSampler");
@@ -496,7 +550,7 @@ describe("Dataset builder", () => {
     await dropKind(wrapper, "Gain");
     await backToMainGraph(wrapper);
 
-    expect(wrapper.find('[data-slot="group-title"]').text()).toBe("Group 3 nodes");
+    expect(titleText(wrapper.find('[data-slot="group-title"]'))).toBe("Group 3 nodes");
     expect(shownTitles(wrapper)).toEqual(["Group 3 nodes"]);
   });
 
@@ -624,6 +678,7 @@ describe("Dataset builder", () => {
             kind: "GaussianField",
             params: { length_scale: 0.2, amplitude: 1, mean: 0, resolution: 64, order: 1 },
             position: { x: 0, y: 0 },
+            name: null,
             preview_hidden: false,
           },
           {
@@ -631,6 +686,7 @@ describe("Dataset builder", () => {
             kind: "GridSampler",
             params: { shape: 32 },
             position: { x: 300, y: 0 },
+            name: null,
             preview_hidden: false,
           },
           {
@@ -638,6 +694,7 @@ describe("Dataset builder", () => {
             kind: "RemovedStage",
             params: { strength: 3 },
             position: { x: 600, y: 0 },
+            name: null,
             preview_hidden: false,
           },
         ],

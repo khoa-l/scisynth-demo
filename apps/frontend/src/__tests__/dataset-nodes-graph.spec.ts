@@ -22,7 +22,7 @@ import {
 import { localCatalog } from "../lib/dataset-nodes/local-catalog";
 
 function savedNode(id: string, kind: string, params: DatasetGraph["nodes"][number]["params"]) {
-  return { id, kind, params, position: { x: 10, y: 20 }, preview_hidden: false };
+  return { id, kind, params, name: null, position: { x: 10, y: 20 }, preview_hidden: false };
 }
 
 function savedEdge(
@@ -87,6 +87,7 @@ describe("Dataset graph", () => {
         id,
         kind: "Gain",
         params: { factor: 2 },
+        name: null,
         position: { x: 1, y: 2 },
         preview_hidden: false,
       })),
@@ -102,7 +103,7 @@ describe("Dataset graph", () => {
       id: "sampler",
       type: "dataset-node",
       position: { x: 10, y: 20 },
-      data: { kind: "GridSampler", params: { shape: 32 }, previewHidden: false },
+      data: { kind: "GridSampler", params: { shape: 32 }, name: null, previewHidden: false },
     });
     expect(edges[0]).toEqual({
       id: "e1",
@@ -116,6 +117,33 @@ describe("Dataset graph", () => {
   it("saves back exactly what it loaded", () => {
     const { nodes, edges } = load(GRAPH);
     expect(toGraph(nodes, edges)).toEqual(GRAPH);
+  });
+
+  it("saves the names given to nodes and groups", () => {
+    const named: DatasetGraph = {
+      ...GRAPH,
+      nodes: [{ ...GRAPH.nodes[0]!, name: "Smooth field" }, ...GRAPH.nodes.slice(1)],
+      groups: [
+        {
+          id: "g",
+          name: "Sampling",
+          position: { x: 0, y: 0 },
+          width: 100,
+          height: 100,
+          nodes: ["sampler"],
+          inputs: [],
+          outputs: [],
+          input_position: null,
+          output_position: null,
+        },
+      ],
+    };
+
+    const { nodes, edges } = load(named);
+
+    expect(nodes.find((node) => node.id === "field")!.data.name).toBe("Smooth field");
+    expect(nodes[0]!.data.name).toBe("Sampling");
+    expect(toGraph(nodes, edges)).toEqual(named);
   });
 
   it("remembers which nodes have their preview hidden", () => {
@@ -158,6 +186,7 @@ describe("Dataset graph", () => {
     expect(nodes[0]!.data).toEqual({
       kind: "RemovedStage",
       params: { strength: 3 },
+      name: null,
       previewHidden: false,
     });
     expect(edges.map((edge) => edge.id)).toEqual(["e", "e1", "e2"]);
@@ -216,12 +245,15 @@ describe("Dataset graph", () => {
       groups: [
         {
           id: "g",
+          name: null,
           position: { x: 100, y: 200 },
           width: 400,
           height: 300,
           nodes: ["field", "sampler"],
           inputs: [],
           outputs: [{ node: "sampler", port: "observation" }],
+          input_position: null,
+          output_position: null,
         },
       ],
     };
@@ -428,7 +460,7 @@ describe("Dataset graph", () => {
       ]);
     });
 
-    it("opens a group by showing only its nodes, joined to a Group Input and a Group Output", () => {
+    it("opens a group by showing only its nodes, joined to a group input and a group output", () => {
       const { nodes, edges } = load(GROUPED);
 
       const view = openGroup(nodes as GraphNode[], edges, "g");
@@ -438,7 +470,7 @@ describe("Dataset graph", () => {
       ).toEqual([
         ["field", { x: 10, y: 20 }],
         ["sampler", { x: 10, y: 20 }],
-        ["group-input", { x: -230, y: 20 }],
+        ["group-input", { x: -278, y: 20 }],
         ["group-output", { x: 362, y: 20 }],
       ]);
       expect(view.edges.at(-1)).toMatchObject({
@@ -446,7 +478,39 @@ describe("Dataset graph", () => {
         sourceHandle: "observation",
         target: "group-output",
       });
-      expect(toGraph(view.nodes, view.edges)).toEqual(GROUPED);
+    });
+
+    it("saves where an open group shows its input and output", () => {
+      const { nodes, edges } = load(GROUPED);
+      const view = openGroup(nodes as GraphNode[], edges, "g");
+      const moved = view.nodes.map((node) =>
+        node.id === "group-input" ? { ...node, position: { x: -500, y: 70 } } : node,
+      );
+
+      expect(toGraph(moved, view.edges).groups[0]).toMatchObject({
+        input_position: { x: -500, y: 70 },
+        output_position: { x: 362, y: 20 },
+      });
+    });
+
+    it("shows a group's input and output where they were left when it opens again", () => {
+      const { nodes, edges } = load(GROUPED);
+      const view = openGroup(nodes as GraphNode[], edges, "g");
+      const moved = view.nodes.map((node) =>
+        node.id === "group-output" ? { ...node, position: { x: 800, y: -40 } } : node,
+      );
+
+      const closed = closeGroup(moved, view.edges);
+      const reopened = openGroup(closed.nodes as GraphNode[], closed.edges, "g");
+
+      expect(reopened.nodes.find((node) => node.id === "group-output")!.position).toEqual({
+        x: 800,
+        y: -40,
+      });
+      expect(reopened.nodes.find((node) => node.id === "group-input")!.position).toEqual({
+        x: -278,
+        y: 20,
+      });
     });
 
     it("closes a group back to how it was, dropping it if its nodes were all removed", () => {

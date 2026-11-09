@@ -3,7 +3,7 @@ import type { Edge, Node, XYPosition } from "@vue-flow/core";
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
 import { canConnect, findKind } from "./catalog";
-import { DATASET_GROUP, groupNode, withGroupEdges, type GroupNode } from "./groups";
+import { DATASET_GROUP, groupNode, portPositions, withGroupEdges, type GroupNode } from "./groups";
 import { isValidParam } from "./params";
 import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 
@@ -11,9 +11,12 @@ export type DatasetGraph = DatasetGraphOutput;
 
 export const DATASET_NODE = "dataset-node";
 
+export const NAME_MAX_LENGTH = 40;
+
 export interface DatasetNodeData {
   kind: string;
   params: ParamValues;
+  name?: string | null;
   previewHidden?: boolean;
 }
 
@@ -32,6 +35,7 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       id,
       kind: data.kind,
       params: data.params,
+      name: data.name ?? null,
       position: { x, y },
       preview_hidden: data.previewHidden ?? false,
     })),
@@ -44,15 +48,21 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       ),
     groups: nodes
       .filter((node): node is GroupNode => node.type === DATASET_GROUP)
-      .map(({ id, position: { x, y }, data: { width, height, inputs, outputs } }) => ({
-        id,
-        position: { x, y },
-        width,
-        height,
-        nodes: datasetNodes.filter((node) => node.parentNode === id).map((node) => node.id),
-        inputs,
-        outputs,
-      }))
+      .map((group) => {
+        const { inputPosition, outputPosition } = portPositions(nodes, group);
+        return {
+          id: group.id,
+          name: group.data.name,
+          position: { x: group.position.x, y: group.position.y },
+          width: group.data.width,
+          height: group.data.height,
+          nodes: datasetNodes.filter((node) => node.parentNode === group.id).map((node) => node.id),
+          inputs: group.data.inputs,
+          outputs: group.data.outputs,
+          input_position: inputPosition && { x: inputPosition.x, y: inputPosition.y },
+          output_position: outputPosition && { x: outputPosition.x, y: outputPosition.y },
+        };
+      })
       .filter((group) => group.nodes.length),
   };
 }
@@ -66,16 +76,23 @@ export function fromGraph(
     graph.groups.flatMap((group) => group.nodes.map((node) => [node, group.id])),
   );
 
-  const members = graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
-    const def = findKind(catalog, kind);
-    const node = flowNode(
-      id,
-      { x, y },
-      { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
-    );
-    const parentNode = parentOf.get(id);
-    return parentNode ? { ...node, parentNode, hidden: true } : node;
-  });
+  const members = graph.nodes.map(
+    ({ id, kind, params, name, position: { x, y }, preview_hidden }) => {
+      const def = findKind(catalog, kind);
+      const node = flowNode(
+        id,
+        { x, y },
+        {
+          kind,
+          params: def ? loadParams(def, params) : params,
+          name,
+          previewHidden: preview_hidden,
+        },
+      );
+      const parentNode = parentOf.get(id);
+      return parentNode ? { ...node, parentNode, hidden: true } : node;
+    },
+  );
   const edges = graph.edges
     .filter((edge) =>
       canConnect(catalog, {
@@ -92,8 +109,20 @@ export function fromGraph(
       target,
       targetHandle: target_port,
     }));
-  const groups = graph.groups.map(({ id, position: { x, y }, width, height, inputs, outputs }) =>
-    groupNode(id, { x, y }, { width, height, inputs, outputs }),
+  const groups = graph.groups.map((group) =>
+    groupNode(
+      group.id,
+      { x: group.position.x, y: group.position.y },
+      {
+        name: group.name,
+        width: group.width,
+        height: group.height,
+        inputs: group.inputs,
+        outputs: group.outputs,
+        inputPosition: group.input_position,
+        outputPosition: group.output_position,
+      },
+    ),
   );
   const nodes = [...groups, ...members];
   return { nodes, edges: withGroupEdges(nodes, edges) };

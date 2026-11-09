@@ -172,6 +172,10 @@ export type GraphGroupInput = {
      * Id
      */
     id: string;
+    /**
+     * Name
+     */
+    name?: string | null;
     position: Position;
     /**
      * Width
@@ -193,6 +197,8 @@ export type GraphGroupInput = {
      * Outputs
      */
     outputs?: Array<GroupPort>;
+    input_position?: Position | null;
+    output_position?: Position | null;
 };
 
 /**
@@ -203,6 +209,10 @@ export type GraphGroupOutput = {
      * Id
      */
     id: string;
+    /**
+     * Name
+     */
+    name: string | null;
     position: Position;
     /**
      * Width
@@ -224,6 +234,8 @@ export type GraphGroupOutput = {
      * Outputs
      */
     outputs: Array<GroupPort>;
+    input_position: Position | null;
+    output_position: Position | null;
 };
 
 /**
@@ -244,6 +256,10 @@ export type GraphNodeInput = {
     params?: {
         [key: string]: boolean | number | number | string | null;
     };
+    /**
+     * Name
+     */
+    name?: string | null;
     position: Position;
     /**
      * Preview Hidden
@@ -269,6 +285,10 @@ export type GraphNodeOutput = {
     params: {
         [key: string]: boolean | number | number | string | null;
     };
+    /**
+     * Name
+     */
+    name: string | null;
     position: Position;
     /**
      * Preview Hidden

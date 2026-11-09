@@ -10,6 +10,7 @@ import {
 } from "@/client/@tanstack/vue-query.gen";
 import ItemActions from "@/components/ItemActions.vue";
 import { SAVED_GROUP_MIME } from "@/lib/dataset-nodes/catalog";
+import { NAME_MAX_LENGTH } from "@/lib/dataset-nodes/graph";
 import { paletteItemClass, paletteListClass } from "@/lib/palette";
 
 const queryClient = useQueryClient();
@@ -65,6 +66,7 @@ function startDrag(event: DragEvent, group: SavedGroupPublic) {
       <ItemActions
         noun="saved group"
         :name="group.name"
+        :max-length="NAME_MAX_LENGTH"
         :rename="(name) => update({ path: { group_id: group.id }, body: { name } })"
         :remove="() => remove({ path: { group_id: group.id } })"
         class="absolute top-1/2 right-1 -translate-y-1/2"

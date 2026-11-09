@@ -11,6 +11,7 @@ def node(node_id: str) -> dict:
         "id": node_id,
         "kind": "GaussianField",
         "params": {"seed": 1},
+        "name": None,
         "position": {"x": 0, "y": 0},
         "preview_hidden": False,
     }
@@ -19,12 +20,15 @@ def node(node_id: str) -> dict:
 NODES = [node("a"), node("b")]
 GROUPED = {
     "id": "g",
+    "name": "Noise",
     "position": {"x": 0, "y": 0},
     "width": 300,
     "height": 200,
     "nodes": ["a", "b"],
     "inputs": [],
     "outputs": [{"node": "b", "port": "field"}],
+    "input_position": {"x": -200, "y": 0},
+    "output_position": None,
 }
 GROUP = {
     "version": 1,
@@ -65,6 +69,12 @@ def test_needs_exactly_one_group(signed_in: TestClient, groups: list) -> None:
     response = signed_in.post(
         URL, json={"name": "Noise", "content": {**GROUP, "groups": groups}}
     )
+
+    assert response.status_code == 422
+
+
+def test_keeps_saved_group_names_short(signed_in: TestClient) -> None:
+    response = signed_in.post(URL, json={"name": "x" * 41, "content": GROUP})
 
     assert response.status_code == 422
 

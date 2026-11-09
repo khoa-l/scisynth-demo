@@ -11,6 +11,7 @@ import { useDialogAction } from "@/lib/dialog-action";
 const props = defineProps<{
   noun: string;
   name: string;
+  maxLength?: number;
   rename: (name: string) => Promise<unknown>;
   remove: () => Promise<unknown>;
 }>();
@@ -46,6 +47,7 @@ function onDelete() {
       :title="`Rename ${noun}`"
       :description="`Enter a new name for this ${noun}.`"
       :initial-name="name"
+      :max-length="maxLength"
       :pending="isRenaming"
       :error="renameError"
       @submit="onRename"

@@ -167,6 +167,10 @@ const saveSoon = useDebounceFn(save, 500);
 watch(serialized, () => saveSoon());
 onBeforeUnmount(() => saveSoon.flush());
 
+const viewedGroupName = computed(
+  () => (viewedGroup.value && findNode<GroupData>(viewedGroup.value)?.data.name) || "Group",
+);
+
 let mainViewport: ViewportTransform | undefined;
 
 watch(viewedGroup, (groupId) => {
@@ -331,7 +335,9 @@ function onDrop(event: DragEvent) {
       </button>
     </Panel>
     <Panel position="top-center" class="m-0 flex flex-col items-center gap-2">
-      <div v-if="viewedGroup" data-slot="group-view-title" :class="tab">Group</div>
+      <div v-if="viewedGroup" data-slot="group-view-title" :class="tab">
+        {{ viewedGroupName }}
+      </div>
       <SaveFailedAlert v-if="saveFailed" class="w-max first:mt-4" @retry="save" />
     </Panel>
     <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">

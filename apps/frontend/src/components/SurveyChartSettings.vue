@@ -58,7 +58,8 @@ const chosen = computed(() =>
 function nodeOptions(dataset: DatasetPublic) {
   const seen = new Map<string, number>();
   return dataset.content.nodes.map((node) => {
-    const label = (catalog.value && findKind(catalog.value, node.kind)?.label) ?? node.kind;
+    const label =
+      node.name ?? (catalog.value && findKind(catalog.value, node.kind)?.label) ?? node.kind;
     const count = (seen.get(label) ?? 0) + 1;
     seen.set(label, count);
     return { value: `${dataset.id}/${node.id}`, label: count > 1 ? `${label} ${count}` : label };

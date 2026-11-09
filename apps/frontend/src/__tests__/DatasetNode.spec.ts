@@ -72,6 +72,56 @@ describe("Dataset node", () => {
     expect(sampler.find('[aria-label="Delete node"]').exists()).toBe(true);
   });
 
+  async function rename(input: DOMWrapper<Element>, name: string) {
+    (input.element as HTMLInputElement).value = name;
+    await input.trigger("keydown", { key: "Enter" });
+    await flushPromises();
+  }
+
+  it("names a node by double-clicking its title, keeping its kind in view", async () => {
+    const wrapper = await mountView();
+    const node = await dropKind(wrapper, "GaussianField");
+
+    await node.find('[data-slot="node-title"] span').trigger("dblclick");
+    const input = node.find('[data-slot="node-title"] input');
+    expect(input.attributes("maxlength")).toBe("40");
+    await rename(input, "  Smooth field ");
+
+    const title = node.find('[data-slot="node-title"]');
+    expect(title.findAll("span").map((part) => part.text())).toEqual([
+      "Smooth field",
+      "Gaussian field",
+    ]);
+  });
+
+  it("renames a node from its toolbar, and goes back to its kind when the name is cleared", async () => {
+    const wrapper = await mountView();
+    const node = await dropKind(wrapper, "GaussianField");
+
+    await node.find('[aria-label="Rename node"]').trigger("click");
+    await flushPromises();
+    await rename(node.find('[data-slot="node-title"] input'), "Smooth field");
+    await node.find('[aria-label="Rename node"]').trigger("click");
+    await flushPromises();
+    await rename(node.find('[data-slot="node-title"] input'), "   ");
+
+    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian field");
+  });
+
+  it("keeps a node's name when renaming is cancelled", async () => {
+    const wrapper = await mountView();
+    const node = await dropKind(wrapper, "GaussianField");
+
+    await node.find('[data-slot="node-title"] span').trigger("dblclick");
+    const input = node.find('[data-slot="node-title"] input');
+    (input.element as HTMLInputElement).value = "Smooth field";
+    await input.trigger("keydown", { key: "Escape" });
+    await flushPromises();
+
+    expect(node.find('[data-slot="node-title"] input').exists()).toBe(false);
+    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian field");
+  });
+
   describe("preview controls", () => {
     function controls(node: DOMWrapper<Element>) {
       return node.find('[aria-label="View preview"]');

@@ -8,6 +8,7 @@ from pydantic import (
     Field,
     FiniteFloat,
     StrictBool,
+    StringConstraints,
     model_validator,
 )
 
@@ -22,7 +23,13 @@ GENERATOR = {"scisynth": scisynth_version(), "numpy": version("numpy")}
 MAX_NODES = 500
 MAX_EDGES = 2000
 
+NAME_MAX_LENGTH = 40
+
 Ref = Annotated[str, Field(min_length=1, max_length=64)]
+NodeName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=NAME_MAX_LENGTH),
+]
 ParamValue = (
     StrictBool | int | FiniteFloat | Annotated[str, Field(max_length=200)] | None
 )
@@ -46,6 +53,7 @@ class NodeSpec(_Strict):
 
 
 class GraphNode(NodeSpec):
+    name: NodeName | None = None
     position: Position
     preview_hidden: bool = False
 
@@ -65,12 +73,15 @@ class GroupPort(_Strict):
 
 class GraphGroup(_Strict):
     id: Ref
+    name: NodeName | None = None
     position: Position
     width: Annotated[FiniteFloat, Field(gt=0)]
     height: Annotated[FiniteFloat, Field(gt=0)]
     nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
     inputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
     outputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
+    input_position: Position | None = None
+    output_position: Position | None = None
 
 
 class DatasetGraph(_Strict):

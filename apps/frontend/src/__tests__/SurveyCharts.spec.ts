@@ -22,6 +22,7 @@ const node = (id: string, kind: string) => ({
   id,
   kind,
   params: {},
+  name: null,
   position: { x: 0, y: 0 },
   preview_hidden: false,
 });
@@ -67,14 +68,14 @@ afterEach(() => {
   react.mockClear();
 });
 
-function answerAsTheServer(survey: object) {
+function answerAsTheServer(survey: object, dataset = DATASET) {
   fetchMock.mockImplementation(async (input) => {
     const request = input as Request;
     const { pathname } = new URL(request.url);
     if (pathname === "/api/previews/nodes") return jsonResponse(PREVIEW);
-    if (pathname === `/api/projects/${PROJECT_ID}/datasets`) return jsonResponse([DATASET]);
-    if (pathname === `/api/projects/${PROJECT_ID}/datasets/${DATASET.id}`) {
-      return jsonResponse(DATASET);
+    if (pathname === `/api/projects/${PROJECT_ID}/datasets`) return jsonResponse([dataset]);
+    if (pathname === `/api/projects/${PROJECT_ID}/datasets/${dataset.id}`) {
+      return jsonResponse(dataset);
     }
     if (request.method === "PATCH") {
       return jsonResponse({ ...survey, ...(await request.clone().json()) });
@@ -83,8 +84,8 @@ function answerAsTheServer(survey: object) {
   });
 }
 
-async function mountBuilder(block: SurveyBlock) {
-  answerAsTheServer({ ...SURVEY, content: { blocks: [block] } });
+async function mountBuilder(block: SurveyBlock, dataset = DATASET) {
+  answerAsTheServer({ ...SURVEY, content: { blocks: [block] } }, dataset);
   const { wrapper } = await mountPage(ProjectSurveyView, {
     props: { projectId: PROJECT_ID, surveyId: SURVEY.id },
   });
@@ -132,6 +133,23 @@ describe("Chart blocks", () => {
 
       expect((await savedBlocks())[0].source).toEqual(SOURCE);
       expect(trigger.text()).toBe("Raw reads / Grid sampler");
+    });
+
+    it("offers named nodes by their name", async () => {
+      const [field, ...others] = DATASET.content.nodes;
+      const named = {
+        ...DATASET,
+        content: { ...DATASET.content, nodes: [{ ...field!, name: "Smooth field" }, ...others] },
+      };
+      const wrapper = await mountBuilder(chart({ source: null }), named);
+
+      const options = await openData(wrapper);
+
+      expect(options.map((option) => option.textContent?.trim())).toEqual([
+        "Smooth field",
+        "Grid sampler",
+        "Gaussian field",
+      ]);
     });
 
     it("lets the author pick the channels to show, but not none", async () => {

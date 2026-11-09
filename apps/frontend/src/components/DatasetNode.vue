@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { Download, Eye, EyeOff, Group, ImageIcon, ImageOff, Trash2 } from "@lucide/vue";
+import { Download, Eye, EyeOff, Group, ImageIcon, ImageOff, Pencil, Trash2 } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useTemplateRef } from "vue";
 
 import { previewsDownloadNodeData } from "@/client";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import DatasetNodePreview from "@/components/DatasetNodePreview.vue";
+import NodeName from "@/components/NodeName.vue";
 import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { findKind, nodeCatalogQuery, requiredConnections } from "@/lib/dataset-nodes/catalog";
@@ -37,6 +38,8 @@ const PREVIEWED_FROM_INPUTS = new Set([
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
+const title = computed(() => props.data.name || kind.value?.label);
+const nameField = useTemplateRef("nameField");
 
 const { edges, getSelectedNodes, nodes, removeNodes, setEdges, setNodes, updateNodeData } =
   useVueFlow();
@@ -92,7 +95,7 @@ async function downloadData() {
       body: previewRequest.value,
       throwOnError: true,
     });
-    download(data, `${kind.value?.label}-${props.id}.npz`);
+    download(data, `${title.value}-${props.id}.npz`);
   } finally {
     downloading.value = false;
   }
@@ -125,6 +128,10 @@ function groupSelected() {
   setEdges(withGroupEdges(grouped, edges.value));
 }
 
+function rename(name: string | null) {
+  updateNodeData<DatasetNodeData>(props.id, { name });
+}
+
 function setParam(name: string, value: ParamValue) {
   updateNodeData<DatasetNodeData>(props.id, { params: { ...props.data.params, [name]: value } });
 }
@@ -141,7 +148,7 @@ function setParam(name: string, value: ParamValue) {
       v-if="hasPreview && !data.previewHidden"
       v-model:plot="plot"
       switchable
-      :label="kind.label"
+      :label="title!"
       :request="previewRequest"
       class="absolute -inset-x-px bottom-full mb-2"
     />
@@ -149,7 +156,7 @@ function setParam(name: string, value: ParamValue) {
       <DatasetNodePreview
         v-model:plot="plot"
         detailed
-        :label="kind.label"
+        :label="title!"
         :request="previewRequest"
         class="w-[min(100cqw,100cqh_-_2.25rem)]"
       />
@@ -192,16 +199,27 @@ function setParam(name: string, value: ParamValue) {
       >
         <Group />
       </button>
+      <button
+        type="button"
+        aria-label="Rename node"
+        :class="plainButton"
+        @click="nameField?.edit()"
+      >
+        <Pencil />
+      </button>
       <button type="button" aria-label="Delete node" :class="plainButton" @click="remove">
         <Trash2 />
       </button>
     </ToggleGroup>
     <div
       data-slot="node-title"
-      class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
+      class="flex flex-col rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
       :style="{ background: familyBackground(kind.family) }"
     >
-      {{ kind.label }}
+      <NodeName ref="nameField" :name="data.name" :fallback="kind.label" @rename="rename" />
+      <span v-if="data.name" class="truncate text-xs font-normal text-muted-foreground">
+        {{ kind.label }}
+      </span>
     </div>
     <div class="flex flex-col gap-1 py-2">
       <div v-for="port in kind.inputs" :key="port.id" class="relative px-3 text-muted-foreground">

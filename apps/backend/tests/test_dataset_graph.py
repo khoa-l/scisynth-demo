@@ -19,6 +19,7 @@ def node(node_id: str, kind: str = "GaussianNoise", **params: Any) -> dict:
         "id": node_id,
         "kind": kind,
         "params": params,
+        "name": None,
         "position": {"x": 0, "y": 0},
         "preview_hidden": False,
     }
@@ -34,13 +35,14 @@ def edge(edge_id: str, source: str, target: str) -> dict:
     }
 
 
+NODES = [
+    node("a", "GridSampler", shape=64),
+    node("b", "Quantize", levels=256, vmin=None, vmax=0.5),
+    node("c", "InterpolatedField", mode="grid-wrap"),
+]
 GRAPH = {
     "version": 1,
-    "nodes": [
-        node("a", "GridSampler", shape=64),
-        node("b", "Quantize", levels=256, vmin=None, vmax=0.5),
-        node("c", "InterpolatedField", mode="grid-wrap"),
-    ],
+    "nodes": NODES,
     "edges": [edge("e1", "a", "b")],
     "groups": [],
 }
@@ -68,6 +70,31 @@ def test_saves_the_graph_and_keeps_the_name(
     assert response.json()["name"] == "Fields"
     assert response.json()["content"] == GRAPH
     assert client.get(dataset_url).json()["content"] == GRAPH
+
+
+def test_saves_names_on_nodes_and_groups(client: TestClient, dataset_url: str) -> None:
+    named = {
+        **GRAPH,
+        "nodes": [{**NODES[0], "name": "  Coarse grid "}, *NODES[1:]],
+        "groups": [{**group("g", "a"), "name": "Sampling"}],
+    }
+
+    client.patch(dataset_url, json={"content": named})
+
+    content = client.get(dataset_url).json()["content"]
+    assert content["nodes"][0]["name"] == "Coarse grid"
+    assert content["groups"][0]["name"] == "Sampling"
+
+
+@pytest.mark.parametrize("name", ["", "   ", "x" * 41])
+def test_rejects_blank_or_long_names(
+    client: TestClient, dataset_url: str, name: str
+) -> None:
+    named = {**GRAPH, "nodes": [{**NODES[0], "name": name}]}
+
+    response = client.patch(dataset_url, json={"content": named})
+
+    assert response.status_code == 422
 
 
 def test_exports_the_graph_as_a_file(client: TestClient, dataset_url: str) -> None:
@@ -204,12 +231,15 @@ def test_shows_previews_of_nodes_saved_before_they_could_be_hidden(
 def group(group_id: str, *nodes: str) -> dict:
     return {
         "id": group_id,
+        "name": None,
         "position": {"x": 10, "y": 20},
         "width": 300,
         "height": 200,
         "nodes": list(nodes),
         "inputs": [{"node": nodes[0], "port": "in"}] if nodes else [],
         "outputs": [],
+        "input_position": None,
+        "output_position": None,
     }
 
 
@@ -219,6 +249,34 @@ def test_saves_groups_of_nodes(client: TestClient, dataset_url: str) -> None:
     client.patch(dataset_url, json={"content": grouped})
 
     assert client.get(dataset_url).json()["content"] == grouped
+
+
+def test_remembers_where_a_group_shows_its_input_and_output(
+    client: TestClient, dataset_url: str
+) -> None:
+    placed = {
+        **group("g", "a"),
+        "input_position": {"x": -150, "y": 40},
+        "output_position": {"x": 400, "y": 40},
+    }
+    client.patch(dataset_url, json={"content": {**GRAPH, "groups": [placed]}})
+
+    assert client.get(dataset_url).json()["content"]["groups"] == [placed]
+
+
+def test_lets_a_group_place_its_input_and_output_later(
+    client: TestClient, dataset_url: str
+) -> None:
+    saved = {
+        k: v
+        for k, v in group("g", "a").items()
+        if k not in ("input_position", "output_position")
+    }
+    client.patch(dataset_url, json={"content": {**GRAPH, "groups": [saved]}})
+
+    loaded = client.get(dataset_url).json()["content"]["groups"][0]
+    assert loaded["input_position"] is None
+    assert loaded["output_position"] is None
 
 
 @pytest.mark.parametrize(

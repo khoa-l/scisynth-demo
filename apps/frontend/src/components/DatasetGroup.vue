@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { BookmarkPlus, Maximize2, Trash2, Ungroup } from "@lucide/vue";
+import { BookmarkPlus, Maximize2, Pencil, Trash2, Ungroup } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useTemplateRef } from "vue";
 
 import {
   savedGroupsGetSavedGroupsQueryKey,
   savedGroupsSaveGroupMutation,
 } from "@/client/@tanstack/vue-query.gen";
 import NameDialog from "@/components/NameDialog.vue";
+import NodeName from "@/components/NodeName.vue";
 import { toggleVariants } from "@/components/ui/toggle";
 import { nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import { toGraph } from "@/lib/dataset-nodes/graph";
-import { groupGraph, memberPorts, ungroupNodes, withGroupEdges } from "@/lib/dataset-nodes/groups";
+import { NAME_MAX_LENGTH, toGraph } from "@/lib/dataset-nodes/graph";
+import {
+  groupGraph,
+  memberPorts,
+  ungroupNodes,
+  withGroupEdges,
+  type GroupData,
+} from "@/lib/dataset-nodes/groups";
 import { VIEWED_GROUP, VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { useDialogAction } from "@/lib/dialog-action";
 
-const props = defineProps<NodeProps>();
+const props = defineProps<NodeProps<GroupData>>();
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
-const { edges, nodes, setEdges, setNodes } = useVueFlow();
+const { edges, nodes, setEdges, setNodes, updateNodeData } = useVueFlow();
+const nameField = useTemplateRef("nameField");
 const viewed = inject(VIEWED_NODE, ref(null));
 const viewedGroup = inject(VIEWED_GROUP, ref(null));
 
@@ -47,7 +55,12 @@ const { open: saveOpen, pending: isSaving, error: saveError, run } = useDialogAc
 
 function save(name: string) {
   const content = groupGraph(toGraph(nodes.value, edges.value), props.id);
+  content.groups[0]!.name = name;
   void run(() => saveGroup({ body: { name, content } }));
+}
+
+function rename(name: string | null) {
+  updateNodeData<GroupData>(props.id, { name });
 }
 
 function ungroup() {
@@ -71,10 +84,10 @@ function remove() {
   >
     <div
       data-slot="group-title"
-      class="flex justify-between rounded-t-[calc(var(--radius-lg)-1px)] border-b bg-muted px-3 py-2 font-medium"
+      class="flex justify-between gap-2 rounded-t-[calc(var(--radius-lg)-1px)] border-b bg-muted px-3 py-2 font-medium"
     >
-      Group
-      <span class="font-normal text-muted-foreground">
+      <NodeName ref="nameField" :name="data.name" fallback="Group" @rename="rename" />
+      <span class="shrink-0 font-normal text-muted-foreground">
         {{ memberIds.length }} {{ memberIds.length === 1 ? "node" : "nodes" }}
       </span>
     </div>
@@ -123,7 +136,8 @@ function remove() {
         v-model:open="saveOpen"
         title="Save group"
         description="Saves a copy of this group to your account, to reuse in any dataset."
-        initial-name="untitled-group"
+        :initial-name="data.name ?? 'untitled-group'"
+        :max-length="NAME_MAX_LENGTH"
         :pending="isSaving"
         :error="saveError"
         @submit="save"
@@ -132,6 +146,14 @@ function remove() {
           <BookmarkPlus />
         </button>
       </NameDialog>
+      <button
+        type="button"
+        aria-label="Rename group"
+        :class="plainButton"
+        @click="nameField?.edit()"
+      >
+        <Pencil />
+      </button>
       <button type="button" aria-label="Ungroup nodes" :class="plainButton" @click="ungroup">
         <Ungroup />
       </button>

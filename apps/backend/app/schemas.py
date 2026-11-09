@@ -17,6 +17,7 @@ from app.dataset_graph import (
     DatasetGraph,
     GraphEdge,
     GroupGraph,
+    NodeName,
     NodeSpec,
     Ref,
 )
@@ -98,12 +99,12 @@ class SavedGroupPublic(BaseModel):
 
 
 class SavedGroupCreate(BaseModel):
-    name: Name
+    name: NodeName
     content: GroupGraph
 
 
 class SavedGroupUpdate(BaseModel):
-    name: Name
+    name: NodeName
 
 
 class SurveyPublic(BaseModel):

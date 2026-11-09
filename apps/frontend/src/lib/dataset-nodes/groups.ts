@@ -11,11 +11,17 @@ export const GROUP_INPUT = "group-input";
 export const GROUP_OUTPUT = "group-output";
 
 const NODE_WIDTH = 256;
-const PORTS_NODE_WIDTH = 144;
+const PORTS_NODE_WIDTH = 192;
 const VIEW_GAP = 96;
 
 export type GroupSide = "inputs" | "outputs";
-export type GroupData = { width: number; height: number } & Record<GroupSide, GroupPort[]>;
+export type GroupData = {
+  name: string | null;
+  width: number;
+  height: number;
+  inputPosition: XYPosition | null;
+  outputPosition: XYPosition | null;
+} & Record<GroupSide, GroupPort[]>;
 export type GroupNode = Node<GroupData> & { data: GroupData };
 
 export function groupNode(id: string, position: XYPosition, data: GroupData): GroupNode {
@@ -68,10 +74,13 @@ export function groupNodes(
       groupId,
       { x: left, y: top },
       {
+        name: null,
         width: right - left,
         height: bottom - top,
         inputs: exposed("inputs"),
         outputs: exposed("outputs"),
+        inputPosition: null,
+        outputPosition: null,
       },
     ),
     ...nodes.map((node) =>
@@ -149,11 +158,11 @@ export function openGroup(nodes: GraphNode[], edges: Edge[], groupId: string) {
   const top = Math.min(...members.map((node) => node.position.y));
   const left = Math.min(...members.map((node) => node.position.x)) - PORTS_NODE_WIDTH - VIEW_GAP;
   const right = Math.max(...members.map((node) => node.position.x)) + NODE_WIDTH + VIEW_GAP;
-  const portsNode = (type: string, x: number): Node => ({
+  const portsNode = (type: string, position: XYPosition): Node => ({
     id: type,
     type,
     parentNode: groupId,
-    position: { x, y: top },
+    position,
     data: {},
     deletable: false,
   });
@@ -161,8 +170,8 @@ export function openGroup(nodes: GraphNode[], edges: Edge[], groupId: string) {
   return {
     nodes: [
       ...nodes.map((node) => ({ ...node, hidden: node.parentNode !== groupId })),
-      portsNode(GROUP_INPUT, left),
-      portsNode(GROUP_OUTPUT, right),
+      portsNode(GROUP_INPUT, group.data.inputPosition ?? { x: left, y: top }),
+      portsNode(GROUP_OUTPUT, group.data.outputPosition ?? { x: right, y: top }),
     ],
     edges: [
       ...edges,
@@ -178,7 +187,14 @@ export function closeGroup(nodes: Node[], edges: Edge[]) {
   );
   const closed = nodes
     .filter((node) => node.type === DATASET_NODE || groups.has(node.id))
-    .map((node) => ({ ...node, hidden: !!node.parentNode }));
+    .map((node) => ({
+      ...node,
+      hidden: !!node.parentNode,
+      data:
+        node.type === DATASET_GROUP
+          ? { ...node.data, ...portPositions(nodes, node as GroupNode) }
+          : node.data,
+    }));
   const ids = new Set(closed.map((node) => node.id));
   return {
     nodes: closed,
@@ -186,6 +202,15 @@ export function closeGroup(nodes: Node[], edges: Edge[]) {
       closed,
       edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
     ),
+  };
+}
+
+export function portPositions(nodes: Node[], group: GroupNode) {
+  const shownAt = (type: string) =>
+    nodes.find((node) => node.type === type && node.parentNode === group.id)?.position;
+  return {
+    inputPosition: shownAt(GROUP_INPUT) ?? group.data.inputPosition,
+    outputPosition: shownAt(GROUP_OUTPUT) ?? group.data.outputPosition,
   };
 }
 
