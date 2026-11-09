@@ -36,12 +36,12 @@ const bound = (label: string) => num(label, null, { optional: true });
 const splineOrder = int("Spline order", 1, { min: 0, max: 5 });
 const seed = int("Seed", 0, { min: 0 });
 
-function stage(group: string) {
+function stage(family: string) {
   return (name: string, label: string, params: NodeKindDef["params"] = {}): NodeKindDef => ({
     name,
     label,
     category: "stage",
-    group,
+    family,
     inputs: [observation],
     outputs: [observation],
     params,
@@ -63,7 +63,7 @@ export const localCatalog: NodeCatalog = {
       name: "GaussianField",
       label: "Gaussian field",
       category: "latent",
-      group: "latent",
+      family: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -79,7 +79,7 @@ export const localCatalog: NodeCatalog = {
       name: "GaussianBumps",
       label: "Gaussian bumps",
       category: "latent",
-      group: "latent",
+      family: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -93,7 +93,7 @@ export const localCatalog: NodeCatalog = {
       name: "VoronoiRegions",
       label: "Voronoi regions",
       category: "latent",
-      group: "latent",
+      family: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -105,7 +105,7 @@ export const localCatalog: NodeCatalog = {
       name: "AnalyticField",
       label: "Analytic field",
       category: "latent",
-      group: "latent",
+      family: "latent",
       inputs: [],
       outputs: [field],
       params: {},
@@ -114,7 +114,7 @@ export const localCatalog: NodeCatalog = {
       name: "InterpolatedField",
       label: "Interpolated field",
       category: "latent",
-      group: "latent",
+      family: "latent",
       inputs: [],
       outputs: [field],
       params: {
@@ -137,7 +137,7 @@ export const localCatalog: NodeCatalog = {
       name: "Sum",
       label: "Sum",
       category: "latent",
-      group: "composite",
+      family: "composite",
       inputs: [fields("terms", "Terms", 2)],
       outputs: [field],
       params: {},
@@ -146,7 +146,7 @@ export const localCatalog: NodeCatalog = {
       name: "Product",
       label: "Product",
       category: "latent",
-      group: "composite",
+      family: "composite",
       inputs: [fields("terms", "Terms", 2)],
       outputs: [field],
       params: {},
@@ -155,7 +155,7 @@ export const localCatalog: NodeCatalog = {
       name: "Threshold",
       label: "Threshold",
       category: "latent",
-      group: "composite",
+      family: "composite",
       inputs: [field],
       outputs: [field],
       params: { level: num("Level", 0, { step: 0.1 }) },
@@ -164,7 +164,7 @@ export const localCatalog: NodeCatalog = {
       name: "Multichannel",
       label: "Multichannel",
       category: "latent",
-      group: "composite",
+      family: "composite",
       inputs: [fields("channels", "Channels")],
       outputs: [field],
       params: {},
@@ -173,7 +173,7 @@ export const localCatalog: NodeCatalog = {
       name: "GridSampler",
       label: "Grid sampler",
       category: "sampler",
-      group: "sampler",
+      family: "sampler",
       inputs: [latent],
       outputs: [observation],
       params: { shape: int("Grid size", 64, { min: 1 }) },
@@ -182,7 +182,7 @@ export const localCatalog: NodeCatalog = {
       name: "PointSampler",
       label: "Point sampler",
       category: "sampler",
-      group: "sampler",
+      family: "sampler",
       inputs: [latent],
       outputs: [observation],
       params: { n: int("Points", 1000, { min: 1 }), seed },
@@ -218,7 +218,7 @@ export const localCatalog: NodeCatalog = {
       name: "PCA",
       label: "PCA",
       category: "projection",
-      group: "projection",
+      family: "projection",
       inputs: [observation],
       outputs: [],
       params: {
@@ -242,7 +242,7 @@ export const localCatalog: NodeCatalog = {
       name: "UMAP",
       label: "UMAP",
       category: "projection",
-      group: "projection",
+      family: "projection",
       inputs: [observation],
       outputs: [],
       params: {

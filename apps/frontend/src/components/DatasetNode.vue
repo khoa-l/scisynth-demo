@@ -11,15 +11,15 @@ import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import DatasetNodePreview from "@/components/DatasetNodePreview.vue";
 import { toggleVariants } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { findKind, nodeCatalogQuery, requiredConnections } from "@/lib/dataset-nodes/catalog";
 import {
-  findKind,
-  nodeCatalogQuery,
-  requiredConnections,
+  DATASET_NODE,
+  nodePreviewRequest,
+  toGraph,
   type DatasetNodeData,
-} from "@/lib/dataset-nodes/catalog";
-import { DATASET_NODE, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
+} from "@/lib/dataset-nodes/graph";
 import { GROUP_INPUT, groupNodes, isStandIn, withGroupEdges } from "@/lib/dataset-nodes/groups";
-import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
+import { familyBackground, familyHues } from "@/lib/dataset-nodes/family-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 import { download } from "@/lib/download";
@@ -52,7 +52,7 @@ function connectionCount(port: PortDef) {
 
 const hasPreview = computed(() => {
   if (!kind.value) return false;
-  if (PREVIEWED_FROM_INPUTS.has(kind.value.group)) {
+  if (PREVIEWED_FROM_INPUTS.has(kind.value.family)) {
     return kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port));
   }
   return PREVIEWABLE_GENERATORS.has(kind.value.name);
@@ -135,7 +135,7 @@ function setParam(name: string, value: ParamValue) {
     v-if="kind"
     class="relative w-64 rounded-lg border bg-background text-sm shadow-sm"
     :class="{ 'ring-2 ring-ring/50': selected }"
-    :style="{ '--hue': groupHues[kind.group] }"
+    :style="{ '--hue': familyHues[kind.family] }"
   >
     <DatasetNodePreview
       v-if="hasPreview && !data.previewHidden"
@@ -199,7 +199,7 @@ function setParam(name: string, value: ParamValue) {
     <div
       data-slot="node-title"
       class="rounded-t-[calc(var(--radius-lg)-1px)] border-b px-3 py-2 font-medium"
-      :style="{ background: groupBackground(kind.group) }"
+      :style="{ background: familyBackground(kind.family) }"
     >
       {{ kind.label }}
     </div>

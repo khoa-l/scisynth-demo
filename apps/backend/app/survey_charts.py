@@ -10,8 +10,8 @@ from sqlmodel import Session, select
 
 from app.dataset_graph import GENERATOR, DatasetGraph, Ref
 from app.models import Dataset, SurveyChart, SurveyVersion
+from app.node_previews import channel_values, node_preview, observe, typed_array
 from app.observation_npz import observation_npz
-from app.routers.previews import channel_values, node_preview, observe, typed_array
 from app.schemas import DatasetFile, NodePreview, NodePreviewRequest
 
 

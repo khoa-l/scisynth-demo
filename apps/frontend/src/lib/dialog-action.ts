@@ -1,6 +1,6 @@
 import { ref, watch } from "vue";
 
-import { errorMessage } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 
 export function useDialogAction() {
   const open = ref(false);

@@ -1,6 +1,6 @@
 import { hueBackground } from "@/lib/gradient";
 
-export const groupHues: Record<string, number> = {
+export const familyHues: Record<string, number> = {
   latent: 250,
   composite: 300,
   sampler: 170,
@@ -9,7 +9,7 @@ export const groupHues: Record<string, number> = {
   projection: 340,
 };
 
-export function groupBackground(group: string) {
-  const hue = groupHues[group];
+export function familyBackground(family: string) {
+  const hue = familyHues[family];
   return hue === undefined ? undefined : hueBackground(hue);
 }

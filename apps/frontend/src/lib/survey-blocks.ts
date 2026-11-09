@@ -35,6 +35,12 @@ export const LABEL_TOOLS = ["point", "lasso", "brush"] as const;
 
 export type LabelTool = (typeof LABEL_TOOLS)[number];
 
+export const labelToolNames: Record<LabelTool, string> = {
+  point: "Point",
+  lasso: "Lasso",
+  brush: "Brush",
+};
+
 export interface LabelBlock extends Omit<ChartBlock, "type"> {
   type: "label";
   labels: SurveyLabel[];

@@ -11,12 +11,6 @@ export const nodeCatalogQuery = queryOptions({
   staleTime: Infinity,
 });
 
-export interface DatasetNodeData {
-  kind: string;
-  params: ParamValues;
-  previewHidden?: boolean;
-}
-
 export function findKind(catalog: NodeCatalog, name: string): NodeKindDef | undefined {
   return catalog.kinds.find((kind) => kind.name === name);
 }

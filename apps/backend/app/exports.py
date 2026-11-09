@@ -8,8 +8,8 @@ from sqlmodel import Session
 
 from app.dataset_graph import GENERATOR, DatasetGraph
 from app.models import Dataset, Survey, SurveyResponse, SurveyVersion
+from app.node_previews import PREVIEW_ERRORS, observe
 from app.observation_npz import observation_npz
-from app.routers.previews import PREVIEW_ERRORS, observe
 from app.schemas import DatasetFile, NodePreviewRequest
 from app.survey_charts import (
     FrozenChart,

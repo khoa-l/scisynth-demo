@@ -37,7 +37,12 @@ import {
   type Pixel,
   type PlacedLocation,
 } from "@/lib/labeling";
-import type { LabelBlock, LabeledPoints, LabelTool } from "@/lib/survey-blocks";
+import {
+  labelToolNames,
+  type LabelBlock,
+  type LabeledPoints,
+  type LabelTool,
+} from "@/lib/survey-blocks";
 
 const props = defineProps<{
   preview: NodePreview;
@@ -54,7 +59,9 @@ const POINT_RADIUS = 16;
 const BRUSH_RADIUS = 12;
 const MARK_RADIUS = 3;
 
-type Navigation = "pan" | "zoom";
+const NAVIGATION = ["pan", "zoom"] as const;
+
+type Navigation = (typeof NAVIGATION)[number];
 type Tool = LabelTool | Navigation;
 
 const toolIcons = {
@@ -64,13 +71,7 @@ const toolIcons = {
   pan: Move,
   zoom: ZoomIn,
 };
-const toolNames: Record<Tool, string> = {
-  point: "Point",
-  lasso: "Lasso",
-  brush: "Brush",
-  pan: "Move",
-  zoom: "Zoom",
-};
+const toolNames: Record<Tool, string> = { ...labelToolNames, pan: "Move", zoom: "Zoom" };
 
 interface PlotAxis {
   _offset: number;
@@ -86,8 +87,6 @@ const plot = shallowRef<PlotElement | null>(null);
 const canvas = useTemplateRef<HTMLCanvasElement>("canvas");
 const plotly = import("plotly.js-dist-min").then((module) => module.default);
 const stroke = ref<Pixel[]>([]);
-
-const NAVIGATION = ["pan", "zoom"] as const;
 
 const paintTools = computed<LabelTool[]>(() => (props.disabled ? [] : props.block.tools));
 const chosenLabel = ref(props.block.labels[0]?.id);

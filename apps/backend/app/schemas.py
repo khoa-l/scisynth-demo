@@ -132,7 +132,7 @@ class PublishedSurvey(BaseModel):
 
 ScalePoint = Annotated[StrictInt, Field(ge=1, le=5)]
 PointIndex = Annotated[StrictInt, Field(ge=0)]
-LabelledPoints = Annotated[
+LabeledPoints = Annotated[
     dict[Ref, Annotated[list[PointIndex], Field(max_length=256 * 256)]],
     Field(max_length=20),
 ]
@@ -140,7 +140,7 @@ LabelledPoints = Annotated[
 
 class SurveyResponseCreate(BaseModel):
     version_id: str
-    data: dict[Ref, ScalePoint | LabelledPoints] = Field(max_length=500)
+    data: dict[Ref, ScalePoint | LabeledPoints] = Field(max_length=500)
 
 
 class SurveyResponseReceipt(BaseModel):

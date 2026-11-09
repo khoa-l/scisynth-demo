@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { errorMessage, meQueryOptions } from "@/lib/auth";
+import { meQueryOptions } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 
 const props = defineProps<{ mode: "login" | "register" }>();
 

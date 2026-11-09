@@ -3,7 +3,7 @@ import { describe, it, expect } from "vite-plus/test";
 import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 
 import DatasetNode from "../components/DatasetNode.vue";
-import type { DatasetNodeData } from "../lib/dataset-nodes/catalog";
+import type { DatasetNodeData } from "../lib/dataset-nodes/graph";
 import { dropKind, enter, mountView, type Wrapper } from "./dataset-view";
 
 function lastNodeData(wrapper: Wrapper) {

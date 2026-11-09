@@ -2,7 +2,7 @@ import type { Edge, Node, XYPosition } from "@vue-flow/core";
 
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
-import { canConnect, findKind, type DatasetNodeData } from "./catalog";
+import { canConnect, findKind } from "./catalog";
 import { DATASET_GROUP, groupNode, withGroupEdges, type GroupNode } from "./groups";
 import { isValidParam } from "./params";
 import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
@@ -10,6 +10,12 @@ import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 export type DatasetGraph = DatasetGraphOutput;
 
 export const DATASET_NODE = "dataset-node";
+
+export interface DatasetNodeData {
+  kind: string;
+  params: ParamValues;
+  previewHidden?: boolean;
+}
 
 export type FlowNode = Node<DatasetNodeData> & { data: DatasetNodeData };
 

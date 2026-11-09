@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import { LABEL_TOOLS, type ChartBlock, type LabelBlock } from "@/lib/survey-blocks";
+import { LABEL_TOOLS, labelToolNames, type ChartBlock, type LabelBlock } from "@/lib/survey-blocks";
 import { liveNodePreview } from "@/lib/survey-charts";
 
 const props = defineProps<{ projectId: string; block: ChartBlock | LabelBlock }>();
@@ -51,7 +51,6 @@ const { data: preview } = useQuery(
 const channelCount = computed(() => preview.value?.channels.length ?? 0);
 const hasChannels = computed(() => !!props.block.source && channelCount.value > 1);
 
-const toolNames = { point: "Point", lasso: "Lasso", brush: "Brush" };
 const chosen = computed(() =>
   props.block.source ? `${props.block.source.dataset_id}/${props.block.source.node_id}` : undefined,
 );
@@ -187,7 +186,7 @@ function setAppearance(value: unknown) {
             @update:model-value="setTools"
           >
             <ToggleGroupItem v-for="tool in LABEL_TOOLS" :key="tool" :value="tool">
-              {{ toolNames[tool] }}
+              {{ labelToolNames[tool] }}
             </ToggleGroupItem>
           </ToggleGroup>
         </div>

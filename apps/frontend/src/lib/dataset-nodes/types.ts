@@ -12,7 +12,7 @@ export interface NodeKindDef {
   name: string;
   label: string;
   category: string;
-  group: string;
+  family: string;
   inputs: PortDef[];
   outputs: PortDef[];
   params: Record<string, ParamDef>;

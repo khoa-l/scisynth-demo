@@ -5,7 +5,7 @@ import { useId } from "vue";
 
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
+import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/graph-settings";
 
 const lineType = defineModel<LineType>("lineType", { required: true });
 const emit = defineEmits<{ autoLayout: [] }>();

@@ -11,7 +11,7 @@ import {
 } from "@/client";
 import { surveysUnpublishSurveyMutation } from "@/client/@tanstack/vue-query.gen";
 import { Button } from "@/components/ui/button";
-import { errorMessage } from "@/lib/auth";
+import { errorMessage } from "@/lib/errors";
 import { lastSaveFailed, saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 import { storeSurvey } from "@/lib/survey-cache";
 

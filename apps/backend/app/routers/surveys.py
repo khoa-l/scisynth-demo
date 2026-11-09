@@ -15,7 +15,7 @@ from app.models import (
     User,
     new_id,
 )
-from app.routers.previews import PREVIEW_ERRORS
+from app.node_previews import PREVIEW_ERRORS
 from app.routers.projects import get_owned_project
 from app.schemas import (
     NodePreview,

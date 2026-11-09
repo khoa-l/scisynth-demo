@@ -12,7 +12,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///scisynth.db")
 
 
 @event.listens_for(Engine, "connect")
-def enable_foreign_keys(
+def configure_sqlite(
     dbapi_connection: DBAPIConnection, _record: ConnectionPoolEntry
 ) -> None:
     cursor = dbapi_connection.cursor()

@@ -33,9 +33,14 @@ import {
   defaultParams,
   findKind,
   nodeCatalogQuery,
-  type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
-import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
+import {
+  DATASET_NODE,
+  flowNode,
+  fromGraph,
+  toGraph,
+  type DatasetNodeData,
+} from "@/lib/dataset-nodes/graph";
 import {
   DATASET_GROUP,
   GROUP_INPUT,
@@ -49,9 +54,8 @@ import {
   type GroupData,
   type GroupSide,
 } from "@/lib/dataset-nodes/groups";
-import { GRAPH_SETTINGS_ID } from "@/lib/dataset-nodes/graph-settings";
+import { GRAPH_SETTINGS_ID, LINE_TYPES, type LineType } from "@/lib/dataset-nodes/graph-settings";
 import { autoLayout } from "@/lib/dataset-nodes/layout";
-import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_GROUP, VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
