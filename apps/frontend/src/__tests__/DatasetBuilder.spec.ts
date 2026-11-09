@@ -187,29 +187,6 @@ describe("Dataset builder", () => {
     expect(fieldNode!.position.y).toBe(samplerNode!.position.y);
   });
 
-  it("shows the graph settings until they are hidden, and remembers it for the dataset", async () => {
-    const settingsShown = (wrapper: Wrapper) =>
-      wrapper.find('[role="group"][aria-label="Graph settings"]').exists();
-    const toggle = (wrapper: Wrapper) =>
-      wrapper.find('[aria-label="Show graph settings"]').trigger("click");
-    const wrapper = await mountView();
-    expect(settingsShown(wrapper)).toBe(true);
-
-    await toggle(wrapper);
-    expect(settingsShown(wrapper)).toBe(false);
-
-    wrapper.unmount();
-    const reopened = await mountView();
-    expect(settingsShown(reopened)).toBe(false);
-
-    await toggle(reopened);
-    expect(settingsShown(reopened)).toBe(true);
-
-    await toggle(reopened);
-    reopened.unmount();
-    expect(settingsShown(await mountView({ ...DATASET, id: "other-dataset" }))).toBe(true);
-  });
-
   it("adds to the selection when a node is clicked with shift held", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");

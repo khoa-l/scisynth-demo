@@ -39,6 +39,7 @@ import {
   standInId,
   withGroupEdges,
 } from "@/lib/dataset-nodes/groups";
+import { GRAPH_SETTINGS_ID } from "@/lib/dataset-nodes/graph-settings";
 import { autoLayout } from "@/lib/dataset-nodes/layout";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
 import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
@@ -57,7 +58,6 @@ const lineType = useLocalStorage<LineType>(
 );
 if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Bezier;
 const defaultEdgeOptions = computed(() => ({ type: lineType.value, style: lineStyle }));
-const settingsShown = useLocalStorage(`dataset-builder-settings-shown:${props.dataset.id}`, true);
 
 provide(VIEWED_NODE, ref(null));
 
@@ -223,12 +223,8 @@ function onDrop(event: DragEvent) {
     <Panel v-if="saveFailed" position="top-center" class="w-max">
       <SaveFailedAlert @retry="save" />
     </Panel>
-    <Panel position="top-right">
-      <GraphSettings
-        v-model:line-type="lineType"
-        v-model:shown="settingsShown"
-        @auto-layout="layOut"
-      />
-    </Panel>
+    <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">
+      <GraphSettings v-model:line-type="lineType" @auto-layout="layOut" />
+    </Teleport>
   </VueFlow>
 </template>

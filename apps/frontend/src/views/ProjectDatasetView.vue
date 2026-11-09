@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GRAPH_SETTINGS_ID } from "@/lib/dataset-nodes/graph-settings";
 import { VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
 import { download } from "@/lib/download";
 
@@ -87,7 +88,10 @@ async function downloadData() {
           <div class="min-h-0">
             <DatasetNodePalette />
           </div>
-          <div class="-ml-px rounded-tl-lg border-t border-l bg-background" />
+          <div
+            :id="GRAPH_SETTINGS_ID"
+            class="relative z-5 -ml-px min-h-0 overflow-y-auto rounded-tl-lg border-t border-l bg-background shadow-[0_-4px_4px_-4px_rgb(0_0_0/0.15)]"
+          />
         </div>
       </div>
     </template>
