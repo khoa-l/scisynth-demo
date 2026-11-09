@@ -27,15 +27,6 @@ import { download } from "@/lib/download";
 
 const props = defineProps<NodeProps<DatasetNodeData>>();
 
-const PREVIEWABLE_GENERATORS = new Set(["GaussianField", "GaussianBumps", "VoronoiRegions"]);
-const PREVIEWED_FROM_INPUTS = new Set([
-  "composite",
-  "sampler",
-  "defect",
-  "transform",
-  "projection",
-]);
-
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
 const title = computed(() => props.data.name || kind.value?.label || props.data.kind);
@@ -53,13 +44,11 @@ function connectionCount(port: PortDef) {
   ).length;
 }
 
-const hasPreview = computed(() => {
-  if (!kind.value) return false;
-  if (PREVIEWED_FROM_INPUTS.has(kind.value.family)) {
-    return kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port));
-  }
-  return PREVIEWABLE_GENERATORS.has(kind.value.name);
-});
+const hasPreview = computed(
+  () =>
+    !!kind.value &&
+    kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port)),
+);
 
 const previewRequest = computed(() =>
   nodePreviewRequest(toGraph(nodes.value, edges.value), props.id),

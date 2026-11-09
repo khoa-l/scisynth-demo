@@ -174,12 +174,6 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
         ("c", [bumps("c", count=101)], [], "Too many bumps to preview: 101"),
         ("c", [regions("c", count=0)], [], "count must be >= 1"),
         ("c", [regions("c", count=10_001)], [], "Too many regions to preview: 10,001"),
-        (
-            "c",
-            [{"id": "c", "kind": "AnalyticField", "params": {}}],
-            [],
-            "Unknown component",
-        ),
     ],
 )
 def test_rejects_latents_it_cannot_preview(

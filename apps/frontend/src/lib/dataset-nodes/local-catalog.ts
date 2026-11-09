@@ -33,7 +33,6 @@ const int = (
 });
 const bound = (label: string) => num(label, null, { optional: true });
 
-const splineOrder = int("Spline order", 1, { min: 0, max: 5 });
 const seed = int("Seed", 0, { min: 0 });
 
 function stage(family: string) {
@@ -83,7 +82,7 @@ export const localCatalog: NodeCatalog = {
         amplitude: num("Amplitude", 1),
         mean: num("Mean", 0),
         resolution: int("Resolution", 128, { min: 1 }),
-        order: splineOrder,
+        order: int("Spline order", 1, { min: 0, max: 5 }),
         seed,
       },
     },
@@ -111,38 +110,6 @@ export const localCatalog: NodeCatalog = {
       params: {
         count: int("Regions", 10, { min: 1, max: 10000 }),
         seed,
-      },
-    },
-    {
-      name: "AnalyticField",
-      label: "Analytic Field",
-      category: "latent",
-      family: "latent",
-      inputs: [],
-      outputs: [field],
-      params: {},
-    },
-    {
-      name: "InterpolatedField",
-      label: "Interpolated Field",
-      category: "latent",
-      family: "latent",
-      inputs: [],
-      outputs: [field],
-      params: {
-        order: splineOrder,
-        mode: {
-          type: "enum",
-          label: "Boundary",
-          default: "nearest",
-          options: [
-            { value: "nearest", label: "Nearest" },
-            { value: "grid-wrap", label: "Periodic" },
-            { value: "reflect", label: "Reflect" },
-            { value: "mirror", label: "Mirror" },
-            { value: "constant", label: "Constant" },
-          ],
-        },
       },
     },
     {

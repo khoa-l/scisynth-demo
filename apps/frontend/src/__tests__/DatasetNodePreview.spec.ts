@@ -487,15 +487,9 @@ describe("Dataset node preview", () => {
     expect(alert.classes()).toContain("text-destructive");
   });
 
-  it("only draws thumbnails for latents it can preview", async () => {
+  it("draws thumbnails for every kind of latent", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse(PREVIEW));
-
-    const analytic = await dropKind(wrapper, "AnalyticField");
-    await flushPromises();
-
-    expect(thumbnail(analytic).exists()).toBe(false);
-    expect(previews()).toHaveLength(0);
 
     const bumps = await dropKind(wrapper, "GaussianBumps");
     const regions = await dropKind(wrapper, "VoronoiRegions");

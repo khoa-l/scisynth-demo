@@ -38,7 +38,7 @@ def edge(edge_id: str, source: str, target: str) -> dict:
 NODES = [
     node("a", "GridSampler", shape=64),
     node("b", "Quantize", levels=256, vmin=None, vmax=0.5),
-    node("c", "InterpolatedField", mode="grid-wrap"),
+    node("c", "UMAP", metric="cosine"),
 ]
 GRAPH = {
     "version": 1,

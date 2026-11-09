@@ -71,17 +71,22 @@ describe("Dataset node parameters", () => {
     await enter(vmin!, "");
     expect(lastNodeData(wrapper).params).toEqual({ levels: 256, vmin: null, vmax: null });
 
-    const field = await dropKind(wrapper, "InterpolatedField");
-    const trigger = field.find('[data-slot="select-trigger"]');
-    expect(trigger.text()).toBe("Nearest");
+    const umap = await dropKind(wrapper, "UMAP");
+    const trigger = umap.find('[data-slot="select-trigger"]');
+    expect(trigger.text()).toBe("Euclidean");
     await trigger.trigger("keydown", { key: "Enter" });
     await flushPromises();
     const options = [...document.querySelectorAll<HTMLElement>('[role="option"]')];
     options
-      .find((option) => option.textContent?.trim() === "Periodic")!
+      .find((option) => option.textContent?.trim() === "Cosine")!
       .dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
     await flushPromises();
-    expect(lastNodeData(wrapper).params).toEqual({ order: 1, mode: "grid-wrap" });
+    expect(lastNodeData(wrapper).params).toEqual({
+      n_neighbors: 15,
+      min_dist: 0.1,
+      metric: "cosine",
+      seed: 0,
+    });
   });
 
   it("turns switch parameters on and off", async () => {

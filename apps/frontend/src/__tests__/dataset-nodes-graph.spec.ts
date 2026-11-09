@@ -157,7 +157,7 @@ describe("Dataset graph", () => {
       version: 1,
       nodes: [
         savedNode("q", "Quantize", { levels: 1.5, vmin: 0, old: 7 }),
-        savedNode("i", "InterpolatedField", { order: 9, mode: "unknown-mode" }),
+        savedNode("u", "UMAP", { n_neighbors: 1, metric: "unknown-metric" }),
         savedNode("p", "PCA", { whiten: 1, svd_solver: "full" }),
         savedNode("w", "PCA", { whiten: true, seed: true }),
       ],
@@ -167,7 +167,7 @@ describe("Dataset graph", () => {
 
     expect(nodes.map((node) => node.data.params)).toEqual([
       { levels: 256, vmin: 0, vmax: null },
-      { order: 1, mode: "nearest" },
+      { n_neighbors: 15, min_dist: 0.1, metric: "euclidean", seed: 0 },
       { whiten: false, svd_solver: "full", seed: 0 },
       { whiten: true, svd_solver: "auto", seed: 0 },
     ]);
