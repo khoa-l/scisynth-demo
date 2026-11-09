@@ -38,7 +38,7 @@ const PREVIEWED_FROM_INPUTS = new Set([
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const kind = computed(() => catalog.value && findKind(catalog.value, props.data.kind));
-const title = computed(() => props.data.name || kind.value?.label);
+const title = computed(() => props.data.name || kind.value?.label || props.data.kind);
 const nameField = useTemplateRef("nameField");
 
 const { edges, getSelectedNodes, nodes, removeNodes, setEdges, setNodes, updateNodeData } =
@@ -148,7 +148,7 @@ function setParam(name: string, value: ParamValue) {
       v-if="hasPreview && !data.previewHidden"
       v-model:plot="plot"
       switchable
-      :label="title!"
+      :label="title"
       :request="previewRequest"
       class="absolute -inset-x-px bottom-full mb-2"
     />
@@ -156,7 +156,7 @@ function setParam(name: string, value: ParamValue) {
       <DatasetNodePreview
         v-model:plot="plot"
         detailed
-        :label="title!"
+        :label="title"
         :request="previewRequest"
         class="w-[min(100cqw,100cqh_-_2.25rem)]"
       />

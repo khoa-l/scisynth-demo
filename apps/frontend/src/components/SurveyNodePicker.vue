@@ -30,16 +30,16 @@ function nodeOptions(dataset: DatasetPublic) {
   });
 }
 
-const groups = computed(() =>
+const sections = computed(() =>
   (datasets.value ?? [])
     .map((dataset) => ({ dataset, options: nodeOptions(dataset) }))
-    .filter((group) => group.options.length),
+    .filter((section) => section.options.length),
 );
 
 const chosen = computed(() => {
-  const group = groups.value.find(({ dataset }) => dataset.id === props.source?.dataset_id);
-  const option = group?.options.find(({ id }) => id === props.source?.node_id);
-  return group && option && { dataset: group.dataset.name, node: option.label };
+  const section = sections.value.find(({ dataset }) => dataset.id === props.source?.dataset_id);
+  const option = section?.options.find(({ id }) => id === props.source?.node_id);
+  return section && option && { dataset: section.dataset.name, node: option.label };
 });
 
 const open = ref(false);
@@ -47,7 +47,7 @@ const expanded = ref<string[]>([]);
 
 watch(open, (isOpen) => {
   if (!isOpen) return;
-  const shown = props.source?.dataset_id ?? groups.value[0]?.dataset.id;
+  const shown = props.source?.dataset_id ?? sections.value[0]?.dataset.id;
   expanded.value = shown ? [shown] : [];
 });
 
@@ -85,11 +85,11 @@ function choose(datasetId: string, nodeId: string) {
       align="start"
       class="max-h-80 w-(--reka-popover-trigger-width) gap-0.5 overflow-y-auto p-1"
     >
-      <p v-if="!groups.length" class="px-1.5 py-1 text-muted-foreground">
+      <p v-if="!sections.length" class="px-1.5 py-1 text-muted-foreground">
         No datasets with nodes yet.
       </p>
       <Collapsible
-        v-for="{ dataset, options } in groups"
+        v-for="{ dataset, options } in sections"
         :key="dataset.id"
         :open="expanded.includes(dataset.id)"
         @update:open="setExpanded(dataset.id, $event)"
