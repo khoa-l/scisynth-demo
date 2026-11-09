@@ -12,11 +12,12 @@ import {
   connectionExists,
   useVueFlow,
   type ValidConnectionFunc,
+  type ViewportTransform,
 } from "@vue-flow/core";
 import { useDebounceFn, useLocalStorage, useMounted, whenever } from "@vueuse/core";
 import { computed, markRaw, nextTick, onBeforeUnmount, provide, ref, watch } from "vue";
 
-import type { DatasetPublic } from "@/client";
+import type { DatasetPublic, GroupPort } from "@/client";
 import {
   datasetsGetDatasetQueryKey,
   datasetsUpdateDatasetMutation,
@@ -24,7 +25,7 @@ import {
 import DatasetGroup from "@/components/DatasetGroup.vue";
 import DatasetNode from "@/components/DatasetNode.vue";
 import GraphSettings from "@/components/GraphSettings.vue";
-import GroupViewNode from "@/components/GroupViewNode.vue";
+import GroupPortsNode from "@/components/GroupPortsNode.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import {
   NODE_KIND_MIME,
@@ -37,11 +38,16 @@ import {
 import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
 import {
   DATASET_GROUP,
-  GROUP_VIEW_NODE,
-  groupView as buildGroupView,
+  GROUP_INPUT,
+  GROUP_OUTPUT,
+  closeGroup,
+  groupPortEdge,
   memberConnection,
+  openGroup,
   standInId,
   withGroupEdges,
+  type GroupData,
+  type GroupSide,
 } from "@/lib/dataset-nodes/groups";
 import { GRAPH_SETTINGS_ID } from "@/lib/dataset-nodes/graph-settings";
 import { autoLayout } from "@/lib/dataset-nodes/layout";
@@ -54,8 +60,9 @@ const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
 const nodeTypes = {
   [DATASET_NODE]: markRaw(DatasetNode),
   [DATASET_GROUP]: markRaw(DatasetGroup),
+  [GROUP_INPUT]: markRaw(GroupPortsNode),
+  [GROUP_OUTPUT]: markRaw(GroupPortsNode),
 };
-const groupViewTypes = { [GROUP_VIEW_NODE]: markRaw(GroupViewNode) };
 const tab =
   "flex items-center gap-1.5 rounded-b-lg border border-t-0 bg-background px-3 py-1 text-sm font-medium shadow-sm";
 const lineStyle = { strokeWidth: 3 };
@@ -77,26 +84,24 @@ const {
   addNodes,
   edges,
   findNode,
+  findEdge,
   fitView,
+  getViewport,
   nodes,
   onConnect,
   onEdgesChange,
   onNodesInitialized,
   removeEdges,
+  removeSelectedElements,
   screenToFlowCoordinate,
   setEdges,
   setNodes,
+  setViewport,
   updateNode,
   vueFlowRef,
 } = useVueFlow();
 
 const graph = computed(() => toGraph(nodes.value, edges.value));
-const groupView = computed(
-  () =>
-    viewedGroup.value &&
-    catalog.value &&
-    buildGroupView(nodes.value, edges.value, catalog.value, viewedGroup.value),
-);
 const serialized = computed(() => JSON.stringify(graph.value));
 let loaded = false;
 let lastSaved: string | undefined;
@@ -153,7 +158,59 @@ const saveSoon = useDebounceFn(save, 500);
 watch(serialized, () => saveSoon());
 onBeforeUnmount(() => saveSoon.flush());
 
+let mainViewport: ViewportTransform | undefined;
+
+watch(viewedGroup, (groupId) => {
+  removeSelectedElements();
+  const view = groupId
+    ? openGroup(nodes.value, edges.value, groupId)
+    : closeGroup(nodes.value, edges.value);
+  setNodes(view.nodes);
+  setEdges(view.edges);
+  if (groupId) {
+    mainViewport = getViewport();
+    const { off } = onNodesInitialized(() => {
+      off();
+      fitView({ maxZoom: 1 });
+    });
+  } else if (mainViewport) {
+    setViewport(mainViewport);
+  }
+});
+
+function setGroupPorts(side: GroupSide, update: (ports: GroupPort[]) => GroupPort[]) {
+  updateNode<GroupData>(viewedGroup.value!, (group) => ({
+    data: { ...group.data, [side]: update(group.data[side]) },
+  }));
+}
+
+function exposePort(side: GroupSide, port: GroupPort) {
+  const edge = groupPortEdge(side, port);
+  if (findEdge(edge.id)) return;
+  setGroupPorts(side, (ports) => [...ports, port]);
+  addEdges(edge);
+}
+
+function hidePort(side: GroupSide, port: GroupPort) {
+  setGroupPorts(side, (ports) =>
+    ports.filter((exposed) => exposed.node !== port.node || exposed.port !== port.port),
+  );
+  const outside = edges.value.filter((edge) =>
+    side === "inputs"
+      ? edge.target === port.node &&
+        edge.targetHandle === port.port &&
+        findNode(edge.source)?.parentNode !== viewedGroup.value
+      : edge.source === port.node &&
+        edge.sourceHandle === port.port &&
+        findNode(edge.target)?.parentNode !== viewedGroup.value,
+  );
+  if (outside.length) removeEdges(outside);
+}
+
 onConnect((connection) => {
+  const { source, sourceHandle, target, targetHandle } = connection;
+  if (source === GROUP_INPUT) return exposePort("inputs", { node: target, port: targetHandle! });
+  if (target === GROUP_OUTPUT) return exposePort("outputs", { node: source, port: sourceHandle! });
   const real = memberConnection(connection, nodes.value);
   if (!connectionExists(real, edges.value)) {
     addEdges({ ...real, id: crypto.randomUUID() });
@@ -162,12 +219,19 @@ onConnect((connection) => {
 });
 
 onEdgesChange((changes) => {
-  const removed = new Set(changes.flatMap((change) => (change.type === "remove" ? change.id : [])));
-  const real = edges.value.filter((edge) => removed.has(standInId(edge.id)));
+  const removed = changes.flatMap((change) => (change.type === "remove" ? [change] : []));
+  const ids = new Set(removed.map((change) => change.id));
+  const real = edges.value.filter((edge) => ids.has(standInId(edge.id)));
   if (real.length) removeEdges(real);
+  for (const { source, sourceHandle, target, targetHandle } of removed) {
+    if (source === GROUP_INPUT) hidePort("inputs", { node: target, port: targetHandle! });
+    if (target === GROUP_OUTPUT) hidePort("outputs", { node: source, port: sourceHandle! });
+  }
 });
 
 const isValidConnection: ValidConnectionFunc = (connection) => {
+  if (connection.source === GROUP_INPUT) return findNode(connection.target)?.type === DATASET_NODE;
+  if (connection.target === GROUP_OUTPUT) return findNode(connection.source)?.type === DATASET_NODE;
   const real = memberConnection(connection, nodes.value);
   const kindOf = (id: string) => (findNode(id)?.data as DatasetNodeData | undefined)?.kind ?? "";
   return (
@@ -183,7 +247,7 @@ const isValidConnection: ValidConnectionFunc = (connection) => {
 };
 
 function layOut() {
-  setNodes(autoLayout(nodes.value, edges.value));
+  setNodes(autoLayout(nodes.value, edges.value, viewedGroup.value ?? undefined));
   nextTick(() => fitView({ maxZoom: 1 }));
 }
 
@@ -211,63 +275,44 @@ function onDrop(event: DragEvent) {
       },
     }));
   });
-  addNodes(
-    flowNode(id, screenToFlowCoordinate({ x: event.clientX, y: event.clientY }), {
-      kind: kind.name,
-      params: defaultParams(kind),
-    }),
+  const point = screenToFlowCoordinate({ x: event.clientX, y: event.clientY });
+  const group = viewedGroup.value && findNode(viewedGroup.value);
+  const node = flowNode(
+    id,
+    group ? { x: point.x - group.position.x, y: point.y - group.position.y } : point,
+    { kind: kind.name, params: defaultParams(kind) },
   );
+  addNodes(group ? { ...node, parentNode: group.id } : node);
 }
 </script>
 
 <template>
-  <div class="size-full">
-    <VueFlow
-      v-show="!groupView"
-      aria-label="Node graph"
-      class="bg-muted inset-shadow-sm"
-      :node-types="nodeTypes"
-      :default-edge-options="defaultEdgeOptions"
-      :connection-line-type="lineType"
-      :connection-line-style="lineStyle"
-      :connection-radius="40"
-      :is-valid-connection="isValidConnection"
-      multi-selection-key-code="Shift"
-      @dragover="onDragOver"
-      @drop="onDrop"
-    >
-      <Background variant="lines" color="#dcdcdc" />
-      <Panel v-if="saveFailed" position="top-center" class="w-max">
-        <SaveFailedAlert @retry="save" />
-      </Panel>
-      <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">
-        <GraphSettings v-model:line-type="lineType" @auto-layout="layOut" />
-      </Teleport>
-    </VueFlow>
-    <VueFlow
-      v-if="groupView"
-      :id="`group-view-${dataset.id}`"
-      aria-label="Group view"
-      class="bg-muted inset-shadow-sm"
-      :nodes="groupView.nodes"
-      :edges="groupView.edges"
-      :node-types="groupViewTypes"
-      :default-edge-options="defaultEdgeOptions"
-      :nodes-draggable="false"
-      :nodes-connectable="false"
-      :elements-selectable="false"
-      fit-view-on-init
-    >
-      <Background variant="lines" color="#dcdcdc" />
-      <Panel position="top-left" class="m-0">
-        <button type="button" :class="tab" @click="viewedGroup = null">
-          <ArrowLeft class="size-4" />
-          Main graph
-        </button>
-      </Panel>
-      <Panel position="top-center" class="m-0">
-        <div data-slot="group-view-title" :class="tab">Group</div>
-      </Panel>
-    </VueFlow>
-  </div>
+  <VueFlow
+    :aria-label="viewedGroup ? 'Group view' : 'Node graph'"
+    class="bg-muted inset-shadow-sm"
+    :node-types="nodeTypes"
+    :default-edge-options="defaultEdgeOptions"
+    :connection-line-type="lineType"
+    :connection-line-style="lineStyle"
+    :connection-radius="40"
+    :is-valid-connection="isValidConnection"
+    multi-selection-key-code="Shift"
+    @dragover="onDragOver"
+    @drop="onDrop"
+  >
+    <Background variant="lines" color="#dcdcdc" />
+    <Panel v-if="viewedGroup" position="top-left" class="m-0">
+      <button type="button" :class="tab" @click="viewedGroup = null">
+        <ArrowLeft class="size-4" />
+        Main graph
+      </button>
+    </Panel>
+    <Panel position="top-center" class="m-0 flex flex-col items-center gap-2">
+      <div v-if="viewedGroup" data-slot="group-view-title" :class="tab">Group</div>
+      <SaveFailedAlert v-if="saveFailed" class="w-max first:mt-4" @retry="save" />
+    </Panel>
+    <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">
+      <GraphSettings v-model:line-type="lineType" @auto-layout="layOut" />
+    </Teleport>
+  </VueFlow>
 </template>

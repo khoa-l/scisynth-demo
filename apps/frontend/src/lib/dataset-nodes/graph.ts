@@ -3,7 +3,7 @@ import type { Edge, Node, XYPosition } from "@vue-flow/core";
 import type { DatasetGraphOutput, NodePreviewRequest } from "@/client";
 
 import { canConnect, findKind, type DatasetNodeData } from "./catalog";
-import { DATASET_GROUP, groupNode, isStandIn, withGroupEdges, type GroupNode } from "./groups";
+import { DATASET_GROUP, groupNode, withGroupEdges, type GroupNode } from "./groups";
 import { isValidParam } from "./params";
 import type { NodeCatalog, NodeKindDef, ParamValues } from "./types";
 
@@ -19,6 +19,7 @@ export function flowNode(id: string, position: XYPosition, data: DatasetNodeData
 
 export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
   const datasetNodes = nodes.filter((node): node is FlowNode => node.type === DATASET_NODE);
+  const ids = new Set(datasetNodes.map((node) => node.id));
   return {
     version: 1,
     nodes: datasetNodes.map(({ id, position: { x, y }, data }) => ({
@@ -29,7 +30,7 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       preview_hidden: data.previewHidden ?? false,
     })),
     edges: edges
-      .filter((edge) => !isStandIn(edge))
+      .filter((edge) => ids.has(edge.source) && ids.has(edge.target))
       .flatMap(({ id, source, sourceHandle, target, targetHandle }) =>
         sourceHandle && targetHandle
           ? [{ id, source, source_port: sourceHandle, target, target_port: targetHandle }]
@@ -37,13 +38,15 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
       ),
     groups: nodes
       .filter((node): node is GroupNode => node.type === DATASET_GROUP)
-      .map(({ id, position: { x, y }, data: { width, height } }) => ({
+      .map(({ id, position: { x, y }, data: { width, height, inputs, outputs } }) => ({
         id,
         position: { x, y },
         width,
         height,
         nodes: datasetNodes.filter((node) => node.parentNode === id).map((node) => node.id),
         collapsed: true,
+        inputs,
+        outputs,
       }))
       .filter((group) => group.nodes.length),
   };
@@ -58,21 +61,16 @@ export function fromGraph(
     graph.groups.flatMap((group) => group.nodes.map((node) => [node, group.id])),
   );
 
-  const nodes = [
-    ...graph.groups.map(({ id, position: { x, y }, width, height }) =>
-      groupNode(id, { x, y }, { width, height }),
-    ),
-    ...graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
-      const def = findKind(catalog, kind);
-      const node = flowNode(
-        id,
-        { x, y },
-        { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
-      );
-      const parentNode = parentOf.get(id);
-      return parentNode ? { ...node, parentNode, hidden: true } : node;
-    }),
-  ];
+  const members = graph.nodes.map(({ id, kind, params, position: { x, y }, preview_hidden }) => {
+    const def = findKind(catalog, kind);
+    const node = flowNode(
+      id,
+      { x, y },
+      { kind, params: def ? loadParams(def, params) : params, previewHidden: preview_hidden },
+    );
+    const parentNode = parentOf.get(id);
+    return parentNode ? { ...node, parentNode, hidden: true } : node;
+  });
   const edges = graph.edges
     .filter((edge) =>
       canConnect(catalog, {
@@ -89,6 +87,10 @@ export function fromGraph(
       target,
       targetHandle: target_port,
     }));
+  const groups = graph.groups.map(({ id, position: { x, y }, width, height, inputs, outputs }) =>
+    groupNode(id, { x, y }, { width, height, inputs, outputs }),
+  );
+  const nodes = [...groups, ...members];
   return { nodes, edges: withGroupEdges(nodes, edges) };
 }
 

@@ -62,7 +62,7 @@ export async function connect(
   wrapper: Wrapper,
   source: DOMWrapper<Element>,
   target: DOMWrapper<Element>,
-  targetHandle: string,
+  targetHandle: string | null,
   sourceHandle = "field",
 ) {
   const flow = wrapper.findComponent(VueFlow).vm as unknown as {

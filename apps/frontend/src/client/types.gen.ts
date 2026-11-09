@@ -189,6 +189,14 @@ export type GraphGroupInput = {
      * Collapsed
      */
     collapsed?: boolean;
+    /**
+     * Inputs
+     */
+    inputs?: Array<GroupPort>;
+    /**
+     * Outputs
+     */
+    outputs?: Array<GroupPort>;
 };
 
 /**
@@ -216,6 +224,14 @@ export type GraphGroupOutput = {
      * Collapsed
      */
     collapsed: boolean;
+    /**
+     * Inputs
+     */
+    inputs: Array<GroupPort>;
+    /**
+     * Outputs
+     */
+    outputs: Array<GroupPort>;
 };
 
 /**
@@ -266,6 +282,20 @@ export type GraphNodeOutput = {
      * Preview Hidden
      */
     preview_hidden: boolean;
+};
+
+/**
+ * GroupPort
+ */
+export type GroupPort = {
+    /**
+     * Node
+     */
+    node: string;
+    /**
+     * Port
+     */
+    port: string;
 };
 
 /**

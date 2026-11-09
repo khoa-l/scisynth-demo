@@ -21,7 +21,7 @@ const memberIds = computed(() =>
   nodes.value.filter((node) => node.parentNode === props.id).map((node) => node.id),
 );
 const members = computed(() =>
-  catalog.value ? memberPorts(nodes.value, edges.value, catalog.value, props.id) : [],
+  catalog.value ? memberPorts(nodes.value, catalog.value, props.id) : [],
 );
 
 const plainButton = cn(

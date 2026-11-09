@@ -58,6 +58,11 @@ class GraphEdge(_Strict):
     target_port: Ref
 
 
+class GroupPort(_Strict):
+    node: Ref
+    port: Ref
+
+
 class GraphGroup(_Strict):
     id: Ref
     position: Position
@@ -65,6 +70,8 @@ class GraphGroup(_Strict):
     height: Annotated[FiniteFloat, Field(gt=0)]
     nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
     collapsed: bool = False
+    inputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
+    outputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
 
 
 class DatasetGraph(_Strict):
@@ -93,4 +100,11 @@ class DatasetGraph(_Strict):
             raise ValueError("A node can only be in one group")
         if not set(members) <= node_ids:
             raise ValueError("A group contains a node that doesn't exist")
+        for group in self.groups:
+            if any(
+                port.node not in group.nodes for port in group.inputs + group.outputs
+            ):
+                raise ValueError(
+                    f"Group {group.id} exposes a port of a node outside it"
+                )
         return self

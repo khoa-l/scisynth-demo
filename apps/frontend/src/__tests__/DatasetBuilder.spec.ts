@@ -311,32 +311,111 @@ describe("Dataset builder", () => {
     expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(true);
   });
 
-  it("views a group's nodes on their own, and goes back to the main graph", async () => {
-    const wrapper = await mountView();
-    const field = await dropKind(wrapper, "GaussianField");
-    const sampler = await dropKind(wrapper, "GridSampler");
-    await connect(wrapper, field, sampler, "latent");
-    await groupTogether(field, sampler);
-    const view = () => wrapper.find('[aria-label="Group view"]');
-
-    await clickGroupControl(wrapper, "View group");
-
-    expect(view().find('[data-slot="group-view-title"]').text()).toBe("Group");
-    expect(
-      view()
-        .findAll('[data-slot="node-title"]')
-        .map((title) => title.text()),
-    ).toEqual(["Group Input", "Gaussian field", "Grid sampler", "Group Output"]);
-    expect(wrapper.find('[aria-label="Node graph"]').isVisible()).toBe(false);
-
-    await view()
+  async function backToMainGraph(wrapper: Wrapper) {
+    await wrapper
       .findAll("button")
       .find((button) => button.text() === "Main graph")!
       .trigger("click");
+    await flushPromises();
+  }
 
-    expect(view().exists()).toBe(false);
-    expect(wrapper.find('[aria-label="Node graph"]').isVisible()).toBe(true);
-    expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(true);
+  function shownTitles(wrapper: Wrapper) {
+    return wrapper
+      .findAll(".vue-flow__node")
+      .map((node) => node.find('[data-slot="node-title"], [data-slot="group-title"]').text());
+  }
+
+  it("opens a group to show only its nodes, and goes back to the main graph", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await dropKind(wrapper, "Gain");
+    await connect(wrapper, field, sampler, "latent");
+    await groupTogether(field, sampler);
+
+    await clickGroupControl(wrapper, "View group");
+
+    expect(wrapper.find('[aria-label="Group view"]').exists()).toBe(true);
+    expect(wrapper.find('[data-slot="group-view-title"]').text()).toBe("Group");
+    expect(shownTitles(wrapper)).toEqual([
+      "Gaussian field",
+      "Grid sampler",
+      "Group Input",
+      "Group Output",
+    ]);
+
+    await backToMainGraph(wrapper);
+
+    expect(wrapper.find('[aria-label="Node graph"]').exists()).toBe(true);
+    expect(shownTitles(wrapper)).toEqual(["Group 2 nodes", "Gain"]);
+  });
+
+  it("exposes ports on the group through the Group Input and Output, and hides them again", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    const gain = await dropKind(wrapper, "Gain");
+    const id = (node: DOMWrapper<Element>) => node.attributes("data-id")!;
+    await connect(wrapper, field, sampler, "latent");
+    await connect(wrapper, sampler, gain, "observation", "observation");
+    await groupTogether(field, sampler);
+    await clickGroupControl(wrapper, "View group");
+
+    await connect(wrapper, field, wrapper.find('[data-id="group-output"]'), null);
+    flow(wrapper).edges.find(
+      (edge) => edge.id === `group-output:${id(sampler)}.observation`,
+    )!.selected = true;
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace" }));
+    await flushPromises();
+
+    expect(
+      flow(wrapper)
+        .edges.filter((edge) => edge.target === "group-output")
+        .map((edge) => [edge.source, edge.sourceHandle]),
+    ).toEqual([[id(field), "field"]]);
+
+    await backToMainGraph(wrapper);
+
+    expect(flow(wrapper).edges.some((edge) => edge.target === id(gain))).toBe(false);
+    expect(
+      wrapper
+        .find(".vue-flow__node-dataset-group")
+        .findAll(".vue-flow__handle")
+        .map((handle) => handle.attributes("data-handleid")),
+    ).toEqual([`${id(field)}.field`]);
+  });
+
+  it("stops exposing the ports of a node deleted from an open group", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await groupTogether(field, sampler);
+    await clickGroupControl(wrapper, "View group");
+
+    await wrapper
+      .find(`[data-id="${sampler.attributes("data-id")}"] [aria-label="Delete node"]`)
+      .trigger("click");
+    await flushPromises();
+
+    const group = flow(wrapper).nodes.find((node) => node.type === "dataset-group")!;
+    expect(group.data).toMatchObject({
+      inputs: [],
+      outputs: [{ node: field.attributes("data-id"), port: "field" }],
+    });
+  });
+
+  it("adds nodes dropped on an open group to the group", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await groupTogether(field, sampler);
+    await clickGroupControl(wrapper, "View group");
+
+    await dropKind(wrapper, "Gain");
+    await backToMainGraph(wrapper);
+
+    expect(wrapper.find('[data-slot="group-title"]').text()).toBe("Group 3 nodes");
+    expect(shownTitles(wrapper)).toEqual(["Group 3 nodes"]);
   });
 
   it("ungroups a group's nodes from the group's toolbar", async () => {

@@ -9,10 +9,11 @@ import {
   type DatasetGraph,
 } from "../lib/dataset-nodes/graph";
 import {
+  closeGroup,
   groupNodes,
-  groupView,
   memberConnection,
   memberPorts,
+  openGroup,
   ungroupNodes,
   withGroupEdges,
 } from "../lib/dataset-nodes/groups";
@@ -59,16 +60,14 @@ function load(graph: DatasetGraph) {
 
 describe("Dataset graph", () => {
   it("saves nodes and edges without Vue Flow's view state", () => {
-    const nodes = [
-      {
-        id: "a",
-        type: "dataset-node",
-        position: { x: 1, y: 2 },
-        data: { kind: "Gain", params: { factor: 2 } },
-        selected: true,
-        dimensions: { width: 256, height: 120 },
-      },
-    ];
+    const nodes = ["a", "b"].map((id) => ({
+      id,
+      type: "dataset-node",
+      position: { x: 1, y: 2 },
+      data: { kind: "Gain", params: { factor: 2 } },
+      selected: true,
+      dimensions: { width: 256, height: 120 },
+    }));
     const edges = [
       {
         id: "e",
@@ -82,15 +81,13 @@ describe("Dataset graph", () => {
 
     expect(toGraph(nodes, edges)).toEqual({
       version: 1,
-      nodes: [
-        {
-          id: "a",
-          kind: "Gain",
-          params: { factor: 2 },
-          position: { x: 1, y: 2 },
-          preview_hidden: false,
-        },
-      ],
+      nodes: ["a", "b"].map((id) => ({
+        id,
+        kind: "Gain",
+        params: { factor: 2 },
+        position: { x: 1, y: 2 },
+        preview_hidden: false,
+      })),
       edges: [savedEdge("e", "a", "observation", "b", "observation")],
       groups: [],
     });
@@ -222,6 +219,8 @@ describe("Dataset graph", () => {
           height: 300,
           nodes: ["field", "sampler"],
           collapsed: true,
+          inputs: [],
+          outputs: [{ node: "sampler", port: "observation" }],
         },
       ],
     };
@@ -238,7 +237,7 @@ describe("Dataset graph", () => {
       expect(nodes[0]).toMatchObject({
         type: "dataset-group",
         position: { x: 100, y: 200 },
-        data: { width: 400, height: 300 },
+        data: { width: 400, height: 300, outputs: [{ node: "sampler", port: "observation" }] },
       });
       expect(edges.map((edge) => [edge.source, edge.sourceHandle, edge.target])).toEqual([
         ["field", "field", "sampler"],
@@ -266,14 +265,14 @@ describe("Dataset graph", () => {
       expect(toGraph(ungrouped, edges).groups).toEqual([]);
     });
 
-    function placed(id: string, x: number, y: number, parentNode?: string) {
+    function placed(id: string, x: number, y: number, parentNode?: string, kind = "Gain") {
       return {
         id,
         type: "dataset-node",
         position: { x, y },
         computedPosition: { x, y, z: 0 },
         dimensions: { width: 256, height: 100 },
-        data: { kind: "Gain", params: {} },
+        data: { kind, params: {} },
         parentNode,
       } as GraphNode;
     }
@@ -281,7 +280,7 @@ describe("Dataset graph", () => {
     it("puts the chosen nodes in a new group where they were, hiding them inside it", () => {
       const nodes = [placed("a", 0, 0), placed("b", 300, 200), placed("c", 900, 900)];
 
-      const [group, ...rest] = groupNodes(nodes, ["a", "b"], "g");
+      const [group, ...rest] = groupNodes(nodes, [], localCatalog, ["a", "b"], "g");
 
       expect(group).toMatchObject({
         id: "g",
@@ -375,81 +374,77 @@ describe("Dataset graph", () => {
       });
     });
 
-    describe("ports of a group", () => {
-      function ports(graph: DatasetGraph) {
-        const { nodes, edges } = load(graph);
-        return memberPorts(nodes, edges, localCatalog, "g");
-      }
+    it("exposes the ports that aren't only joined up inside the new group", () => {
+      const nodes = [
+        placed("a", 0, 0, undefined, "GaussianField"),
+        placed("b", 0, 200, undefined, "GaussianField"),
+        placed("sum", 300, 0, undefined, "Sum"),
+      ];
+      const edges = [
+        { id: "e1", source: "a", sourceHandle: "field", target: "sum", targetHandle: "terms" },
+        { id: "e2", source: "b", sourceHandle: "field", target: "sum", targetHandle: "terms" },
+      ];
 
-      it("has the inputs and outputs that aren't joined up inside the group", () => {
-        expect(ports(GROUPED)).toMatchObject([
-          {
-            id: "sampler",
-            label: "Grid sampler",
-            inputs: [],
-            outputs: [{ id: "observation", handle: "sampler.observation", label: "Observation" }],
-          },
-        ]);
-      });
+      const [group] = groupNodes(nodes, edges, localCatalog, ["a", "sum"], "g");
 
-      it("keeps an input that is also fed from outside the group", () => {
-        const graph: DatasetGraph = {
-          version: 1,
-          nodes: [
-            savedNode("a", "GaussianField", {}),
-            savedNode("b", "GaussianField", {}),
-            savedNode("sum", "Sum", {}),
-          ],
-          edges: [
-            savedEdge("e1", "a", "field", "sum", "terms"),
-            savedEdge("e2", "b", "field", "sum", "terms"),
-          ],
-          groups: [
-            {
-              id: "g",
-              position: { x: 0, y: 0 },
-              width: 100,
-              height: 100,
-              nodes: ["a", "sum"],
-              collapsed: true,
-            },
-          ],
-        };
-
-        expect(ports(graph)).toMatchObject([
-          {
-            id: "sum",
-            label: "Sum",
-            inputs: [{ id: "terms", handle: "sum.terms", label: "Terms", multiple: true }],
-            outputs: [{ id: "field", handle: "sum.field", label: "Field" }],
-          },
-        ]);
+      expect(group!.data).toMatchObject({
+        inputs: [{ node: "sum", port: "terms" }],
+        outputs: [{ node: "sum", port: "field" }],
       });
     });
 
-    it("views a group's nodes joined to a Group Input and a Group Output", () => {
+    it("lists the ports a group exposes under the node they belong to", () => {
+      const { nodes } = load(GROUPED);
+
+      expect(memberPorts(nodes, localCatalog, "g")).toMatchObject([
+        {
+          id: "sampler",
+          label: "Grid sampler",
+          inputs: [],
+          outputs: [{ id: "observation", handle: "sampler.observation", label: "Observation" }],
+        },
+      ]);
+    });
+
+    it("opens a group by showing only its nodes, joined to a Group Input and a Group Output", () => {
       const { nodes, edges } = load(GROUPED);
 
-      const view = groupView(nodes, edges, localCatalog, "g");
+      const view = openGroup(nodes as GraphNode[], edges, "g");
 
-      expect(view.nodes.map((node) => [node.id, node.data.label, node.position])).toEqual([
-        ["group-input", "Group Input", { x: -342, y: 20 }],
-        ["field", "Gaussian field", { x: 10, y: 20 }],
-        ["sampler", "Grid sampler", { x: 10, y: 20 }],
-        ["group-output", "Group Output", { x: 362, y: 20 }],
-      ]);
-      expect(view.nodes.at(-1)!.data.inputs).toEqual([
-        { id: "sampler.observation", label: "Grid sampler: Observation" },
-      ]);
       expect(
-        view.edges.map((edge) => [
-          `${edge.source}.${edge.sourceHandle}`,
-          `${edge.target}.${edge.targetHandle}`,
-        ]),
+        view.nodes.filter((node) => !node.hidden).map((node) => [node.id, node.position]),
       ).toEqual([
-        ["field.field", "sampler.latent"],
-        ["sampler.observation", "group-output.sampler.observation"],
+        ["field", { x: 10, y: 20 }],
+        ["sampler", { x: 10, y: 20 }],
+        ["group-input", { x: -230, y: 20 }],
+        ["group-output", { x: 362, y: 20 }],
       ]);
+      expect(view.edges.at(-1)).toMatchObject({
+        source: "sampler",
+        sourceHandle: "observation",
+        target: "group-output",
+      });
+      expect(toGraph(view.nodes, view.edges)).toEqual(GROUPED);
+    });
+
+    it("closes a group back to how it was, dropping it if its nodes were all removed", () => {
+      const { nodes, edges } = load(GROUPED);
+      const view = openGroup(nodes as GraphNode[], edges, "g");
+
+      const closed = closeGroup(view.nodes, view.edges);
+      const emptied = closeGroup(
+        view.nodes.filter((node) => node.parentNode !== "g" || node.id.startsWith("group-")),
+        view.edges,
+      );
+
+      expect(closed.nodes.map((node) => [node.id, node.hidden])).toEqual([
+        ["g", false],
+        ["field", true],
+        ["sampler", true],
+        ["quantize", false],
+      ]);
+      expect(closed.edges).toEqual(edges);
+      expect(emptied.nodes.map((node) => node.id)).toEqual(["quantize"]);
     });
 
     it("turns a connection to a group's port into one to the node behind it", () => {

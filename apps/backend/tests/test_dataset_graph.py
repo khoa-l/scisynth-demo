@@ -209,6 +209,8 @@ def group(group_id: str, *nodes: str) -> dict:
         "height": 200,
         "nodes": list(nodes),
         "collapsed": False,
+        "inputs": [{"node": nodes[0], "port": "in"}] if nodes else [],
+        "outputs": [],
     }
 
 
@@ -247,6 +249,7 @@ def test_expands_groups_saved_before_they_could_be_collapsed(
         [group("a", "b")],
         [group("g")],
         [{**group("g", "a"), "width": 0}],
+        [{**group("g", "a"), "outputs": [{"node": "b", "port": "out"}]}],
     ],
 )
 def test_rejects_groups_that_dont_fit_the_graph(
@@ -255,6 +258,13 @@ def test_rejects_groups_that_dont_fit_the_graph(
     response = client.patch(dataset_url, json={"content": {**GRAPH, "groups": groups}})
 
     assert response.status_code == 422
+
+
+def test_exports_groups_with_the_graph(client: TestClient, dataset_url: str) -> None:
+    grouped = {**GRAPH, "groups": [group("g", "a", "b")]}
+    client.patch(dataset_url, json={"content": grouped})
+
+    assert client.get(f"{dataset_url}/export").json()["graph"] == grouped
 
 
 def test_renaming_keeps_the_graph(client: TestClient, dataset_url: str) -> None:

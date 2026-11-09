@@ -18,7 +18,7 @@ import {
   type DatasetNodeData,
 } from "@/lib/dataset-nodes/catalog";
 import { DATASET_NODE, nodePreviewRequest, toGraph } from "@/lib/dataset-nodes/graph";
-import { groupNodes, isStandIn, withGroupEdges } from "@/lib/dataset-nodes/groups";
+import { GROUP_INPUT, groupNodes, isStandIn, withGroupEdges } from "@/lib/dataset-nodes/groups";
 import { groupBackground, groupHues } from "@/lib/dataset-nodes/group-colors";
 import type { ParamValue, PortDef } from "@/lib/dataset-nodes/types";
 import { VIEWED_NODE, VIEWED_PREVIEW_ID } from "@/lib/dataset-nodes/viewed";
@@ -42,7 +42,11 @@ const { edges, getSelectedNodes, nodes, removeNodes, setEdges, setNodes, updateN
   useVueFlow();
 function connectionCount(port: PortDef) {
   return edges.value.filter(
-    (edge) => edge.target === props.id && edge.targetHandle === port.id && !isStandIn(edge),
+    (edge) =>
+      edge.target === props.id &&
+      edge.targetHandle === port.id &&
+      edge.source !== GROUP_INPUT &&
+      !isStandIn(edge),
   ).length;
 }
 
@@ -109,8 +113,11 @@ const selectedDatasetNodes = computed(() =>
 );
 
 function groupSelected() {
+  if (!catalog.value) return;
   const grouped = groupNodes(
     nodes.value,
+    edges.value,
+    catalog.value,
     selectedDatasetNodes.value.map((node) => node.id),
     crypto.randomUUID(),
   );
@@ -177,7 +184,7 @@ function setParam(name: string, value: ParamValue) {
         </button>
       </template>
       <button
-        v-if="selected && selectedDatasetNodes.length > 1"
+        v-if="selected && !parentNodeId && selectedDatasetNodes.length > 1"
         type="button"
         aria-label="Group nodes"
         :class="plainButton"
