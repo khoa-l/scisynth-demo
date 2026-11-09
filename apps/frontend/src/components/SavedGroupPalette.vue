@@ -23,6 +23,9 @@ const { mutateAsync: update } = useMutation({
     queryClient.setQueryData<SavedGroupPublic[]>(key, (list) =>
       list?.map((group) => (group.id === updated.id ? updated : group)),
     ),
+  onSettled: () => {
+    void queryClient.invalidateQueries({ queryKey: key });
+  },
 });
 
 const { mutateAsync: remove } = useMutation({
@@ -31,6 +34,9 @@ const { mutateAsync: remove } = useMutation({
     queryClient.setQueryData<SavedGroupPublic[]>(key, (list) =>
       list?.filter((group) => group.id !== path.group_id),
     ),
+  onSettled: () => {
+    void queryClient.invalidateQueries({ queryKey: key });
+  },
 });
 
 function startDrag(event: DragEvent, group: SavedGroupPublic) {

@@ -115,6 +115,13 @@ let lastSaved: string | undefined;
 
 const mounted = useMounted();
 
+function onceNodesInitialized(callback: () => void) {
+  const { off } = onNodesInitialized(() => {
+    off();
+    callback();
+  });
+}
+
 whenever(
   () => mounted.value && catalog.value,
   (value) => {
@@ -123,12 +130,7 @@ whenever(
     setEdges(saved.edges);
     lastSaved = JSON.stringify(toGraph(saved.nodes, saved.edges));
     loaded = true;
-    if (saved.nodes.length) {
-      const { off } = onNodesInitialized(() => {
-        off();
-        fitView({ maxZoom: 1 });
-      });
-    }
+    if (saved.nodes.length) onceNodesInitialized(() => fitView({ maxZoom: 1 }));
   },
   { once: true },
 );
@@ -176,10 +178,7 @@ watch(viewedGroup, (groupId) => {
   setEdges(view.edges);
   if (groupId) {
     mainViewport = getViewport();
-    const { off } = onNodesInitialized(() => {
-      off();
-      fitView({ maxZoom: 1 });
-    });
+    onceNodesInitialized(() => fitView({ maxZoom: 1 }));
   } else if (mainViewport) {
     setViewport(mainViewport);
   }
@@ -268,16 +267,15 @@ function onDragOver(event: DragEvent) {
   event.dataTransfer.dropEffect = "copy";
 }
 
-function centerOnDrop(id: string, title: string) {
-  const { off } = onNodesInitialized(() => {
-    off();
-    const height =
-      vueFlowRef.value?.querySelector<HTMLElement>(`[data-id="${id}"] [data-slot="${title}"]`)
-        ?.offsetHeight ?? 0;
+function centerOnDrop(id: string, titleSlot: string) {
+  onceNodesInitialized(() => {
+    const title = vueFlowRef.value?.querySelector<HTMLElement>(
+      `[data-id="${id}"] [data-slot="${titleSlot}"]`,
+    );
     updateNode(id, (node) => ({
       position: {
         x: node.position.x - node.dimensions.width / 2,
-        y: node.position.y - height / 2,
+        y: node.position.y - (title?.offsetHeight ?? 0) / 2,
       },
     }));
   });
