@@ -5,6 +5,24 @@ export type ClientOptions = {
 };
 
 /**
+ * AxisRange
+ */
+export type AxisRange = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Start
+     */
+    start: number;
+    /**
+     * End
+     */
+    end: number;
+};
+
+/**
  * DatasetCreate
  */
 export type DatasetCreate = {
@@ -425,6 +443,7 @@ export type NodePreviewRequest = {
      * Edges
      */
     edges?: Array<GraphEdge>;
+    view?: PreviewView | null;
 };
 
 /**
@@ -459,6 +478,26 @@ export type Position = {
      * Y
      */
     y: number;
+};
+
+/**
+ * PreviewView
+ */
+export type PreviewView = {
+    /**
+     * X
+     */
+    x: string;
+    /**
+     * Y
+     */
+    y: string;
+    /**
+     * At
+     */
+    at?: {
+        [key: string]: number;
+    };
 };
 
 /**
@@ -571,6 +610,30 @@ export type SavedGroupUpdate = {
      * Name
      */
     name: string;
+};
+
+/**
+ * SlicedNodePreview
+ */
+export type SlicedNodePreview = {
+    /**
+     * Layout
+     */
+    layout: 'grid' | 'points';
+    /**
+     * Axes
+     */
+    axes: Array<string>;
+    x: TypedArray;
+    y: TypedArray;
+    /**
+     * Channels
+     */
+    channels: Array<TypedArray>;
+    /**
+     * Domain
+     */
+    domain: Array<AxisRange>;
 };
 
 /**
@@ -1875,7 +1938,7 @@ export type PreviewsPreviewNodeResponses = {
     /**
      * Successful Response
      */
-    200: NodePreview;
+    200: SlicedNodePreview;
 };
 
 export type PreviewsPreviewNodeResponse = PreviewsPreviewNodeResponses[keyof PreviewsPreviewNodeResponses];

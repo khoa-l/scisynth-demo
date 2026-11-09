@@ -141,7 +141,7 @@ def test_latent_preview_caps_the_resolution(signed_in: TestClient) -> None:
     response = signed_in.post(NODES, json=body)
 
     assert response.status_code == 422
-    assert "over the limit of 262,144" in response.json()["detail"]
+    assert "over the limit of 2,097,152" in response.json()["detail"]
 
 
 @pytest.mark.parametrize(

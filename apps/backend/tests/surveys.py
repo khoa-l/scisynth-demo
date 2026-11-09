@@ -61,4 +61,5 @@ def publish(client: TestClient, survey_url: str) -> str:
 
 def live(client: TestClient, content: dict, node: str = "grid") -> dict:
     nodes = [{k: v for k, v in n.items() if k != "position"} for n in content["nodes"]]
-    return preview(client, node, nodes, content["edges"])
+    shown = preview(client, node, nodes, content["edges"])
+    return {k: v for k, v in shown.items() if k != "domain"}

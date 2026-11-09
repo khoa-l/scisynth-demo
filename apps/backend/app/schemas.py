@@ -7,11 +7,13 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    FiniteFloat,
     StrictInt,
     StringConstraints,
 )
 
 from app.dataset_graph import (
+    MAX_AXES,
     MAX_EDGES,
     MAX_NODES,
     DatasetGraph,
@@ -169,10 +171,17 @@ class SurveyResponseReceipt(BaseModel):
     submitted_at: datetime
 
 
+class PreviewView(BaseModel):
+    x: Ref
+    y: Ref
+    at: dict[Ref, FiniteFloat] = Field(default_factory=dict, max_length=MAX_AXES)
+
+
 class NodePreviewRequest(BaseModel):
     node: Ref
     nodes: list[NodeSpec] = Field(max_length=MAX_NODES)
     edges: list[GraphEdge] = Field(default_factory=list, max_length=MAX_EDGES)
+    view: PreviewView | None = None
 
 
 class TypedArray(BaseModel):
@@ -187,6 +196,16 @@ class NodePreview(BaseModel):
     x: TypedArray
     y: TypedArray
     channels: list[TypedArray]
+
+
+class AxisRange(BaseModel):
+    name: str
+    start: float
+    end: float
+
+
+class SlicedNodePreview(NodePreview):
+    domain: list[AxisRange]
 
 
 def binary_response(media_type: str) -> dict[int | str, dict[str, Any]]:

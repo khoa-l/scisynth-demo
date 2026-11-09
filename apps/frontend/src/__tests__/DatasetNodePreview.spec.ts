@@ -4,7 +4,7 @@ import { flushPromises, type DOMWrapper } from "@vue/test-utils";
 import type { PlotData } from "plotly.js";
 import Plotly from "plotly.js-dist-min";
 
-import { AXIS, connect, dropKind, enter, mountView } from "./dataset-view";
+import { AXIS, SQUARE, connect, dropKind, enter, mountView } from "./dataset-view";
 import {
   DATASET,
   captureDownloads,
@@ -16,7 +16,14 @@ import {
 
 const CHANNEL = { dtype: "f4", bdata: "AAAAAAAAgD8AAABAAABAQA==", shape: "2, 2" };
 const SECOND_CHANNEL = { ...CHANNEL, bdata: "AACAQAAAoEAAAMBAAADgQA==" };
-const PREVIEW = { layout: "grid", axes: ["x", "y"], x: AXIS, y: AXIS, channels: [CHANNEL] };
+const PREVIEW = {
+  layout: "grid",
+  axes: ["x", "y"],
+  x: AXIS,
+  y: AXIS,
+  channels: [CHANNEL],
+  domain: SQUARE,
+};
 const FIELD_PARAMS = {
   length_scale: 0.1,
   amplitude: 1,
@@ -112,6 +119,10 @@ describe("Dataset node preview", () => {
       jsonResponse({
         layout: "points",
         axes: ["c0", "c1"],
+        domain: [
+          { name: "c0", start: -1, end: 1 },
+          { name: "c1", start: 1, end: 2 },
+        ],
         x: gappy,
         y: narrow,
         channels: [gappy],
@@ -263,6 +274,7 @@ describe("Dataset node preview", () => {
       jsonResponse({
         layout: "points",
         axes: ["x", "y"],
+        domain: SQUARE,
         x: points,
         y: points,
         channels: [points],
@@ -285,36 +297,88 @@ describe("Dataset node preview", () => {
     expect(sampler.find('[aria-label="Plot type"]').exists()).toBe(false);
   });
 
-  it("shows the range of each axis of a preview, leaving out dropped points", async () => {
-    const wrapper = await mountView();
-    const typed = (values: number[]) => ({
-      ...AXIS,
-      bdata: btoa(String.fromCharCode(...new Uint8Array(new Float32Array(values).buffer))),
-      shape: String(values.length),
+  describe("domain selector", () => {
+    const CUBE = [...SQUARE, { name: "z", start: 0, end: 2 }];
+
+    async function openDomain(axes = ["x", "y"]) {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse({ ...PREVIEW, axes, domain: CUBE }));
+      const field = await dropKind(wrapper, "GaussianField");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+      await field.find('[aria-label="Show domain"]').trigger("click");
+      await flushPromises();
+      return document.querySelector<HTMLElement>('[data-slot="popover-content"]')!;
+    }
+
+    async function choose(popover: HTMLElement, label: string, option: string) {
+      const trigger = [...popover.querySelectorAll("label")].find(
+        (item) => item.textContent?.trim() === label,
+      )!.nextElementSibling as HTMLElement;
+      trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await flushPromises();
+      [...document.querySelectorAll<HTMLElement>('[role="option"]')]
+        .find((item) => item.textContent?.trim() === option)!
+        .dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+    }
+
+    async function lastView() {
+      const bodies = await Promise.all(previews().map((r) => r.clone().json()));
+      return bodies[bodies.length - 1].view;
+    }
+
+    it("shows the preview's axes and slices through the middle of the rest", async () => {
+      const popover = await openDomain();
+
+      const values = [...popover.querySelectorAll('[data-slot="select-value"]')].map((value) =>
+        value.textContent?.trim(),
+      );
+      expect(values).toEqual(["x", "y", "z"]);
+      expect(popover.querySelector('[role="slider"]')!.getAttribute("aria-valuenow")).toBe("1");
+      expect(popover.textContent).toContain("z = 1");
+      expect(await lastView()).toBeUndefined();
     });
-    answerPreviews(() =>
-      jsonResponse({
-        layout: "points",
-        axes: ["x", "time"],
-        x: typed([NaN, -2, 3.5]),
-        y: typed([0.12345, 1, NaN]),
-        channels: [typed([1, 2, 3])],
-      }),
-    );
-    const sampler = await dropKind(wrapper, "PointSampler");
-    await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
-    await flushPromises();
 
-    await sampler.find('[aria-label="Show domain"]').trigger("click");
-    await flushPromises();
+    it("chooses the axes to show, swapping them when one is picked for both", async () => {
+      const popover = await openDomain();
 
-    const popover = document.querySelector('[data-slot="popover-content"]')!;
-    expect([...popover.querySelectorAll("dt, dd")].map((item) => item.textContent)).toEqual([
-      "x",
-      "-2 – 3.5",
-      "time",
-      "0.1235 – 1",
-    ]);
+      await choose(popover, "X axis", "z");
+      expect(await lastView()).toEqual({ x: "z", y: "y", at: {} });
+
+      await choose(popover, "Y axis", "x");
+      expect(await lastView()).toEqual({ x: "y", y: "x", at: {} });
+    });
+
+    it("moves the slice along the axis that isn't shown", async () => {
+      const popover = await openDomain(["z", "x"]);
+      const slider = popover.querySelector<HTMLElement>('[role="slider"]')!;
+
+      expect(popover.textContent).toContain("y = 0.5");
+      slider.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+
+      expect(await lastView()).toEqual({ x: "z", y: "x", at: { y: 0.51 } });
+    });
+
+    it("has no slice for a two-dimensional preview", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const wrapper = await mountView();
+      answerPreviews(() => jsonResponse(PREVIEW));
+      const field = await dropKind(wrapper, "GaussianField");
+      await vi.advanceTimersByTimeAsync(300);
+      await flushPromises();
+
+      await field.find('[aria-label="Show domain"]').trigger("click");
+      await flushPromises();
+
+      const popover = document.querySelector('[data-slot="popover-content"]')!;
+      expect(popover.querySelector('[role="slider"]')).toBeNull();
+      expect(popover.textContent).not.toContain("Slice");
+    });
   });
 
   it("draws scatters of more than a thousand points with WebGL", async () => {
@@ -325,6 +389,7 @@ describe("Dataset node preview", () => {
       jsonResponse({
         layout: "points",
         axes: ["x", "y"],
+        domain: SQUARE,
         x: points,
         y: points,
         channels: [points],

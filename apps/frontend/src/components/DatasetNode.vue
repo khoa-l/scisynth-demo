@@ -5,7 +5,7 @@ import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
 import { computed, inject, ref, useTemplateRef } from "vue";
 
-import { previewsDownloadNodeData } from "@/client";
+import { previewsDownloadNodeData, type PreviewView } from "@/client";
 
 import DatasetNodeParams from "@/components/DatasetNodeParams.vue";
 import DatasetNodePreview from "@/components/DatasetNodePreview.vue";
@@ -51,11 +51,13 @@ const hasPreview = computed(
     kind.value.inputs.every((port) => connectionCount(port) >= requiredConnections(port)),
 );
 
-const previewRequest = computed(() =>
-  nodePreviewRequest(toGraph(nodes.value, edges.value), props.id),
-);
-
 const plot = ref<"heatmap" | "scatter">("heatmap");
+const view = ref<PreviewView | null>(null);
+
+const previewRequest = computed(() => {
+  const request = nodePreviewRequest(toGraph(nodes.value, edges.value), props.id);
+  return view.value ? { ...request, view: view.value } : request;
+});
 
 const viewed = inject(VIEWED_NODE, ref(null));
 const isViewed = computed(() => viewed.value === props.id);
@@ -137,6 +139,7 @@ function setParam(name: string, value: ParamValue) {
     <DatasetNodePreview
       v-if="hasPreview && !data.previewHidden"
       v-model:plot="plot"
+      v-model:view="view"
       switchable
       :label="title"
       :request="previewRequest"
@@ -145,6 +148,7 @@ function setParam(name: string, value: ParamValue) {
     <Teleport v-if="hasPreview && isViewed" :to="`#${VIEWED_PREVIEW_ID}`">
       <DatasetNodePreview
         v-model:plot="plot"
+        v-model:view="view"
         detailed
         :label="title"
         :request="previewRequest"

@@ -3,14 +3,16 @@ from fastapi import APIRouter, HTTPException, Response, status
 from app.auth import CurrentUser
 from app.node_previews import (
     PREVIEW_ERRORS,
+    axis_ranges,
     channel_values,
     node_preview,
     observe,
+    sliced,
 )
 from app.observation_npz import observation_npz
 from app.schemas import (
-    NodePreview,
     NodePreviewRequest,
+    SlicedNodePreview,
     binary_response,
 )
 
@@ -22,10 +24,14 @@ def invalid(exc: Exception) -> HTTPException:
 
 
 @router.post("/nodes")
-def preview_node(body: NodePreviewRequest, user: CurrentUser) -> NodePreview:
+def preview_node(body: NodePreviewRequest, user: CurrentUser) -> SlicedNodePreview:
     try:
         observation = observe(body)
-        return node_preview(observation, channel_values(observation))
+        shown = sliced(observation, body.view)
+        preview = node_preview(shown, channel_values(shown))
+        return SlicedNodePreview(
+            **preview.model_dump(), domain=axis_ranges(observation)
+        )
     except PREVIEW_ERRORS as exc:
         raise invalid(exc) from exc
 

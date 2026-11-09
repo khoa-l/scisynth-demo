@@ -10,7 +10,13 @@ from sqlmodel import Session, select
 
 from app.dataset_graph import GENERATOR, DatasetGraph, Ref
 from app.models import Dataset, SurveyChart, SurveyVersion
-from app.node_previews import channel_values, node_preview, observe, typed_array
+from app.node_previews import (
+    channel_values,
+    node_preview,
+    observe,
+    sliced,
+    typed_array,
+)
 from app.observation_npz import observation_npz
 from app.schemas import DatasetFile, NodePreview, NodePreviewRequest
 
@@ -81,12 +87,13 @@ def freeze_chart(source: ChartSource, project_id: str, db: Session) -> FrozenCha
     observation = observe(
         NodePreviewRequest(node=source.node_id, nodes=[*graph.nodes], edges=graph.edges)
     )
-    channels = channel_values(observation)
+    shown = sliced(observation, None)
+    channels = channel_values(shown)
     if max(source.channels) >= len(channels):
         raise ValueError(f"The chart's data has no channel {max(source.channels) + 1}")
     return FrozenChart(
         preview=node_preview(
-            observation, [channels[i] for i in source.channels]
+            shown, [channels[i] for i in source.channels]
         ).model_dump(),
         dataset_file=DatasetFile(
             name=dataset.name, generator=GENERATOR, graph=graph

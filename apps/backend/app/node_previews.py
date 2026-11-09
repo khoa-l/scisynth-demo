@@ -2,7 +2,7 @@ import base64
 from typing import cast
 
 import numpy as np
-from scisynth.core import Domain, Observation, registry
+from scisynth.core import Axis, Domain, Observation, registry
 from scisynth.latent import (
     FieldLatent,
     GaussianField,
@@ -20,12 +20,19 @@ from sklearn.manifold import Isomap
 from sklearn.random_projection import GaussianRandomProjection
 
 from app.dataset_graph import NodeSpec
-from app.schemas import NodePreview, NodePreviewRequest, TypedArray
+from app.schemas import (
+    AxisRange,
+    NodePreview,
+    NodePreviewRequest,
+    PreviewView,
+    TypedArray,
+)
 
 PREVIEW_ERRORS = (KeyError, TypeError, ValueError, NotImplementedError)
-LATENT_SHAPE = (64, 64)
-LATENT_MAX_CELLS = 512 * 512
-SAMPLE_MAX_CELLS = 256 * 256
+LATENT_SIDE = 64
+LATENT_MAX_SAMPLES = 64**3
+LATENT_MAX_CELLS = 128**3
+SAMPLE_MAX_CELLS = 64**3
 POINTS_LIMIT = 10_000
 ISOMAP_POINTS_LIMIT = 5_000
 COUNT_LIMITS = {"GaussianBumps": ("bumps", 100), "VoronoiRegions": ("regions", 10_000)}
@@ -47,6 +54,15 @@ def inputs(body: NodePreviewRequest, node_id: str) -> list[str]:
         for edge in body.edges
         if edge.target == node_id and edge.target_port != "domain"
     ]
+
+
+def domain_of(body: NodePreviewRequest, node_id: str) -> Domain:
+    for edge in body.edges:
+        if edge.target == node_id and edge.target_port == "domain":
+            axes = find_node(body, edge.source).params.get("axes")
+            if isinstance(axes, list):
+                return Domain([Axis(axis.name, axis.extent) for axis in axes])
+    return Domain.from_extents([(0.0, 1.0), (0.0, 1.0)])
 
 
 def split_seed(node: NodeSpec) -> tuple[dict, int]:
@@ -83,9 +99,8 @@ def build_latent(
             raise ValueError(
                 f"Too many {noun} to preview: {count:,}, at most {limit:,}"
             )
-    domain = Domain.from_extents([(0.0, 1.0), (0.0, 1.0)])
     generator = LatentGenerator.from_dict(
-        {"type": node.kind, "params": {**params, "domain": domain}}
+        {"type": node.kind, "params": {**params, "domain": domain_of(body, node_id)}}
     )
     if isinstance(generator, GaussianField):
         generator.max_cells = LATENT_MAX_CELLS
@@ -166,8 +181,54 @@ def observe(body: NodePreviewRequest) -> Observation:
     if node.kind in (*COMPOSITES, "Threshold") or issubclass(
         registry.get(node.kind), LatentGenerator
     ):
-        return GridSampler(LATENT_SHAPE).run(build_latent(body, node.id, ()), seed=0)
+        latent = build_latent(body, node.id, ())
+        side = min(LATENT_SIDE, round(LATENT_MAX_SAMPLES ** (1 / latent.domain.ndim)))
+        return GridSampler(side).run(latent, seed=0)
     return build_observation(body, node.id, ())
+
+
+def axis_ranges(observation: Observation) -> list[AxisRange]:
+    return [
+        AxisRange(
+            name=name, start=float(np.nanmin(values)), end=float(np.nanmax(values))
+        )
+        for name, values in observation.coords.items()
+    ]
+
+
+def sliced(observation: Observation, view: PreviewView | None) -> Observation:
+    names = list(observation.coords)
+    if len(names) < 2:
+        raise ValueError("Previews need a domain with at least two axes")
+    x, y = names[:2]
+    if view and view.x in names and view.y in names and view.x != view.y:
+        x, y = view.x, view.y
+    ranges = {axis.name: axis for axis in axis_ranges(observation)}
+
+    def at(name: str) -> float:
+        middle = (ranges[name].start + ranges[name].end) / 2
+        return view.at.get(name, middle) if view else middle
+
+    hidden = [name for name in names if name not in (x, y)]
+    coords = {x: observation.coords[x], y: observation.coords[y]}
+    if observation.layout == "grid":
+        index = tuple(
+            int(np.abs(observation.coords[name] - at(name)).argmin())
+            if name in hidden
+            else slice(None)
+            for name in names
+        )
+        values, mask = observation.values[index], observation.mask[index]
+        if names.index(x) > names.index(y):
+            values, mask = values.swapaxes(0, 1), mask.T
+        return Observation(values, coords, mask)
+    mask = observation.mask.copy()
+    for name in hidden:
+        band = (ranges[name].end - ranges[name].start) / 16
+        mask &= np.abs(observation.coords[name] - at(name)) <= band
+    return Observation(
+        np.where(mask[:, None], observation.values, np.nan), coords, mask
+    )
 
 
 def channel_values(observation: Observation) -> list[np.ndarray]:
@@ -178,8 +239,6 @@ def channel_values(observation: Observation) -> list[np.ndarray]:
 
 
 def node_preview(observation: Observation, channels: list[np.ndarray]) -> NodePreview:
-    if len(observation.coords) != 2:
-        raise ValueError("Only 2-D observations can be previewed")
     x, y = observation.coords.values()
     if observation.layout == "points":
         x = np.where(observation.mask, x, np.nan)

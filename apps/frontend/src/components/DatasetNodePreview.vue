@@ -2,9 +2,9 @@
 import { Axis3d, ChartScatter, CircleAlert, Grid3x3 } from "@lucide/vue";
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { refDebounced } from "@vueuse/core";
-import { computed } from "vue";
+import { computed, ref, useId } from "vue";
 
-import { previewsPreviewNode, type NodePreviewRequest } from "@/client";
+import { previewsPreviewNode, type NodePreviewRequest, type PreviewView } from "@/client";
 import PreviewPlot from "@/components/PreviewPlot.vue";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,15 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { decode } from "@/lib/labeling";
 
 const props = defineProps<{
   label: string;
@@ -26,6 +33,8 @@ const props = defineProps<{
 }>();
 
 const plot = defineModel<"heatmap" | "scatter">("plot", { default: "heatmap" });
+const view = defineModel<PreviewView | null>("view", { default: null });
+const uid = useId();
 
 function setPlot(value: unknown) {
   if (value === "heatmap" || value === "scatter") plot.value = value;
@@ -53,17 +62,38 @@ const {
   })),
 );
 
-const domains = computed(() =>
-  preview.value?.axes.map((name, index) => {
-    let start = Infinity;
-    let end = -Infinity;
-    for (const value of decode(index ? preview.value!.y : preview.value!.x)) {
-      if (value < start) start = value;
-      if (value > end) end = value;
-    }
-    return { name, start: Number(start.toPrecision(4)), end: Number(end.toPrecision(4)) };
-  }),
+const shown = computed(() => {
+  const [x = "", y = ""] = preview.value?.axes ?? [];
+  return { x, y };
+});
+const hidden = computed(
+  () =>
+    preview.value?.domain.filter(
+      (axis) => axis.name !== shown.value.x && axis.name !== shown.value.y,
+    ) ?? [],
 );
+const chosenSlice = ref<string>();
+const slice = computed(
+  () => hidden.value.find((axis) => axis.name === chosenSlice.value) ?? hidden.value[0],
+);
+const slicedAt = computed(() => {
+  if (!slice.value) return 0;
+  const { name, start, end } = slice.value;
+  return view.value?.at?.[name] ?? (start + end) / 2;
+});
+
+function setAxis(side: "x" | "y", name: unknown) {
+  if (typeof name !== "string") return;
+  const other = side === "x" ? "y" : "x";
+  const next = { ...shown.value, [side]: name };
+  if (next[other] === name) next[other] = shown.value[side];
+  view.value = { ...next, at: view.value?.at ?? {} };
+}
+
+function setSlice(value: number[] | undefined) {
+  if (!slice.value || value?.[0] === undefined) return;
+  view.value = { ...shown.value, at: { ...view.value?.at, [slice.value.name]: value[0] } };
+}
 
 const errorMessage = computed(() => {
   const detail = (error.value as { detail?: unknown } | null)?.detail;
@@ -90,18 +120,52 @@ const errorMessage = computed(() => {
           <Axis3d />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="left" align="start" class="w-auto">
+      <PopoverContent side="left" align="start" class="w-64">
         <PopoverHeader>
           <PopoverTitle>Domain</PopoverTitle>
         </PopoverHeader>
-        <dl class="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-sm">
-          <template v-for="domain in domains" :key="domain.name">
-            <dt class="font-medium">{{ domain.name }}</dt>
-            <dd class="text-muted-foreground tabular-nums">
-              {{ domain.start }} – {{ domain.end }}
-            </dd>
+        <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
+          <template v-for="side in ['x', 'y'] as const" :key="side">
+            <label :for="`${uid}-${side}`" class="text-muted-foreground">
+              {{ side.toUpperCase() }} axis
+            </label>
+            <Select :model-value="shown[side]" @update:model-value="setAxis(side, $event)">
+              <SelectTrigger :id="`${uid}-${side}`" size="sm" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="axis in preview.domain" :key="axis.name" :value="axis.name">
+                  {{ axis.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </template>
-        </dl>
+          <template v-if="slice">
+            <label :for="`${uid}-slice`" class="text-muted-foreground">Slice</label>
+            <Select :model-value="slice.name" @update:model-value="chosenSlice = String($event)">
+              <SelectTrigger :id="`${uid}-slice`" size="sm" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="axis in hidden" :key="axis.name" :value="axis.name">
+                  {{ axis.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Slider
+              :model-value="[slicedAt]"
+              :min="slice.start"
+              :max="slice.end"
+              :step="(slice.end - slice.start) / 100"
+              :aria-label="`Slice of ${slice.name}`"
+              class="col-span-2"
+              @update:model-value="setSlice"
+            />
+            <span class="col-span-2 text-right text-muted-foreground tabular-nums">
+              {{ slice.name }} = {{ Number(slicedAt.toPrecision(4)) }}
+            </span>
+          </template>
+        </div>
       </PopoverContent>
     </Popover>
     <ToggleGroup

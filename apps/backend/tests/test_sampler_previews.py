@@ -67,7 +67,7 @@ def test_previews_a_point_sampler_as_points(signed_in: TestClient) -> None:
         (
             sampler("s", "GridSampler", shape=1024),
             [sampled("s")],
-            "over the limit of 65,536",
+            "over the limit of 262,144",
         ),
         (
             sampler("s", "PointSampler", n=20_000),

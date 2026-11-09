@@ -13,7 +13,18 @@ import {
 } from "./helpers";
 
 export const AXIS = { dtype: "f4", bdata: "AAAAAAAAgD8=", shape: "2" };
-const NO_PREVIEW = { layout: "grid", axes: ["x", "y"], x: AXIS, y: AXIS, channels: [] };
+export const SQUARE = [
+  { name: "x", start: 0, end: 1 },
+  { name: "y", start: 0, end: 1 },
+];
+const NO_PREVIEW = {
+  layout: "grid",
+  axes: ["x", "y"],
+  x: AXIS,
+  y: AXIS,
+  channels: [],
+  domain: SQUARE,
+};
 
 export function answerWith(dataset: DatasetPublic, savedGroups: SavedGroupPublic[] = []) {
   fetchMock.mockImplementation(async (input) => {
