@@ -50,7 +50,7 @@ function thumbnail(node: DOMWrapper<Element>) {
 }
 
 describe("Dataset node preview", () => {
-  it("draws a static heatmap of a Gaussian field above its node", async () => {
+  it("draws a static heatmap of a Gaussian Field above its node", async () => {
     const wrapper = await mountView();
     answerPreviews(() => jsonResponse(PREVIEW));
 
@@ -62,7 +62,7 @@ describe("Dataset node preview", () => {
       nodes: [{ id: field.attributes("data-id"), kind: "GaussianField", params: FIELD_PARAMS }],
       edges: [],
     });
-    expect(thumbnail(field).attributes("aria-label")).toBe("Preview of Gaussian field");
+    expect(thumbnail(field).attributes("aria-label")).toBe("Preview of Gaussian Field");
     expect(field.find('[aria-label="Next channel"]').exists()).toBe(false);
     expect(react).toHaveBeenCalledWith(
       thumbnail(field).element,
@@ -228,7 +228,7 @@ describe("Dataset node preview", () => {
     await connect(wrapper, await dropKind(wrapper, "GaussianField"), sampler, "latent");
     await flushPromises();
 
-    expect(thumbnail(sampler).attributes("aria-label")).toBe("Preview of Grid sampler");
+    expect(thumbnail(sampler).attributes("aria-label")).toBe("Preview of Grid Sampler");
     const bodies = await Promise.all(previews().map((r) => r.clone().json()));
     const body = bodies.find((b) => b.node === sampler.attributes("data-id"))!;
     expect(body.nodes.map((n: { kind: string }) => n.kind).sort()).toEqual([
@@ -345,7 +345,7 @@ describe("Dataset node preview", () => {
     await connect(wrapper, sampler, noise, "observation", "observation");
     await flushPromises();
 
-    expect(thumbnail(noise).attributes("aria-label")).toBe("Preview of Gaussian noise");
+    expect(thumbnail(noise).attributes("aria-label")).toBe("Preview of Gaussian Noise");
     const bodies = await Promise.all(previews().map((r) => r.clone().json()));
     const body = bodies.find((b) => b.node === noise.attributes("data-id"))!;
     expect(body.nodes.map((n: { kind: string }) => n.kind).sort()).toEqual([
@@ -410,7 +410,7 @@ describe("Dataset node preview", () => {
 
     const sent = requests().find((r) => new URL(r.url).pathname === "/api/previews/nodes/data");
     expect(await sent!.json()).toEqual(await previews()[0]!.json());
-    expect(downloads.names()).toEqual([`Gaussian field-${field.attributes("data-id")}.npz`]);
+    expect(downloads.names()).toEqual([`Gaussian Field-${field.attributes("data-id")}.npz`]);
   });
 
   it("sends only the nodes upstream of the preview", async () => {
@@ -501,8 +501,8 @@ describe("Dataset node preview", () => {
     const regions = await dropKind(wrapper, "VoronoiRegions");
     await flushPromises();
 
-    expect(thumbnail(bumps).attributes("aria-label")).toBe("Preview of Gaussian bumps");
-    expect(thumbnail(regions).attributes("aria-label")).toBe("Preview of Voronoi regions");
+    expect(thumbnail(bumps).attributes("aria-label")).toBe("Preview of Gaussian Bumps");
+    expect(thumbnail(regions).attributes("aria-label")).toBe("Preview of Voronoi Regions");
     const bodies = await Promise.all(previews().map((r) => r.clone().json()));
     expect(bodies.map((body) => body.nodes)).toEqual([
       [

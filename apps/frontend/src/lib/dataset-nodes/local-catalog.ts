@@ -61,7 +61,7 @@ export const localCatalog: NodeCatalog = {
   kinds: [
     {
       name: "GaussianField",
-      label: "Gaussian field",
+      label: "Gaussian Field",
       category: "latent",
       family: "latent",
       inputs: [],
@@ -77,7 +77,7 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "GaussianBumps",
-      label: "Gaussian bumps",
+      label: "Gaussian Bumps",
       category: "latent",
       family: "latent",
       inputs: [],
@@ -91,7 +91,7 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "VoronoiRegions",
-      label: "Voronoi regions",
+      label: "Voronoi Regions",
       category: "latent",
       family: "latent",
       inputs: [],
@@ -103,7 +103,7 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "AnalyticField",
-      label: "Analytic field",
+      label: "Analytic Field",
       category: "latent",
       family: "latent",
       inputs: [],
@@ -112,7 +112,7 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "InterpolatedField",
-      label: "Interpolated field",
+      label: "Interpolated Field",
       category: "latent",
       family: "latent",
       inputs: [],
@@ -171,7 +171,7 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "GridSampler",
-      label: "Grid sampler",
+      label: "Grid Sampler",
       category: "sampler",
       family: "sampler",
       inputs: [latent],
@@ -180,19 +180,19 @@ export const localCatalog: NodeCatalog = {
     },
     {
       name: "PointSampler",
-      label: "Point sampler",
+      label: "Point Sampler",
       category: "sampler",
       family: "sampler",
       inputs: [latent],
       outputs: [observation],
       params: { n: int("Points", 1000, { min: 1 }), seed },
     },
-    defect("GaussianNoise", "Gaussian noise", {
+    defect("GaussianNoise", "Gaussian Noise", {
       sigma: num("Sigma", 1, { min: 0 }),
       mean: num("Mean", 0),
       seed,
     }),
-    defect("PoissonNoise", "Poisson noise", {
+    defect("PoissonNoise", "Poisson Noise", {
       scale: num("Count scale", 1, { min: 0 }),
       seed,
     }),
@@ -203,16 +203,16 @@ export const localCatalog: NodeCatalog = {
     }),
     defect("Clip", "Clip", { lo: bound("Low"), hi: bound("High") }),
     defect("Saturate", "Saturate", { ceiling: num("Ceiling", 1, { min: 0 }) }),
-    defect("ValueOffset", "Value offset", { value: num("Offset", 0) }),
+    defect("ValueOffset", "Value Offset", { value: num("Offset", 0) }),
     defect("Gain", "Gain", { factor: num("Factor", 1) }),
     defect("Drift", "Drift", { rate: num("Rate", 0) }),
-    defect("CoordinateShift", "Coordinate shift", { shift: num("Shift", 0) }),
-    defect("RandomDropout", "Random dropout", {
+    defect("CoordinateShift", "Coordinate Shift", { shift: num("Shift", 0) }),
+    defect("RandomDropout", "Random Dropout", {
       p: num("Probability", 0.1, { min: 0, max: 1, step: 0.01 }),
       seed,
     }),
-    defect("PositionJitter", "Position jitter", { sigma: num("Sigma", 0, { min: 0 }), seed }),
-    defect("RandomInsertion", "Random insertion", { n: int("Points", 10, { min: 0 }), seed }),
+    defect("PositionJitter", "Position Jitter", { sigma: num("Sigma", 0, { min: 0 }), seed }),
+    defect("RandomInsertion", "Random Insertion", { n: int("Points", 10, { min: 0 }), seed }),
     transform("Downsample", "Downsample", { factor: int("Factor", 2, { min: 1 }) }),
     {
       name: "PCA",

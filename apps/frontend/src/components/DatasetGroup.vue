@@ -98,7 +98,7 @@ function remove() {
         data-slot="group-member"
         class="flex flex-col gap-1 py-2"
       >
-        <div class="px-3 text-xs font-medium">{{ member.label }}</div>
+        <div class="px-3 font-medium">{{ member.label }}</div>
         <div
           v-for="port in member.inputs"
           :key="port.handle"

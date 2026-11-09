@@ -29,7 +29,7 @@ describe("Dataset node palette", () => {
       "Saved groups",
     ]);
     expect(tabs[0]!.attributes("aria-selected")).toBe("true");
-    expect(visiblePanel(wrapper).text()).toContain("Gaussian field");
+    expect(visiblePanel(wrapper).text()).toContain("Gaussian Field");
   });
 
   it("lists every stage, without sub-category headings, under Stages", async () => {
@@ -39,10 +39,10 @@ describe("Dataset node palette", () => {
 
     const panel = visiblePanel(wrapper);
     expect(panel.find("h3").exists()).toBe(false);
-    expect(panel.text()).not.toMatch(/Defects|Transforms|Gaussian field/);
+    expect(panel.text()).not.toMatch(/Defects|Transforms|Gaussian Field/);
     const items = panel.findAll("li").map((item) => item.text());
     expect(items).toHaveLength(13);
-    expect([items[0], items[12]]).toEqual(["Gaussian noise", "Downsample"]);
+    expect([items[0], items[12]]).toEqual(["Gaussian Noise", "Downsample"]);
   });
 
   it("offers PCA and UMAP under Projection", async () => {

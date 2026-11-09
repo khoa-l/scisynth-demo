@@ -123,16 +123,16 @@ describe("Chart blocks", () => {
       const groups = document.querySelectorAll('[data-slot="select-label"]');
       expect([...groups].map((group) => group.textContent?.trim())).toEqual(["Raw reads"]);
       expect(options.map((option) => option.textContent?.trim())).toEqual([
-        "Gaussian field",
-        "Grid sampler",
-        "Gaussian field 2",
+        "Gaussian Field",
+        "Grid Sampler",
+        "Gaussian Field 2",
       ]);
 
       options[1]!.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
       await flushPromises();
 
       expect((await savedBlocks())[0].source).toEqual(SOURCE);
-      expect(trigger.text()).toBe("Raw reads / Grid sampler");
+      expect(trigger.text()).toBe("Raw reads / Grid Sampler");
     });
 
     it("offers named nodes by their name", async () => {
@@ -147,8 +147,8 @@ describe("Chart blocks", () => {
 
       expect(options.map((option) => option.textContent?.trim())).toEqual([
         "Smooth field",
-        "Grid sampler",
-        "Gaussian field",
+        "Grid Sampler",
+        "Gaussian Field",
       ]);
     });
 
@@ -325,7 +325,7 @@ describe("Chart blocks", () => {
       expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labeling");
       expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
       expect(row(wrapper).find('[data-slot="select-trigger"]').text()).toBe(
-        "Raw reads / Grid sampler",
+        "Raw reads / Grid Sampler",
       );
       const [only] = labelRows(wrapper);
       expect((only!.find('input[type="color"]').element as HTMLInputElement).value).toBe("#e11d48");

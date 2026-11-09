@@ -217,7 +217,7 @@ function setParam(name: string, value: ParamValue) {
       :style="{ background: familyBackground(kind.family) }"
     >
       <NodeName ref="nameField" :name="data.name" :fallback="kind.label" @rename="rename" />
-      <span v-if="data.name" class="truncate text-xs font-normal text-muted-foreground">
+      <span v-if="data.name" class="truncate font-normal text-muted-foreground">
         {{ kind.label }}
       </span>
     </div>

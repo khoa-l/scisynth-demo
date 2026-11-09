@@ -90,7 +90,7 @@ describe("Dataset node", () => {
     const title = node.find('[data-slot="node-title"]');
     expect(title.findAll("span").map((part) => part.text())).toEqual([
       "Smooth field",
-      "Gaussian field",
+      "Gaussian Field",
     ]);
   });
 
@@ -105,7 +105,7 @@ describe("Dataset node", () => {
     await flushPromises();
     await rename(node.find('[data-slot="node-title"] input'), "   ");
 
-    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian field");
+    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian Field");
   });
 
   it("keeps a node's name when renaming is cancelled", async () => {
@@ -119,7 +119,7 @@ describe("Dataset node", () => {
     await flushPromises();
 
     expect(node.find('[data-slot="node-title"] input').exists()).toBe(false);
-    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian field");
+    expect(node.find('[data-slot="node-title"]').text()).toBe("Gaussian Field");
   });
 
   describe("preview controls", () => {
@@ -182,7 +182,7 @@ describe("Dataset node", () => {
       await press(view(field));
       expect(view(field).attributes("aria-pressed")).toBe("true");
       expect(viewed(wrapper).find('[role="img"]').attributes("aria-label")).toBe(
-        "Preview of Gaussian field",
+        "Preview of Gaussian Field",
       );
 
       await press(view(field));

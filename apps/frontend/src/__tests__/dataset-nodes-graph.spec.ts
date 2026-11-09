@@ -453,7 +453,7 @@ describe("Dataset graph", () => {
       expect(memberPorts(nodes, localCatalog, "g")).toMatchObject([
         {
           id: "sampler",
-          label: "Grid sampler",
+          label: "Grid Sampler",
           inputs: [],
           outputs: [{ id: "observation", handle: "sampler.observation", label: "Observation" }],
         },

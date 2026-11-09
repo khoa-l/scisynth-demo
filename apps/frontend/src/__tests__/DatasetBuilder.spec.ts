@@ -67,7 +67,7 @@ describe("Dataset builder", () => {
     const wrapper = await mountView();
     const canvas = wrapper.find(".vue-flow");
 
-    for (const label of ["Gaussian field", "Multichannel"]) {
+    for (const label of ["Gaussian Field", "Multichannel"]) {
       const dataTransfer = fakeDataTransfer();
       await paletteItem(wrapper, label).trigger("dragstart", { dataTransfer });
       await canvas.trigger("dragover", { dataTransfer });
@@ -78,7 +78,7 @@ describe("Dataset builder", () => {
 
     const nodes = wrapper.findAll(".vue-flow__node");
     expect(nodes.map((node) => node.find('[data-slot="node-title"]').text())).toEqual([
-      "Gaussian field",
+      "Gaussian Field",
       "Multichannel",
     ]);
     expect(nodes.every((node) => node.classes().includes("vue-flow__node-dataset-node"))).toBe(
@@ -113,7 +113,7 @@ describe("Dataset builder", () => {
     const wrapper = await mountView();
     const dataTransfer = fakeDataTransfer();
 
-    await paletteItem(wrapper, "Gaussian field").trigger("dragstart", { dataTransfer });
+    await paletteItem(wrapper, "Gaussian Field").trigger("dragstart", { dataTransfer });
     await wrapper.find(".vue-flow").trigger("drop", { dataTransfer, clientX: 120, clientY: 80 });
     await flushPromises();
 
@@ -447,10 +447,10 @@ describe("Dataset builder", () => {
     expect(wrapper.find('[aria-label="Group view"]').exists()).toBe(true);
     expect(wrapper.find('[data-slot="group-view-title"]').text()).toBe("Group");
     expect(shownTitles(wrapper)).toEqual([
-      "Gaussian field",
-      "Grid sampler",
-      "Group input",
-      "Group output",
+      "Gaussian Field",
+      "Grid Sampler",
+      "Group Input",
+      "Group Output",
     ]);
 
     await backToMainGraph(wrapper);
@@ -613,7 +613,7 @@ describe("Dataset builder", () => {
         .map((member) => member.findAll(":scope > div").map((row) => row.text())),
     ).toEqual([
       ["Sum", "Terms", "Field"],
-      ["Grid sampler", "Latent", "Observation"],
+      ["Grid Sampler", "Latent", "Observation"],
     ]);
     expect(
       isValid({
@@ -729,8 +729,8 @@ describe("Dataset builder", () => {
 
       const titles = wrapper.findAll('.vue-flow__node [data-slot="node-title"]');
       expect(titles.map((title) => title.text())).toEqual([
-        "Gaussian field",
-        "Grid sampler",
+        "Gaussian Field",
+        "Grid Sampler",
         "Unknown: RemovedStage",
       ]);
       expect(flow(wrapper).edges).toMatchObject([

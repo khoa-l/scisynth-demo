@@ -18,7 +18,7 @@ const isInput = computed(() => props.type === GROUP_INPUT);
       data-slot="node-title"
       class="rounded-t-[calc(var(--radius-lg)-1px)] border-b bg-muted px-3 py-2 font-medium"
     >
-      {{ isInput ? "Group input" : "Group output" }}
+      {{ isInput ? "Group Input" : "Group Output" }}
     </div>
     <div class="py-2">
       <div v-if="isInput" class="relative px-3 text-right text-muted-foreground">
