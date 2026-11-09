@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, ChevronDown, ChevronRight } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 
 import type { DatasetPublic } from "@/client";
 import { datasetsGetDatasetsOptions } from "@/client/@tanstack/vue-query.gen";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { findKind, nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
-import type { ChartSource } from "@/lib/survey-blocks";
+import { surveyPanelKey, type ChartSource } from "@/lib/survey-blocks";
 
 const props = defineProps<{ id: string; projectId: string; source: ChartSource | null }>();
 const emit = defineEmits<{ choose: [datasetId: string, nodeId: string] }>();
@@ -42,6 +42,7 @@ const chosen = computed(() => {
   return section && option && { dataset: section.dataset.name, node: option.label };
 });
 
+const panel = inject(surveyPanelKey, null);
 const open = ref(false);
 const expanded = ref<string[]>([]);
 
@@ -60,11 +61,6 @@ function setExpanded(datasetId: string, isExpanded: boolean) {
 function isChosen(datasetId: string, nodeId: string) {
   return props.source?.dataset_id === datasetId && props.source.node_id === nodeId;
 }
-
-function choose(datasetId: string, nodeId: string) {
-  emit("choose", datasetId, nodeId);
-  open.value = false;
-}
 </script>
 
 <template>
@@ -82,6 +78,8 @@ function choose(datasetId: string, nodeId: string) {
       </Button>
     </PopoverTrigger>
     <PopoverContent
+      :to="panel ?? undefined"
+      position-strategy="absolute"
       align="start"
       class="max-h-80 w-(--reka-popover-trigger-width) gap-0 divide-y overflow-y-auto p-0"
     >
@@ -109,7 +107,7 @@ function choose(datasetId: string, nodeId: string) {
                 type="button"
                 :aria-current="isChosen(dataset.id, option.id)"
                 class="flex w-full items-center gap-1.5 py-1.5 pr-3 pl-8.5 text-left outline-none hover:bg-accent focus-visible:bg-accent"
-                @click="choose(dataset.id, option.id)"
+                @click="emit('choose', dataset.id, option.id)"
               >
                 <span class="flex-1 truncate">{{ option.label }}</span>
                 <Check v-if="isChosen(dataset.id, option.id)" class="size-4 shrink-0" />

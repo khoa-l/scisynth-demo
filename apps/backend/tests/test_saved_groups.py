@@ -22,8 +22,6 @@ GROUPED = {
     "id": "g",
     "name": "Noise",
     "position": {"x": 0, "y": 0},
-    "width": 300,
-    "height": 200,
     "nodes": ["a", "b"],
     "inputs": [],
     "outputs": [{"node": "b", "port": "field"}],

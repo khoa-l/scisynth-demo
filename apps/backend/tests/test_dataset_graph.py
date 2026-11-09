@@ -233,8 +233,6 @@ def group(group_id: str, *nodes: str) -> dict:
         "id": group_id,
         "name": None,
         "position": {"x": 10, "y": 20},
-        "width": 300,
-        "height": 200,
         "nodes": list(nodes),
         "inputs": [{"node": nodes[0], "port": "in"}] if nodes else [],
         "outputs": [],
@@ -287,7 +285,6 @@ def test_lets_a_group_place_its_input_and_output_later(
         [group("g", "a"), group("g", "b")],
         [group("a", "b")],
         [group("g")],
-        [{**group("g", "a"), "width": 0}],
         [{**group("g", "a"), "outputs": [{"node": "b", "port": "out"}]}],
     ],
 )

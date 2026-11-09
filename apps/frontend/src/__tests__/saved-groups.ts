@@ -38,8 +38,6 @@ export const SAVED_GROUP: SavedGroupPublic = {
         id: "saved",
         name: "Smoothed noise",
         position: { x: 0, y: 0 },
-        width: 556,
-        height: 200,
         nodes: ["noise", "gain"],
         inputs: [{ node: "noise", port: "observation" }],
         outputs: [{ node: "gain", port: "observation" }],

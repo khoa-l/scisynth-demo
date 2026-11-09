@@ -98,21 +98,25 @@ function row(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
 }
 
 function dataPicker(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
-  return row(wrapper).find('button[aria-haspopup="dialog"]');
+  return row(wrapper).find('button[id$="-data"]');
 }
 
 async function openData(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
   await dataPicker(wrapper).trigger("click");
   await flushPromises();
-  return shownNodes();
+  return shownNodes(wrapper);
 }
 
-function shownNodes() {
-  return [...document.querySelectorAll<HTMLElement>('[data-slot="popover-content"] li button')];
+function nodeList(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+  return wrapper.find('[aria-label="Survey builder"] [data-slot="popover-content"]');
 }
 
-function datasetHeadings() {
-  return [...document.querySelectorAll<HTMLElement>('[data-slot="collapsible-trigger"]')];
+function shownNodes(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+  return nodeList(wrapper).findAll("ul button");
+}
+
+function datasetHeadings(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+  return nodeList(wrapper).findAll('[data-slot="collapsible-trigger"]');
 }
 
 async function savedBlocks() {
@@ -127,26 +131,24 @@ function drawn(element: Element) {
 
 describe("Chart blocks", () => {
   describe("in the builder", () => {
-    it("offers each dataset's nodes and saves the chosen one with its first channel", async () => {
+    it("offers each dataset's nodes and saves the chosen one with its first channel, staying open", async () => {
       const wrapper = await mountBuilder(chart({ source: null }));
 
       expect(dataPicker(wrapper).text()).toBe("Choose a node from a dataset…");
       const options = await openData(wrapper);
-      expect(datasetHeadings().map((heading) => heading.textContent?.trim())).toEqual([
-        "Raw reads",
-      ]);
-      expect(options.map((option) => option.textContent?.trim())).toEqual([
+      expect(datasetHeadings(wrapper).map((heading) => heading.text())).toEqual(["Raw reads"]);
+      expect(options.map((option) => option.text())).toEqual([
         "Gaussian Field",
         "Grid Sampler",
         "Gaussian Field 2",
       ]);
 
-      options[1]!.click();
+      await options[1]!.trigger("click");
       await flushPromises();
 
       expect((await savedBlocks())[0].source).toEqual(SOURCE);
       expect(dataPicker(wrapper).text()).toBe("Raw reads / Grid Sampler");
-      expect(document.querySelector('[data-slot="popover-content"]')).toBeNull();
+      expect(nodeList(wrapper).exists()).toBe(true);
     });
 
     it("lists the nodes under collapsible dataset headings, opening the chosen node's dataset", async () => {
@@ -159,24 +161,22 @@ describe("Chart blocks", () => {
       const wrapper = await mountBuilder(chart(), [other, DATASET]);
 
       const options = await openData(wrapper);
-      expect(datasetHeadings().map((heading) => heading.textContent?.trim())).toEqual([
+      expect(datasetHeadings(wrapper).map((heading) => heading.text())).toEqual([
         "Cleaned reads",
         "Raw reads",
       ]);
-      expect(options.map((option) => option.textContent?.trim())).toEqual([
+      expect(options.map((option) => option.text())).toEqual([
         "Gaussian Field",
         "Grid Sampler",
         "Gaussian Field 2",
       ]);
-      expect(options[1]!.getAttribute("aria-current")).toBe("true");
+      expect(options[1]!.attributes("aria-current")).toBe("true");
 
-      datasetHeadings()[0]!.click();
-      await flushPromises();
-      expect(shownNodes()).toHaveLength(4);
+      await datasetHeadings(wrapper)[0]!.trigger("click");
+      expect(shownNodes(wrapper)).toHaveLength(4);
 
-      datasetHeadings()[1]!.click();
-      await flushPromises();
-      expect(shownNodes().map((option) => option.textContent?.trim())).toEqual(["Gaussian Field"]);
+      await datasetHeadings(wrapper)[1]!.trigger("click");
+      expect(shownNodes(wrapper).map((option) => option.text())).toEqual(["Gaussian Field"]);
     });
 
     it("offers named nodes by their name", async () => {
@@ -189,7 +189,7 @@ describe("Chart blocks", () => {
 
       const options = await openData(wrapper);
 
-      expect(options.map((option) => option.textContent?.trim())).toEqual([
+      expect(options.map((option) => option.text())).toEqual([
         "Smooth field",
         "Grid Sampler",
         "Gaussian Field",

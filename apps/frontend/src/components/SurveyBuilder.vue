@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { makeSortableList } from "@vue-dnd-kit/core";
-import { computed, useTemplateRef } from "vue";
+import { computed, provide, useTemplateRef } from "vue";
 
 import type { SurveyPublic } from "@/client";
 import { surveysUpdateSurveyMutation } from "@/client/@tanstack/vue-query.gen";
@@ -24,6 +24,7 @@ import {
   blockLabels,
   surveyBlocks,
   surveyColumnClass,
+  surveyPanelKey,
   type ChartBlock,
   type LabelBlock,
   type SurveyBlock,
@@ -57,6 +58,7 @@ function save(next: SurveyBlock[]) {
 
 const LIST_ID = "survey-builder";
 const zone = useTemplateRef<HTMLElement>("zone");
+provide(surveyPanelKey, zone);
 const list = useTemplateRef<HTMLElement>("list");
 const { items } = makeSortableList(list, {
   id: LIST_ID,

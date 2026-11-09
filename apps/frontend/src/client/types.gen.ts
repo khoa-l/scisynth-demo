@@ -178,14 +178,6 @@ export type GraphGroupInput = {
     name?: string | null;
     position: Position;
     /**
-     * Width
-     */
-    width: number;
-    /**
-     * Height
-     */
-    height: number;
-    /**
      * Nodes
      */
     nodes: Array<string>;
@@ -214,14 +206,6 @@ export type GraphGroupOutput = {
      */
     name: string | null;
     position: Position;
-    /**
-     * Width
-     */
-    width: number;
-    /**
-     * Height
-     */
-    height: number;
     /**
      * Nodes
      */

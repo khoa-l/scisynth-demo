@@ -17,8 +17,6 @@ const VIEW_GAP = 96;
 export type GroupSide = "inputs" | "outputs";
 export type GroupData = {
   name: string | null;
-  width: number;
-  height: number;
   inputPosition: XYPosition | null;
   outputPosition: XYPosition | null;
 } & Record<GroupSide, GroupPort[]>;
@@ -44,10 +42,6 @@ export function groupNodes(
   const members = nodes.filter((node) => memberIds.includes(node.id));
   const left = Math.min(...members.map((node) => node.computedPosition.x));
   const top = Math.min(...members.map((node) => node.computedPosition.y));
-  const right = Math.max(...members.map((node) => node.computedPosition.x + node.dimensions.width));
-  const bottom = Math.max(
-    ...members.map((node) => node.computedPosition.y + node.dimensions.height),
-  );
 
   const real = edges.filter((edge) => !isStandIn(edge));
   const onlyInside = (links: Edge[]) =>
@@ -75,8 +69,6 @@ export function groupNodes(
       { x: left, y: top },
       {
         name: null,
-        width: right - left,
-        height: bottom - top,
         inputs: exposed("inputs"),
         outputs: exposed("outputs"),
         inputPosition: null,

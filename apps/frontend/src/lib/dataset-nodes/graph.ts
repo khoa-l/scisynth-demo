@@ -54,8 +54,6 @@ export function toGraph(nodes: Node[], edges: Edge[]): DatasetGraph {
           id: group.id,
           name: group.data.name,
           position: { x: group.position.x, y: group.position.y },
-          width: group.data.width,
-          height: group.data.height,
           nodes: datasetNodes.filter((node) => node.parentNode === group.id).map((node) => node.id),
           inputs: group.data.inputs,
           outputs: group.data.outputs,
@@ -115,8 +113,6 @@ export function fromGraph(
       { x: group.position.x, y: group.position.y },
       {
         name: group.name,
-        width: group.width,
-        height: group.height,
         inputs: group.inputs,
         outputs: group.outputs,
         inputPosition: group.input_position,

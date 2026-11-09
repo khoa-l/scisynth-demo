@@ -128,8 +128,6 @@ describe("Dataset graph", () => {
           id: "g",
           name: "Sampling",
           position: { x: 0, y: 0 },
-          width: 100,
-          height: 100,
           nodes: ["sampler"],
           inputs: [],
           outputs: [],
@@ -247,8 +245,6 @@ describe("Dataset graph", () => {
           id: "g",
           name: null,
           position: { x: 100, y: 200 },
-          width: 400,
-          height: 300,
           nodes: ["field", "sampler"],
           inputs: [],
           outputs: [{ node: "sampler", port: "observation" }],
@@ -270,7 +266,7 @@ describe("Dataset graph", () => {
       expect(nodes[0]).toMatchObject({
         type: "dataset-group",
         position: { x: 100, y: 200 },
-        data: { width: 400, height: 300, outputs: [{ node: "sampler", port: "observation" }] },
+        data: { outputs: [{ node: "sampler", port: "observation" }] },
       });
       expect(edges.map((edge) => [edge.source, edge.sourceHandle, edge.target])).toEqual([
         ["field", "field", "sampler"],
@@ -340,7 +336,6 @@ describe("Dataset graph", () => {
         id: "g",
         type: "dataset-group",
         position: { x: 0, y: 0 },
-        data: { width: 556, height: 300 },
       });
       expect(rest.map((node) => [node.id, node.parentNode, node.hidden, node.position])).toEqual([
         ["a", "g", true, { x: 0, y: 0 }],

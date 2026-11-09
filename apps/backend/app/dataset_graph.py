@@ -75,8 +75,6 @@ class GraphGroup(_Strict):
     id: Ref
     name: NodeName | None = None
     position: Position
-    width: Annotated[FiniteFloat, Field(gt=0)]
-    height: Annotated[FiniteFloat, Field(gt=0)]
     nodes: list[Ref] = Field(min_length=1, max_length=MAX_NODES)
     inputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
     outputs: list[GroupPort] = Field(default_factory=list, max_length=MAX_EDGES)
