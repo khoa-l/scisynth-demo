@@ -2,6 +2,7 @@
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 
+import { ArrowLeft } from "@lucide/vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { Background } from "@vue-flow/background";
 import {
@@ -23,6 +24,7 @@ import {
 import DatasetGroup from "@/components/DatasetGroup.vue";
 import DatasetNode from "@/components/DatasetNode.vue";
 import GraphSettings from "@/components/GraphSettings.vue";
+import GroupViewNode from "@/components/GroupViewNode.vue";
 import SaveFailedAlert from "@/components/SaveFailedAlert.vue";
 import {
   NODE_KIND_MIME,
@@ -35,6 +37,8 @@ import {
 import { DATASET_NODE, flowNode, fromGraph, toGraph } from "@/lib/dataset-nodes/graph";
 import {
   DATASET_GROUP,
+  GROUP_VIEW_NODE,
+  groupView as buildGroupView,
   memberConnection,
   standInId,
   withGroupEdges,
@@ -42,7 +46,7 @@ import {
 import { GRAPH_SETTINGS_ID } from "@/lib/dataset-nodes/graph-settings";
 import { autoLayout } from "@/lib/dataset-nodes/layout";
 import { LINE_TYPES, type LineType } from "@/lib/dataset-nodes/line-type";
-import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
+import { VIEWED_GROUP, VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 import { saveKey, saveScope, useSaveFailed } from "@/lib/save-state";
 
 const props = defineProps<{ projectId: string; dataset: DatasetPublic }>();
@@ -51,6 +55,9 @@ const nodeTypes = {
   [DATASET_NODE]: markRaw(DatasetNode),
   [DATASET_GROUP]: markRaw(DatasetGroup),
 };
+const groupViewTypes = { [GROUP_VIEW_NODE]: markRaw(GroupViewNode) };
+const tab =
+  "flex items-center gap-1.5 rounded-b-lg border border-t-0 bg-background px-3 py-1 text-sm font-medium shadow-sm";
 const lineStyle = { strokeWidth: 3 };
 const lineType = useLocalStorage<LineType>(
   `dataset-builder-line-type:${props.dataset.id}`,
@@ -60,6 +67,8 @@ if (!LINE_TYPES.includes(lineType.value)) lineType.value = ConnectionLineType.Be
 const defaultEdgeOptions = computed(() => ({ type: lineType.value, style: lineStyle }));
 
 provide(VIEWED_NODE, ref(null));
+const viewedGroup = ref<string | null>(null);
+provide(VIEWED_GROUP, viewedGroup);
 
 const queryClient = useQueryClient();
 const { data: catalog } = useQuery(nodeCatalogQuery);
@@ -82,6 +91,12 @@ const {
 } = useVueFlow();
 
 const graph = computed(() => toGraph(nodes.value, edges.value));
+const groupView = computed(
+  () =>
+    viewedGroup.value &&
+    catalog.value &&
+    buildGroupView(nodes.value, edges.value, catalog.value, viewedGroup.value),
+);
 const serialized = computed(() => JSON.stringify(graph.value));
 let loaded = false;
 let lastSaved: string | undefined;
@@ -206,25 +221,53 @@ function onDrop(event: DragEvent) {
 </script>
 
 <template>
-  <VueFlow
-    aria-label="Node graph"
-    class="bg-muted inset-shadow-sm"
-    :node-types="nodeTypes"
-    :default-edge-options="defaultEdgeOptions"
-    :connection-line-type="lineType"
-    :connection-line-style="lineStyle"
-    :connection-radius="40"
-    :is-valid-connection="isValidConnection"
-    multi-selection-key-code="Shift"
-    @dragover="onDragOver"
-    @drop="onDrop"
-  >
-    <Background variant="lines" color="#dcdcdc" />
-    <Panel v-if="saveFailed" position="top-center" class="w-max">
-      <SaveFailedAlert @retry="save" />
-    </Panel>
-    <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">
-      <GraphSettings v-model:line-type="lineType" @auto-layout="layOut" />
-    </Teleport>
-  </VueFlow>
+  <div class="size-full">
+    <VueFlow
+      v-show="!groupView"
+      aria-label="Node graph"
+      class="bg-muted inset-shadow-sm"
+      :node-types="nodeTypes"
+      :default-edge-options="defaultEdgeOptions"
+      :connection-line-type="lineType"
+      :connection-line-style="lineStyle"
+      :connection-radius="40"
+      :is-valid-connection="isValidConnection"
+      multi-selection-key-code="Shift"
+      @dragover="onDragOver"
+      @drop="onDrop"
+    >
+      <Background variant="lines" color="#dcdcdc" />
+      <Panel v-if="saveFailed" position="top-center" class="w-max">
+        <SaveFailedAlert @retry="save" />
+      </Panel>
+      <Teleport defer :to="`#${GRAPH_SETTINGS_ID}`">
+        <GraphSettings v-model:line-type="lineType" @auto-layout="layOut" />
+      </Teleport>
+    </VueFlow>
+    <VueFlow
+      v-if="groupView"
+      :id="`group-view-${dataset.id}`"
+      aria-label="Group view"
+      class="bg-muted inset-shadow-sm"
+      :nodes="groupView.nodes"
+      :edges="groupView.edges"
+      :node-types="groupViewTypes"
+      :default-edge-options="defaultEdgeOptions"
+      :nodes-draggable="false"
+      :nodes-connectable="false"
+      :elements-selectable="false"
+      fit-view-on-init
+    >
+      <Background variant="lines" color="#dcdcdc" />
+      <Panel position="top-left" class="m-0">
+        <button type="button" :class="tab" @click="viewedGroup = null">
+          <ArrowLeft class="size-4" />
+          Main graph
+        </button>
+      </Panel>
+      <Panel position="top-center" class="m-0">
+        <div data-slot="group-view-title" :class="tab">Group</div>
+      </Panel>
+    </VueFlow>
+  </div>
 </template>

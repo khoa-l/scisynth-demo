@@ -10,6 +10,7 @@ import {
 } from "../lib/dataset-nodes/graph";
 import {
   groupNodes,
+  groupView,
   memberConnection,
   memberPorts,
   ungroupNodes,
@@ -386,7 +387,7 @@ describe("Dataset graph", () => {
             id: "sampler",
             label: "Grid sampler",
             inputs: [],
-            outputs: [{ id: "sampler.observation", label: "Observation" }],
+            outputs: [{ id: "observation", handle: "sampler.observation", label: "Observation" }],
           },
         ]);
       });
@@ -419,11 +420,36 @@ describe("Dataset graph", () => {
           {
             id: "sum",
             label: "Sum",
-            inputs: [{ id: "sum.terms", label: "Terms", multiple: true }],
-            outputs: [{ id: "sum.field", label: "Field" }],
+            inputs: [{ id: "terms", handle: "sum.terms", label: "Terms", multiple: true }],
+            outputs: [{ id: "field", handle: "sum.field", label: "Field" }],
           },
         ]);
       });
+    });
+
+    it("views a group's nodes joined to a Group Input and a Group Output", () => {
+      const { nodes, edges } = load(GROUPED);
+
+      const view = groupView(nodes, edges, localCatalog, "g");
+
+      expect(view.nodes.map((node) => [node.id, node.data.label, node.position])).toEqual([
+        ["group-input", "Group Input", { x: -342, y: 20 }],
+        ["field", "Gaussian field", { x: 10, y: 20 }],
+        ["sampler", "Grid sampler", { x: 10, y: 20 }],
+        ["group-output", "Group Output", { x: 362, y: 20 }],
+      ]);
+      expect(view.nodes.at(-1)!.data.inputs).toEqual([
+        { id: "sampler.observation", label: "Grid sampler: Observation" },
+      ]);
+      expect(
+        view.edges.map((edge) => [
+          `${edge.source}.${edge.sourceHandle}`,
+          `${edge.target}.${edge.targetHandle}`,
+        ]),
+      ).toEqual([
+        ["field.field", "sampler.latent"],
+        ["sampler.observation", "group-output.sampler.observation"],
+      ]);
     });
 
     it("turns a connection to a group's port into one to the node behind it", () => {

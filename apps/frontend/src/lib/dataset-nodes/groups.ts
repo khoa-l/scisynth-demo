@@ -5,6 +5,12 @@ import type { FlowNode } from "./graph";
 import type { NodeCatalog } from "./types";
 
 export const DATASET_GROUP = "dataset-group";
+export const GROUP_VIEW_NODE = "group-view-node";
+export const GROUP_INPUT = "group-input";
+export const GROUP_OUTPUT = "group-output";
+
+const VIEW_NODE_WIDTH = 256;
+const VIEW_GAP = 96;
 
 type GroupData = { width: number; height: number };
 export type GroupNode = Node<GroupData> & { data: GroupData };
@@ -117,8 +123,8 @@ export function memberPorts(nodes: Node[], edges: Edge[], catalog: NodeCatalog, 
       {
         id: node.id,
         label: kind.label,
-        inputs: inputs.map((port) => ({ ...port, id: memberHandle(node.id, port.id) })),
-        outputs: outputs.map((port) => ({ ...port, id: memberHandle(node.id, port.id) })),
+        inputs: inputs.map((port) => ({ ...port, handle: memberHandle(node.id, port.id) })),
+        outputs: outputs.map((port) => ({ ...port, handle: memberHandle(node.id, port.id) })),
       },
     ];
   });
@@ -138,5 +144,99 @@ export function memberConnection(connection: Connection, nodes: Node[]): Connect
     sourceHandle: source.handle,
     target: target.nodeId,
     targetHandle: target.handle,
+  };
+}
+
+type ViewPort = { id: string; label: string };
+export type GroupViewData = {
+  label: string;
+  group?: string;
+  inputs: ViewPort[];
+  outputs: ViewPort[];
+};
+
+function viewNode(
+  id: string,
+  position: XYPosition,
+  data: GroupViewData,
+): Node<GroupViewData> & { data: GroupViewData } {
+  return { id, type: GROUP_VIEW_NODE, position, data };
+}
+
+export function groupView(nodes: Node[], edges: Edge[], catalog: NodeCatalog, groupId: string) {
+  const members = nodes.filter((node): node is FlowNode => node.parentNode === groupId);
+  const memberIds = new Set(members.map((node) => node.id));
+  const ports = memberPorts(nodes, edges, catalog, groupId);
+  const left = Math.min(...members.map((node) => node.position.x)) - VIEW_NODE_WIDTH - VIEW_GAP;
+  const right = Math.max(...members.map((node) => node.position.x)) + VIEW_NODE_WIDTH + VIEW_GAP;
+  const top = Math.min(...members.map((node) => node.position.y));
+  const groupPort = (member: string, port: { handle: string; label: string }) => ({
+    id: port.handle,
+    label: `${member}: ${port.label}`,
+  });
+
+  return {
+    nodes: [
+      viewNode(
+        GROUP_INPUT,
+        { x: left, y: top },
+        {
+          label: "Group Input",
+          inputs: [],
+          outputs: ports.flatMap((member) =>
+            member.inputs.map((port) => groupPort(member.label, port)),
+          ),
+        },
+      ),
+      ...members.map((node) => {
+        const kind = findKind(catalog, node.data.kind);
+        return viewNode(node.id, node.position, {
+          label: kind?.label ?? `Unknown: ${node.data.kind}`,
+          group: kind?.group,
+          inputs: kind?.inputs ?? [],
+          outputs: kind?.outputs ?? [],
+        });
+      }),
+      viewNode(
+        GROUP_OUTPUT,
+        { x: right, y: top },
+        {
+          label: "Group Output",
+          inputs: ports.flatMap((member) =>
+            member.outputs.map((port) => groupPort(member.label, port)),
+          ),
+          outputs: [],
+        },
+      ),
+    ],
+    edges: [
+      ...edges
+        .filter(
+          (edge) => !isStandIn(edge) && memberIds.has(edge.source) && memberIds.has(edge.target),
+        )
+        .map(({ id, source, sourceHandle, target, targetHandle }) => ({
+          id,
+          source,
+          sourceHandle,
+          target,
+          targetHandle,
+        })),
+      ...ports.flatMap((member) => [
+        ...member.inputs.map((port) => ({
+          id: `${GROUP_INPUT}:${port.handle}`,
+          source: GROUP_INPUT,
+          sourceHandle: port.handle,
+          target: member.id,
+          targetHandle: port.id,
+        })),
+        ...member.outputs.map((port) => ({
+          id: `${GROUP_OUTPUT}:${port.handle}`,
+          source: member.id,
+          sourceHandle: port.id,
+          target: GROUP_OUTPUT,
+          targetHandle: port.handle,
+        })),
+      ]),
+    ],
   };
 }

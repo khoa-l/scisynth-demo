@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trash2, Ungroup } from "@lucide/vue";
+import { Eye, Trash2, Ungroup } from "@lucide/vue";
 import { useQuery } from "@tanstack/vue-query";
 import { Handle, Position, useVueFlow, type NodeProps } from "@vue-flow/core";
 import { cn } from "cn";
@@ -8,13 +8,14 @@ import { computed, inject, ref } from "vue";
 import { toggleVariants } from "@/components/ui/toggle";
 import { nodeCatalogQuery } from "@/lib/dataset-nodes/catalog";
 import { memberPorts, ungroupNodes, withGroupEdges } from "@/lib/dataset-nodes/groups";
-import { VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
+import { VIEWED_GROUP, VIEWED_NODE } from "@/lib/dataset-nodes/viewed";
 
 const props = defineProps<NodeProps>();
 
 const { data: catalog } = useQuery(nodeCatalogQuery);
 const { edges, nodes, setEdges, setNodes } = useVueFlow();
 const viewed = inject(VIEWED_NODE, ref(null));
+const viewedGroup = inject(VIEWED_GROUP, ref(null));
 
 const memberIds = computed(() =>
   nodes.value.filter((node) => node.parentNode === props.id).map((node) => node.id),
@@ -66,11 +67,11 @@ function remove() {
         <div class="px-3 text-xs font-medium">{{ member.label }}</div>
         <div
           v-for="port in member.inputs"
-          :key="port.id"
+          :key="port.handle"
           class="relative px-3 text-muted-foreground"
         >
           <Handle
-            :id="port.id"
+            :id="port.handle"
             type="target"
             :position="Position.Left"
             class="size-3.5!"
@@ -80,10 +81,10 @@ function remove() {
         </div>
         <div
           v-for="port in member.outputs"
-          :key="port.id"
+          :key="port.handle"
           class="relative px-3 text-right text-muted-foreground"
         >
-          <Handle :id="port.id" type="source" :position="Position.Right" class="size-3.5!" />
+          <Handle :id="port.handle" type="source" :position="Position.Right" class="size-3.5!" />
           {{ port.label }}
         </div>
       </div>
@@ -94,6 +95,9 @@ function remove() {
       class="nodrag absolute top-full left-1/2 mt-2 flex -translate-x-1/2 rounded-lg bg-background shadow-sm"
       @click.stop
     >
+      <button type="button" aria-label="View group" :class="plainButton" @click="viewedGroup = id">
+        <Eye />
+      </button>
       <button type="button" aria-label="Ungroup nodes" :class="plainButton" @click="ungroup">
         <Ungroup />
       </button>

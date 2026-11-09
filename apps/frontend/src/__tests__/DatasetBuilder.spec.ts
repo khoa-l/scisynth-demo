@@ -311,6 +311,34 @@ describe("Dataset builder", () => {
     expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(true);
   });
 
+  it("views a group's nodes on their own, and goes back to the main graph", async () => {
+    const wrapper = await mountView();
+    const field = await dropKind(wrapper, "GaussianField");
+    const sampler = await dropKind(wrapper, "GridSampler");
+    await connect(wrapper, field, sampler, "latent");
+    await groupTogether(field, sampler);
+    const view = () => wrapper.find('[aria-label="Group view"]');
+
+    await clickGroupControl(wrapper, "View group");
+
+    expect(view().find('[data-slot="group-view-title"]').text()).toBe("Group");
+    expect(
+      view()
+        .findAll('[data-slot="node-title"]')
+        .map((title) => title.text()),
+    ).toEqual(["Group Input", "Gaussian field", "Grid sampler", "Group Output"]);
+    expect(wrapper.find('[aria-label="Node graph"]').isVisible()).toBe(false);
+
+    await view()
+      .findAll("button")
+      .find((button) => button.text() === "Main graph")!
+      .trigger("click");
+
+    expect(view().exists()).toBe(false);
+    expect(wrapper.find('[aria-label="Node graph"]').isVisible()).toBe(true);
+    expect(wrapper.find(".vue-flow__node-dataset-group").exists()).toBe(true);
+  });
+
   it("ungroups a group's nodes from the group's toolbar", async () => {
     const wrapper = await mountView();
     const first = await dropKind(wrapper, "GaussianField");
