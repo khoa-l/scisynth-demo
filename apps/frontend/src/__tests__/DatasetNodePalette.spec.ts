@@ -45,7 +45,7 @@ describe("Dataset node palette", () => {
     expect([items[0], items[12]]).toEqual(["Gaussian Noise", "Downsample"]);
   });
 
-  it("offers PCA and UMAP under Projection", async () => {
+  it("offers the projections under Projection", async () => {
     const wrapper = await mountView();
 
     await openTab(wrapper, "Projection");
@@ -54,7 +54,7 @@ describe("Dataset node palette", () => {
       visiblePanel(wrapper)
         .findAll("li")
         .map((item) => item.text()),
-    ).toEqual(["PCA", "UMAP"]);
+    ).toEqual(["PCA", "UMAP", "Isomap", "Random Gaussian"]);
   });
 
   it("makes every node kind draggable and puts its kind on the drag", async () => {

@@ -51,6 +51,18 @@ function stage(family: string) {
 const defect = stage("defect");
 const transform = stage("transform");
 
+function projection(name: string, label: string, params: NodeKindDef["params"]): NodeKindDef {
+  return {
+    name,
+    label,
+    category: "projection",
+    family: "projection",
+    inputs: [observation],
+    outputs: [],
+    params,
+  };
+}
+
 export const localCatalog: NodeCatalog = {
   categories: [
     { id: "latent", label: "Latent" },
@@ -214,54 +226,40 @@ export const localCatalog: NodeCatalog = {
     defect("PositionJitter", "Position Jitter", { sigma: num("Sigma", 0, { min: 0 }), seed }),
     defect("RandomInsertion", "Random Insertion", { n: int("Points", 10, { min: 0 }), seed }),
     transform("Downsample", "Downsample", { factor: int("Factor", 2, { min: 1 }) }),
-    {
-      name: "PCA",
-      label: "PCA",
-      category: "projection",
-      family: "projection",
-      inputs: [observation],
-      outputs: [],
-      params: {
-        whiten: { type: "boolean", label: "Whiten", default: false },
-        svd_solver: {
-          type: "enum",
-          label: "Solver",
-          default: "auto",
-          options: [
-            { value: "auto", label: "Auto" },
-            { value: "full", label: "Full" },
-            { value: "covariance_eigh", label: "Covariance" },
-            { value: "randomized", label: "Randomized" },
-            { value: "arpack", label: "ARPACK" },
-          ],
-        },
-        seed,
+    projection("PCA", "PCA", {
+      whiten: { type: "boolean", label: "Whiten", default: false },
+      svd_solver: {
+        type: "enum",
+        label: "Solver",
+        default: "auto",
+        options: [
+          { value: "auto", label: "Auto" },
+          { value: "full", label: "Full" },
+          { value: "covariance_eigh", label: "Covariance" },
+          { value: "randomized", label: "Randomized" },
+          { value: "arpack", label: "ARPACK" },
+        ],
       },
-    },
-    {
-      name: "UMAP",
-      label: "UMAP",
-      category: "projection",
-      family: "projection",
-      inputs: [observation],
-      outputs: [],
-      params: {
-        n_neighbors: int("Neighbours", 15, { min: 2 }),
-        min_dist: num("Min distance", 0.1, { min: 0, step: 0.05 }),
-        metric: {
-          type: "enum",
-          label: "Metric",
-          default: "euclidean",
-          options: [
-            { value: "euclidean", label: "Euclidean" },
-            { value: "manhattan", label: "Manhattan" },
-            { value: "chebyshev", label: "Chebyshev" },
-            { value: "cosine", label: "Cosine" },
-            { value: "correlation", label: "Correlation" },
-          ],
-        },
-        seed,
+      seed,
+    }),
+    projection("UMAP", "UMAP", {
+      n_neighbors: int("Neighbours", 15, { min: 2 }),
+      min_dist: num("Min distance", 0.1, { min: 0, step: 0.05 }),
+      metric: {
+        type: "enum",
+        label: "Metric",
+        default: "euclidean",
+        options: [
+          { value: "euclidean", label: "Euclidean" },
+          { value: "manhattan", label: "Manhattan" },
+          { value: "chebyshev", label: "Chebyshev" },
+          { value: "cosine", label: "Cosine" },
+          { value: "correlation", label: "Correlation" },
+        ],
       },
-    },
+      seed,
+    }),
+    projection("Isomap", "Isomap", { n_neighbors: int("Neighbours", 5, { min: 1 }) }),
+    projection("GaussianRandomProjection", "Random Gaussian", { seed }),
   ],
 };

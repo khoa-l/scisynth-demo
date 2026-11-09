@@ -35,6 +35,7 @@ describe("Node catalog", () => {
       "RandomInsertion",
       "PCA",
       "UMAP",
+      "GaussianRandomProjection",
     ]);
   });
 
