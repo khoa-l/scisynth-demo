@@ -68,15 +68,16 @@ afterEach(() => {
   react.mockClear();
 });
 
-function answerAsTheServer(survey: object, dataset = DATASET) {
+function answerAsTheServer(survey: object, datasets = [DATASET]) {
   fetchMock.mockImplementation(async (input) => {
     const request = input as Request;
     const { pathname } = new URL(request.url);
     if (pathname === "/api/previews/nodes") return jsonResponse(PREVIEW);
-    if (pathname === `/api/projects/${PROJECT_ID}/datasets`) return jsonResponse([dataset]);
-    if (pathname === `/api/projects/${PROJECT_ID}/datasets/${dataset.id}`) {
-      return jsonResponse(dataset);
-    }
+    if (pathname === `/api/projects/${PROJECT_ID}/datasets`) return jsonResponse(datasets);
+    const dataset = datasets.find(
+      ({ id }) => pathname === `/api/projects/${PROJECT_ID}/datasets/${id}`,
+    );
+    if (dataset) return jsonResponse(dataset);
     if (request.method === "PATCH") {
       return jsonResponse({ ...survey, ...(await request.clone().json()) });
     }
@@ -84,8 +85,8 @@ function answerAsTheServer(survey: object, dataset = DATASET) {
   });
 }
 
-async function mountBuilder(block: SurveyBlock, dataset = DATASET) {
-  answerAsTheServer({ ...SURVEY, content: { blocks: [block] } }, dataset);
+async function mountBuilder(block: SurveyBlock, datasets = [DATASET]) {
+  answerAsTheServer({ ...SURVEY, content: { blocks: [block] } }, datasets);
   const { wrapper } = await mountPage(ProjectSurveyView, {
     props: { projectId: PROJECT_ID, surveyId: SURVEY.id },
   });
@@ -96,10 +97,22 @@ function row(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
   return wrapper.find('[aria-label="Survey builder"] li');
 }
 
+function dataPicker(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
+  return row(wrapper).find('button[aria-haspopup="dialog"]');
+}
+
 async function openData(wrapper: Awaited<ReturnType<typeof mountBuilder>>) {
-  await row(wrapper).find('[data-slot="select-trigger"]').trigger("keydown", { key: "Enter" });
+  await dataPicker(wrapper).trigger("click");
   await flushPromises();
-  return [...document.querySelectorAll<HTMLElement>('[role="option"]')];
+  return shownNodes();
+}
+
+function shownNodes() {
+  return [...document.querySelectorAll<HTMLElement>('[data-slot="popover-content"] li button')];
+}
+
+function datasetHeadings() {
+  return [...document.querySelectorAll<HTMLElement>('[data-slot="collapsible-trigger"]')];
 }
 
 async function savedBlocks() {
@@ -117,22 +130,53 @@ describe("Chart blocks", () => {
     it("offers each dataset's nodes and saves the chosen one with its first channel", async () => {
       const wrapper = await mountBuilder(chart({ source: null }));
 
-      const trigger = row(wrapper).find('[data-slot="select-trigger"]');
-      expect(trigger.text()).toBe("Choose a node from a dataset…");
+      expect(dataPicker(wrapper).text()).toBe("Choose a node from a dataset…");
       const options = await openData(wrapper);
-      const groups = document.querySelectorAll('[data-slot="select-label"]');
-      expect([...groups].map((group) => group.textContent?.trim())).toEqual(["Raw reads"]);
+      expect(datasetHeadings().map((heading) => heading.textContent?.trim())).toEqual([
+        "Raw reads",
+      ]);
       expect(options.map((option) => option.textContent?.trim())).toEqual([
         "Gaussian Field",
         "Grid Sampler",
         "Gaussian Field 2",
       ]);
 
-      options[1]!.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+      options[1]!.click();
       await flushPromises();
 
       expect((await savedBlocks())[0].source).toEqual(SOURCE);
-      expect(trigger.text()).toBe("Raw reads / Grid Sampler");
+      expect(dataPicker(wrapper).text()).toBe("Raw reads / Grid Sampler");
+      expect(document.querySelector('[data-slot="popover-content"]')).toBeNull();
+    });
+
+    it("lists the nodes under collapsible dataset headings, opening the chosen node's dataset", async () => {
+      const other: DatasetPublic = {
+        ...DATASET,
+        id: "Zq9-OvCTLPC6Urz_TXE8e",
+        name: "Cleaned reads",
+        content: { ...DATASET.content, nodes: [DATASET.content.nodes[0]!] },
+      };
+      const wrapper = await mountBuilder(chart(), [other, DATASET]);
+
+      const options = await openData(wrapper);
+      expect(datasetHeadings().map((heading) => heading.textContent?.trim())).toEqual([
+        "Cleaned reads",
+        "Raw reads",
+      ]);
+      expect(options.map((option) => option.textContent?.trim())).toEqual([
+        "Gaussian Field",
+        "Grid Sampler",
+        "Gaussian Field 2",
+      ]);
+      expect(options[1]!.getAttribute("aria-current")).toBe("true");
+
+      datasetHeadings()[0]!.click();
+      await flushPromises();
+      expect(shownNodes()).toHaveLength(4);
+
+      datasetHeadings()[1]!.click();
+      await flushPromises();
+      expect(shownNodes().map((option) => option.textContent?.trim())).toEqual(["Gaussian Field"]);
     });
 
     it("offers named nodes by their name", async () => {
@@ -141,7 +185,7 @@ describe("Chart blocks", () => {
         ...DATASET,
         content: { ...DATASET.content, nodes: [{ ...field!, name: "Smooth field" }, ...others] },
       };
-      const wrapper = await mountBuilder(chart({ source: null }), named);
+      const wrapper = await mountBuilder(chart({ source: null }), [named]);
 
       const options = await openData(wrapper);
 
@@ -324,9 +368,7 @@ describe("Chart blocks", () => {
 
       expect(row(wrapper).find('[data-slot="block-title"]').text()).toBe("Labeling");
       expect(row(wrapper).find('input[aria-label="Instruction"]').exists()).toBe(true);
-      expect(row(wrapper).find('[data-slot="select-trigger"]').text()).toBe(
-        "Raw reads / Grid Sampler",
-      );
+      expect(dataPicker(wrapper).text()).toBe("Raw reads / Grid Sampler");
       const [only] = labelRows(wrapper);
       expect((only!.find('input[type="color"]').element as HTMLInputElement).value).toBe("#e11d48");
       expect(
