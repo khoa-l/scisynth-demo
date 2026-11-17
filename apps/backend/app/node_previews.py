@@ -34,7 +34,9 @@ LATENT_MAX_SAMPLES = 64**3
 LATENT_MAX_CELLS = 128**3
 SAMPLE_MAX_CELLS = 64**3
 POINTS_LIMIT = 10_000
-ISOMAP_POINTS_LIMIT = 5_000
+FIT_POINTS = 10_000
+ISOMAP_FIT_POINTS = 5_000
+TRANSFORM_LIMITS = {"UMAP": 20_000, "Isomap": 20_000}
 COUNT_LIMITS = {"GaussianBumps": ("bumps", 100), "VoronoiRegions": ("regions", 10_000)}
 COMPOSITES = {"Sum": Sum, "Product": Product, "Multichannel": Multichannel}
 PROJECTIONS = ("PCA", "UMAP", "Isomap", "GaussianRandomProjection")
@@ -161,17 +163,32 @@ def build_estimator(kind: str, params: dict, seed: int) -> object:
     return UMAP(n_components=2, random_state=seed, n_jobs=1, **params)
 
 
+def fit_sample(observation: Observation, limit: int, seed: int) -> Observation:
+    valid = np.flatnonzero(observation.mask)
+    if len(valid) <= limit:
+        return observation
+    keep = np.zeros(observation.mask.size, dtype=bool)
+    keep[np.random.default_rng(seed).choice(valid, limit, replace=False)] = True
+    keep = keep.reshape(observation.mask.shape)
+    values = np.where(keep[..., None], observation.values, np.nan)
+    return Observation(values, observation.coords, keep)
+
+
 def project(body: NodePreviewRequest, node: NodeSpec) -> Observation:
     before = build_observation(body, only_input(body, node), (node.id,))
     valid = int(before.mask.sum())
-    limit = ISOMAP_POINTS_LIMIT if node.kind == "Isomap" else POINTS_LIMIT
-    if valid > limit:
-        raise ValueError(f"Too many locations to project: {valid:,}, at most {limit:,}")
+    limit = TRANSFORM_LIMITS.get(node.kind)
+    if limit and valid > limit:
+        raise ValueError(
+            f"Too many locations to project with {node.kind}: {valid:,}, "
+            f"at most {limit:,}"
+        )
     if node.kind in LINEAR_PROJECTIONS and before.n_channels < 2:
         raise ValueError(f"{node.kind} needs an observation with at least two channels")
     params, seed = split_seed(node)
     projection = Projection(build_estimator(node.kind, params, seed))
-    return projection.fit(before).transform(before)
+    fit_points = ISOMAP_FIT_POINTS if node.kind == "Isomap" else FIT_POINTS
+    return projection.fit(fit_sample(before, fit_points, seed)).transform(before)
 
 
 def observe(body: NodePreviewRequest) -> Observation:

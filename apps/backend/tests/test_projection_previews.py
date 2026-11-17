@@ -108,6 +108,31 @@ def test_previews_a_random_gaussian_projection_from_its_seed(
     assert not np.allclose(embedding(1), embedding(2))
 
 
+def test_places_every_location_after_fitting_on_a_sample_of_them(
+    signed_in: TestClient,
+) -> None:
+    nodes, edges = projected("PCA", shape=128)
+    dropout, link_dropout = stage("drop", "RandomDropout", "grid", p=0.1)
+    nodes = [*nodes[:-1], dropout, nodes[-1]]
+    edges = [*edges[:-1], link_dropout, {**edges[-1], "id": "drop-p", "source": "drop"}]
+    channels = preview(signed_in, "drop", nodes[:-1], edges[:-1])["channels"]
+    values = np.stack([decode(c).T.ravel() for c in channels], axis=1)
+
+    result = embedded(preview(signed_in, "p", nodes, edges))
+
+    assert result.shape == (128 * 128, 2)
+    kept = ~np.isnan(values).any(axis=1)
+    assert 10_000 < kept.sum() < 128 * 128
+    assert np.array_equal(~np.isnan(result).any(axis=1), kept)
+    full_fit = PCA(n_components=2).fit_transform(values[kept])
+    for axis in range(2):
+        correlation = np.corrcoef(result[kept, axis], full_fit[:, axis])[0, 1]
+        assert abs(correlation) > 0.999
+    assert np.array_equal(
+        result, embedded(preview(signed_in, "p", nodes, edges)), equal_nan=True
+    )
+
+
 def test_dropped_locations_have_no_place_in_the_projection(
     signed_in: TestClient,
 ) -> None:
@@ -129,7 +154,10 @@ def test_dropped_locations_have_no_place_in_the_projection(
 @pytest.mark.parametrize(
     ("nodes", "edges", "message"),
     [
-        (*projected("PCA", shape=128), "Too many locations to project"),
+        (
+            *projected("UMAP", shape=142),
+            "Too many locations to project with UMAP: 20,164, at most 20,000",
+        ),
         (
             [
                 field("field"),
@@ -148,7 +176,7 @@ def test_dropped_locations_have_no_place_in_the_projection(
             [sampled("grid"), stage("p", "GaussianRandomProjection", "grid")[1]],
             "GaussianRandomProjection needs an observation with at least two channels",
         ),
-        (*projected("Isomap", shape=71), "at most 5,000"),
+        (*projected("Isomap", shape=142), "at most 20,000"),
         ([stage("p", "UMAP", "grid")[0]], [], "needs one input connected"),
         (*projected("UMAP", shape=8, n_neighbours=10), "n_neighbours"),
         (*projected("PCA", svd_solver="fastest"), "svd_solver"),
